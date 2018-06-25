@@ -33,8 +33,8 @@ div.smoothie-chart-tooltip {
 .scopeview { 
   height:40vh; 
   display: grid; 
-  grid-template-rows: 400px; 
-  grid-template-columns: 86% 14%; 
+  grid-template-rows: 100px; 
+  grid-template-columns: 76% 24%; 
 } 
 article { 
   grid-column-start:1; 
@@ -50,7 +50,7 @@ aside {
 } 
 .slider {
     -webkit-appearance: none;
-    width: 85%;
+    width: 82%;
     height: 10px;
     border-radius: 5px;   
     background: #d3d3d3;

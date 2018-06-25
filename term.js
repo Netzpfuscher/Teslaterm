@@ -19,10 +19,30 @@ var g = [];
 var wavecanvas;
 var backcanvas;
 
+var TIMEOUT = 50;
+var response_timeout = 50  // 50 * 20ms = 1s
+
 
 var uitime = setInterval(refresh_UI, 20);
 
+function reconnect(){
+	send_command('tterm start\r');
+}
+
 function refresh_UI(){
+	if(connected==true){
+		response_timeout--;
+	
+		if(response_timeout==0){
+			response_timeout=TIMEOUT;
+			t.io.println('Connection lost, reconnecting...');
+			reconnect();
+		
+		}
+	}
+	
+	
+	
 	var gauges =g.length;
 	
 	while(gauges){
@@ -106,6 +126,7 @@ const TT_GAUGE_CONF = 2;
 const TT_CHART = 3;
 const TT_CHART_DRAW = 4;
 const TT_CHART_CONF = 5;
+const TT_CHART_CLEAR = 6;
 
 const TT_UNIT_NONE = 0;
 const TT_UNIT_V = 1;
@@ -137,6 +158,7 @@ const DATA_NUM = 2;
 
 
 function compute(dat){
+	response_timeout = TIMEOUT;
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
 			gauge_buf[dat[DATA_NUM]] = helper.bytes_to_signed(dat[3],dat[4]);
@@ -223,6 +245,9 @@ function compute(dat){
 
 			}
 		break;
+		case TT_CHART_CLEAR:
+		
+		break;
 		
 	}
 }
@@ -288,10 +313,19 @@ function connected_cb(connectionInfo){
 		connected = true;
 		w2ui['toolbar'].get('connect').text = 'Disconnect';
 		w2ui['toolbar'].refresh();
-		send_command('tterm start\rcls\r');
+		start_conf();
+		
 		
 	}
 };
+
+function start_conf(){
+	send_command('\r');
+	send_command('set pw 0\r');
+	send_command('set pwd 50000\r');
+	send_command('tterm start\rcls\r');
+	
+}
 
 function getdevs(devices){
    for (var i = 0; i < devices.length; i++) {
@@ -537,11 +571,11 @@ draw_grid.grid=50;
 
 function resize(){
 	plot.xpos = TRIGGER_SPACE+1;
-	wavecanvas.style.width=(100-control_space)+'%';
+	wavecanvas.style.width=(90-control_space)+'%';
 	wavecanvas.style.height='100%';
 	wavecanvas.width  = wavecanvas.offsetWidth;
 	wavecanvas.height = wavecanvas.offsetHeight;
-	waveback.style.width=(100-control_space)+'%';
+	waveback.style.width=(90-control_space)+'%';
 	waveback.style.height='100%';
 	waveback.width  = wavecanvas.offsetWidth;
 	waveback.height = wavecanvas.offsetHeight;
@@ -610,6 +644,12 @@ function warn_energ() {
 	.yes(function () { send_command('bus on\r'); });
 }
 
+function warn_tr() {
+    w2confirm('WARNING!<br>The coil will produce sparks.')
+    .no(function () { })
+	.yes(function () { slider0(); slider1(); send_command('tr start\r'); });
+}
+
 function warn_eeprom_save() {
     w2confirm('WARNING!<br>Are you sure to save the configuration to EEPROM?')
     .no(function () { })
@@ -637,8 +677,16 @@ function wave_mouse_down(e){
 function slider0(){
 	var slider = document.getElementById('slider0');
 	var slider_disp = document.getElementById('slider0_disp');
-	slider_disp.innerHTML = slider.value;
+	slider_disp.innerHTML = slider.value + ' µs';
 	send_command('set pw ' + slider.value + '\r');
+}
+
+function slider1(){
+	var slider = document.getElementById('slider1');
+	var slider_disp = document.getElementById('slider1_disp');
+	var pwd = Math.floor(1/slider.value*1000000);
+	slider_disp.innerHTML = slider.value + ' Hz';
+	send_command('set pwd ' + pwd + '\r');
 }
 
 function redrawTrigger(){
@@ -681,6 +729,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		    { type: 'menu', id: 'mnu_command', text: 'Commands', icon: 'fa fa-table', items: [
                 { text: 'BUS ON', icon: 'fa fa-bolt'},
 				{ text: 'BUS OFF', icon: 'fa fa-bolt'},
+				{ text: 'TR Start', icon: 'fa fa-bolt'},
+				{ text: 'TR Stop', icon: 'fa fa-bolt'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'}
             ]},
@@ -788,6 +838,12 @@ document.addEventListener('DOMContentLoaded', function () {
 				case 'mnu_command:BUS OFF':
 					send_command('bus off\r');
 				break;
+				case 'mnu_command:TR Start':
+					warn_tr();
+				break;
+				case 'mnu_command:TR Stop':
+					send_command('tr stop\r');
+				break;
 				case 'mnu_command:Load EEPROM-Config':
 					warn_eeprom_load();
 				break;
@@ -834,12 +890,14 @@ document.addEventListener('DOMContentLoaded', function () {
 			{ type: 'main', style: pstyle, content:
 				'<div class="scopeview">'+
 				'<article>'+
-				'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 85%; background: black; z-index: 0;"></canvas>'+
-				'<canvas id="wavecanvas" style= "position: absolute; left: 0; top: 0;width: 85%; z-index: 1;"></canvas>'+
+				'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>'+
+				'<canvas id="wavecanvas" style= "position: absolute; left: 0; top: 0;width: 75%; z-index: 1;"></canvas>'+
 				'</article>'+ 
 				'<aside>'+
 				'Ontime<br><br>'+
-				'<input type="range" id="slider0" min="0" max="150" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0</output>'+
+				'<input type="range" id="slider0" min="0" max="250" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
+				'<br><br>Offtime<br><br>'+
+				'<input type="range" id="slider1" min="20" max="1000" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
 				'</aside>'+ 
 				'</div>'
 				//'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 85%; background: black; z-index: 0;"></canvas>'+
@@ -869,6 +927,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('layout').addEventListener("drop", ondrop);
 	document.getElementById('layout').addEventListener("dragover", ondragover);
 	document.getElementById('slider0').addEventListener("input", slider0);
+	document.getElementById('slider1').addEventListener("input", slider1);
 
 	
 	wavecanvas = document.getElementById("wavecanvas");
