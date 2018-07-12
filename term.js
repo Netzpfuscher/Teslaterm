@@ -127,6 +127,9 @@ const TT_CHART = 3;
 const TT_CHART_DRAW = 4;
 const TT_CHART_CONF = 5;
 const TT_CHART_CLEAR = 6;
+const TT_CHART_LINE = 7;
+const TT_CHART_TEXT = 8;
+
 
 const TT_UNIT_NONE = 0;
 const TT_UNIT_V = 1;
@@ -247,6 +250,33 @@ function compute(dat){
 		break;
 		case TT_CHART_CLEAR:
 		
+		break;
+		case TT_CHART_LINE:
+			var x1 = helper.bytes_to_signed(dat[2],dat[3]);
+			var y1 = helper.bytes_to_signed(dat[4],dat[5]);
+			var x2 = helper.bytes_to_signed(dat[6],dat[7]);
+			var y2 = helper.bytes_to_signed(dat[8],dat[9]);
+			var color = dat[10].valueOf();
+			ctx.beginPath();
+			ctx.lineWidth = pixel;
+			ctx.strokeStyle = wavecolor[color];
+			ctx.moveTo(x1,y1);
+			ctx.lineTo(x2,y2);
+			ctx.stroke();
+		
+		break;
+		case TT_CHART_TEXT:
+			var x = helper.bytes_to_signed(dat[2],dat[3]);
+			var y = helper.bytes_to_signed(dat[4],dat[5]);
+			var color = dat[6].valueOf();
+			var size = dat[7].valueOf();
+			if(size<6) size=6;
+			dat.splice(0,8);
+			var str = helper.convertArrayBufferToString(dat);
+			ctx.font = size + "px Arial";
+			ctx.textAlign = "left";
+			ctx.fillStyle = wavecolor[color];
+			ctx.fillText(str,x, y);
 		break;
 		
 	}
@@ -689,6 +719,20 @@ function slider1(){
 	send_command('set pwd ' + pwd + '\r');
 }
 
+function slider2(){
+	var slider = document.getElementById('slider2');
+	var slider_disp = document.getElementById('slider2_disp');
+	slider_disp.innerHTML = slider.value + ' ms';
+	send_command('set bon ' + slider.value + '\r');
+}
+
+function slider3(){
+	var slider = document.getElementById('slider3');
+	var slider_disp = document.getElementById('slider3_disp');
+	slider_disp.innerHTML = slider.value + ' ms';
+	send_command('set boff ' + slider.value + '\r');
+}
+
 function redrawTrigger(){
   var ctx = wavecanvas.getContext('2d');
   var x_res = wavecanvas.width;
@@ -806,7 +850,8 @@ document.addEventListener('DOMContentLoaded', function () {
             ]},
 			
             { type: 'spacer' },
-			{ type: 'button', id: 'kill', text: 'KILL', icon: 'fa fa-power-off' },
+			{ type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off' },
+			{ type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off' },
 			{ type: 'html',  id: 'port',
                 html: function (item) {
                     var html =
@@ -864,8 +909,11 @@ document.addEventListener('DOMContentLoaded', function () {
 				break;
 				
 				
-				case 'kill':
-					send_command('kill\r');
+				case 'kill_set':
+					send_command('kill set\r');
+				break;
+				case 'kill_reset':
+					send_command('kill reset\r');
 				break;
             }
         }
@@ -898,6 +946,10 @@ document.addEventListener('DOMContentLoaded', function () {
 				'<input type="range" id="slider0" min="0" max="250" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
 				'<br><br>Offtime<br><br>'+
 				'<input type="range" id="slider1" min="20" max="1000" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
+				'<br><br>Burst On<br><br>'+
+				'<input type="range" id="slider2" min="0" max="1000" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
+				'<br><br>Burst Off<br><br>'+
+				'<input type="range" id="slider3" min="0" max="1000" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
 				'</aside>'+ 
 				'</div>'
 				//'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 85%; background: black; z-index: 0;"></canvas>'+
@@ -928,7 +980,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('layout').addEventListener("dragover", ondragover);
 	document.getElementById('slider0').addEventListener("input", slider0);
 	document.getElementById('slider1').addEventListener("input", slider1);
-
+	document.getElementById('slider2').addEventListener("input", slider2);
+	document.getElementById('slider3').addEventListener("input", slider3);
 	
 	wavecanvas = document.getElementById("wavecanvas");
 	backcanvas = document.getElementById("backcanvas");
