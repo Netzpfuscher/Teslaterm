@@ -3,12 +3,8 @@
   "name": "Teslaterm",
   "version": "0.1",
   "permissions": ["serial", {"fileSystem": ["write"]}],
-  "minimum_chrome_version": "28",
-  "icons": {
-    "16": "16x16.png",
-    "128": "128x128.png"
-  },
-  "app": {
+  "sockets": {"tcp": {"connect": "*"}},
+    "app": {
     "background": {
       "scripts": ["main.js"]
     }
