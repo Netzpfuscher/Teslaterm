@@ -38,6 +38,8 @@ function createInfo(info){
 	
 }
 
+
+
 function callback_sck(result){
 	if(!result){
 		t.io.println("connected");
@@ -48,9 +50,11 @@ function callback_sck(result){
 	}
 	
 }
-function send_tcp(data){
+
+/*function send_tcp(data){
 	chrome.sockets.tcp.send(socket, data, send_complete)
 }
+*/
 function send_complete(result){
 	console.log(result);
 }
@@ -102,9 +106,14 @@ var Player = new MidiPlayer.Player(process_midi);
 
 function process_midi(event){
 	
-	if(connected==2 && event.bytes_buf[0] != 0x00){
+	if(connected && event.bytes_buf[0] != 0x00){
 		var msg=new Uint8Array(event.bytes_buf);
-		chrome.serial.send(connid, msg, sendcb);
+		if(connected==1){
+			chrome.sockets.tcp.send(socket, msg, sendcb);
+		}
+		if(connected==2){
+			chrome.serial.send(connid, msg, sendcb);
+		}
 		midi_state.progress=Player.getSongPercentRemaining();
 		redrawTop();
 	}else{
@@ -748,9 +757,26 @@ function slider0(){
 	send_command('set pw ' + slider.value + '\r');
 }
 
+function set_slider0(val){
+	var slider = document.getElementById('slider0');
+	var slider_disp = document.getElementById('slider0_disp');
+	slider.value = slider.max*val;
+	slider_disp.innerHTML = slider.value + ' µs';
+	send_command('set pw ' + slider.value + '\r');
+}
+
 function slider1(){
 	var slider = document.getElementById('slider1');
 	var slider_disp = document.getElementById('slider1_disp');
+	var pwd = Math.floor(1/slider.value*1000000);
+	slider_disp.innerHTML = slider.value + ' Hz';
+	send_command('set pwd ' + pwd + '\r');
+}
+
+function set_slider1(val){
+	var slider = document.getElementById('slider1');
+	var slider_disp = document.getElementById('slider1_disp');
+	slider.value = slider.max*val;
 	var pwd = Math.floor(1/slider.value*1000000);
 	slider_disp.innerHTML = slider.value + ' Hz';
 	send_command('set pwd ' + pwd + '\r');
@@ -763,9 +789,24 @@ function slider2(){
 	send_command('set bon ' + slider.value + '\r');
 }
 
+function set_slider2(val){
+	var slider = document.getElementById('slider2');
+	var slider_disp = document.getElementById('slider2_disp');
+	slider.value = slider.max*val;
+	slider_disp.innerHTML = slider.value + ' ms';
+	send_command('set bon ' + slider.value + '\r');
+}
+
 function slider3(){
 	var slider = document.getElementById('slider3');
 	var slider_disp = document.getElementById('slider3_disp');
+	slider_disp.innerHTML = slider.value + ' ms';
+	send_command('set boff ' + slider.value + '\r');
+}
+function set_slider3(val){
+	var slider = document.getElementById('slider3');
+	var slider_disp = document.getElementById('slider3_disp');
+	slider.value = slider.max*val;
 	slider_disp.innerHTML = slider.value + ' ms';
 	send_command('set boff ' + slider.value + '\r');
 }
@@ -799,6 +840,165 @@ function redrawTrigger(){
       ctx.fillText(tterm.trigger,4,ytrgpos-4);
     }
   }
+}
+
+var selectMIDI = null;
+var midiAccess = null;
+var midiIn = null;
+var nano=null;
+
+function selectMIDIIn( ev ) {
+  if (midiIn)
+    midiIn.onmidimessage = null;
+  var id = ev.target[ev.target.selectedIndex].value;
+  if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
+    midiIn = midiAccess.inputs()[ev.target.selectedIndex];
+  else
+    midiIn = midiAccess.inputs.get(id);
+  if (midiIn)
+    midiIn.onmidimessage = midiMessageReceived;
+}
+
+function midi_start(){
+	
+if (navigator.requestMIDIAccess) {
+    navigator.requestMIDIAccess().then(onMIDIStarted, onMIDISystemError);
+} else {
+    alert("No MIDI support in your browser.");
+}
+	
+}
+
+function midiConnectionStateChange( e ) {
+  console.log("connection: " + e.port.name + " " + e.port.connection + " " + e.port.state );
+  populateMIDIInSelect();
+}
+
+function onMIDIStarted( midi ) {
+  var preferredIndex = 0;
+
+  midiAccess = midi;
+
+  //document.getElementById("synthbox").className = "loaded";
+  selectMIDI=document.getElementById("midiIn");
+  midi.onstatechange = midiConnectionStateChange;
+  populateMIDIInSelect();
+  selectMIDI.onchange = selectMIDIIn;
+}
+
+function onMIDISystemError( err ) {
+  document.getElementById("synthbox").className = "error";
+  console.log( "MIDI not initialized - error encountered:" + err.code );
+}
+
+
+function populateMIDIInSelect() {
+  // clear the MIDI input select
+  selectMIDI.options.length = 0;
+  if (midiIn && midiIn.state=="disconnected")
+    midiIn=null;
+  var firstInput = null;
+
+  var inputs=midiAccess.inputs.values();
+  for ( var input = inputs.next(); input && !input.done; input = inputs.next()){
+    input = input.value;
+    if (!firstInput)
+      firstInput=input;
+    var str=input.name.toString();
+    var preferred = !midiIn && ((str.indexOf("Tesla") != -1)||(str.indexOf("Keyboard") != -1)||(str.indexOf("keyboard") != -1)||(str.indexOf("KEYBOARD") != -1));
+	if(str.includes("nano")){
+		nano=input;
+		nano.onmidimessage = midiMessageReceived;
+	}
+    // if we're rebuilding the list, but we already had this port open, reselect it.
+    if (midiIn && midiIn==input)
+      preferred = true;
+
+    selectMIDI.appendChild(new Option(input.name,input.id,preferred,preferred));
+    if (preferred) {
+      midiIn = input;
+      midiIn.onmidimessage = midiMessageReceived;
+    }
+  }
+  if (!midiIn) {
+      midiIn = firstInput;
+      if (midiIn)
+        midiIn.onmidimessage = midiMessageReceived;
+  }
+}
+
+
+function midiMessageReceived( ev ) {
+	if(connected==1 && !ev.currentTarget.name.includes("nano")){
+		chrome.sockets.tcp.send(socket, ev.data, sendcb);
+	}
+	
+  var cmd = ev.data[0] >> 4;
+  var channel = ev.data[0] & 0xf;
+  var noteNumber = ev.data[1];
+  var velocity = ev.data[2];
+	//console.log(ev);
+  if (channel == 9)
+    return
+
+	if(ev.currentTarget.name.includes("nano")){
+
+		if ( cmd==8 || ((cmd==9)&&(velocity==0)) ) { // with MIDI, note on with velocity zero is the same as note off
+			// note off
+			//noteOff( noteNumber );
+			
+		} else if (cmd == 9) {
+		// note on
+		//noteOn( noteNumber, velocity/127.0);
+		switch(noteNumber){
+			case 10:
+				Player.play();
+				midi_state.state = 'playing';
+				redrawTop();
+			break;
+			case 11:
+				Player.stop();
+					midi_state.state = 'stopped';
+					redrawTop();
+					if(connected==2){
+						var msg=new Uint8Array([0xB0,0x77,0x00]);
+						chrome.serial.send(connid, msg, sendcb);
+					}
+					if(connected==1){
+						var msg=new Uint8Array([0xB0,0x77,0x00]);
+						chrome.sockets.tcp.send(socket, msg, sendcb);
+					}
+			break;
+		}
+		//console.log(noteNumber);
+		} else if (cmd == 11) {
+		//controller( noteNumber, velocity/127.0);
+		switch(noteNumber){
+			case 36:
+				set_slider0(velocity/127.0);
+			break;
+			case 37:
+				set_slider1(velocity/127.0);
+			break;
+			case 38:
+				set_slider2(velocity/127.0);
+			break;
+			case 39:
+				set_slider3(velocity/127.0);
+			break;
+		}
+		
+		} else if (cmd == 14) {
+		// pitch wheel
+		//pitchWheel( ((velocity * 128.0 + noteNumber)-8192)/8192.0 );
+		} else if ( cmd == 10 ) {  // poly aftertouch
+		//polyPressure(noteNumber,velocity/127)
+		} else{
+			console.log( "" + ev.data[0] + " " + ev.data[1] + " " + ev.data[2])
+		}
+	
+	}
+
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -887,7 +1087,6 @@ document.addEventListener('DOMContentLoaded', function () {
             ]},
 			
             { type: 'spacer' },
-			{ type: 'button', id: 'conip', text: 'conip', icon: 'fa fa-power-off' },
 			{ type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off' },
 			{ type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off' },
 			{ type: 'html',  id: 'port',
@@ -936,19 +1135,22 @@ document.addEventListener('DOMContentLoaded', function () {
 				case 'mnu_midi:Play':
 					Player.play();
 					midi_state.state = 'playing';
+					redrawTop();
 				break;
 				case 'mnu_midi:Stop':
 					Player.stop();
 					midi_state.state = 'stopped';
+					redrawTop();
 					if(connected==2){
-						var msg=new Uint8Array([0xB0,0x7B,0x00]);
+						var msg=new Uint8Array([0xB0,0x77,0x00]);
 						chrome.serial.send(connid, msg, sendcb);
 					}
+					if(connected==1){
+						var msg=new Uint8Array([0xB0,0x77,0x00]);
+						chrome.sockets.tcp.send(socket, msg, sendcb);
+					}
 				break;
-				case 'conip':
-					connect_ip();
-				break;
-				
+		
 				case 'kill_set':
 					send_command('kill set\r');
 				break;
@@ -990,6 +1192,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				'<input type="range" id="slider2" min="0" max="1000" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
 				'<br><br>Burst Off<br><br>'+
 				'<input type="range" id="slider3" min="0" max="1000" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
+				'<br><br><select id="midiIn"></select>'+
 				'</aside>'+ 
 				'</div>'
 				//'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 85%; background: black; z-index: 0;"></canvas>'+
@@ -1057,6 +1260,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	tterm.trigger_block=0;
 	
 	gauge_buf[0]=0;
+	
+	midi_start();
 
 	
 });
