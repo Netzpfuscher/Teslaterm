@@ -23,6 +23,8 @@ var TIMEOUT = 50;
 var response_timeout = 50  // 50 * 20ms = 1s
 
 var socket;
+var socket_midi;
+
 var ipaddr="0.0.0.0";
 
 
@@ -30,11 +32,18 @@ var uitime = setInterval(refresh_UI, 20);
 
 function connect_ip(){
 	chrome.sockets.tcp.create({}, createInfo);
+	chrome.sockets.tcp.create({}, createInfo_midi);
+	
 }
 
 function createInfo(info){
-	socket= info.socketId;
+	socket = info.socketId;
 	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
+	
+}
+function createInfo_midi(info){
+	socket_midi = info.socketId;
+	chrome.sockets.tcp.connect(socket_midi,ipaddr,123, callback_sck_midi);
 	
 }
 
@@ -48,7 +57,11 @@ function callback_sck(result){
 		w2ui['toolbar'].refresh();
 		start_conf();	
 	}
-	
+
+}
+
+function callback_sck_midi(result){
+
 }
 
 /*function send_tcp(data){
@@ -109,7 +122,7 @@ function process_midi(event){
 	if(connected && event.bytes_buf[0] != 0x00){
 		var msg=new Uint8Array(event.bytes_buf);
 		if(connected==1){
-			chrome.sockets.tcp.send(socket, msg, sendcb);
+			chrome.sockets.tcp.send(socket_midi, msg, sendcb);
 		}
 		if(connected==2){
 			chrome.serial.send(connid, msg, sendcb);
@@ -750,6 +763,23 @@ function wave_mouse_down(e){
 	}
 }
 
+function nano_led(num,val){
+	var uint8 = new Uint8Array(3);
+	if(nano_out){
+	if(val>0){
+		uint8[0]=157;
+		uint8[1]=num;
+		uint8[2]=127;
+		nano_out.send(uint8);
+	}else{
+		uint8[0]=141;
+		uint8[1]=num;
+		uint8[2]=0;
+		nano_out.send(uint8);
+	}
+	}
+}
+
 function slider0(){
 	var slider = document.getElementById('slider0');
 	var slider_disp = document.getElementById('slider0_disp');
@@ -846,6 +876,7 @@ var selectMIDI = null;
 var midiAccess = null;
 var midiIn = null;
 var nano=null;
+var nano_out=null;
 
 function selectMIDIIn( ev ) {
   if (midiIn)
@@ -920,6 +951,17 @@ function populateMIDIInSelect() {
       midiIn.onmidimessage = midiMessageReceived;
     }
   }
+  var outputs=midiAccess.outputs.values();
+  for ( var output = outputs.next(); output && !output.done; output = outputs.next()){
+	 output = output.value;
+	 var str=output.name.toString(); 
+	 if(str.includes("nano")){
+		nano_out=output;
+		
+	}
+	
+	  
+  }
   if (!midiIn) {
       midiIn = firstInput;
       if (midiIn)
@@ -937,7 +979,7 @@ function midiMessageReceived( ev ) {
   var channel = ev.data[0] & 0xf;
   var noteNumber = ev.data[1];
   var velocity = ev.data[2];
-	//console.log(ev);
+	console.log(ev);
   if (channel == 9)
     return
 
@@ -952,11 +994,15 @@ function midiMessageReceived( ev ) {
 		//noteOn( noteNumber, velocity/127.0);
 		switch(noteNumber){
 			case 10:
+				nano_led(10,1);
+				nano_led(11,0);
 				Player.play();
 				midi_state.state = 'playing';
 				redrawTop();
 			break;
 			case 11:
+				nano_led(10,0);
+				nano_led(11,1);
 				Player.stop();
 					midi_state.state = 'stopped';
 					redrawTop();
@@ -966,7 +1012,7 @@ function midiMessageReceived( ev ) {
 					}
 					if(connected==1){
 						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.sockets.tcp.send(socket, msg, sendcb);
+						chrome.sockets.tcp.send(socket_midi, msg, sendcb);
 					}
 			break;
 		}
@@ -1134,11 +1180,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				break;
 				case 'mnu_midi:Play':
 					Player.play();
+					nano_led(10,1);
+					nano_led(11,0);
 					midi_state.state = 'playing';
 					redrawTop();
 				break;
 				case 'mnu_midi:Stop':
 					Player.stop();
+					nano_led(10,0);
+					nano_led(11,1);
 					midi_state.state = 'stopped';
 					redrawTop();
 					if(connected==2){
@@ -1147,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					}
 					if(connected==1){
 						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.sockets.tcp.send(socket, msg, sendcb);
+						chrome.sockets.tcp.send(socket_midi, msg, sendcb);
 					}
 				break;
 		
