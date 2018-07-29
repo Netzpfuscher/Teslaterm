@@ -27,6 +27,10 @@ var socket_midi;
 
 var ipaddr="0.0.0.0";
 
+var blink=0;
+var coil_hot_led=0;
+var cycle_led=0;
+
 
 var uitime = setInterval(refresh_UI, 20);
 
@@ -38,6 +42,9 @@ function connect_ip(){
 
 function createInfo(info){
 	socket = info.socketId;
+	
+	console.log(ipaddr);
+	
 	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
 	
 }
@@ -92,6 +99,23 @@ function refresh_UI(){
 			reconnect();
 		
 		}
+	}
+	
+	blink++;
+	if(blink>25){
+		blink=0;
+		if(coil_hot_led){
+			if(cycle_led){
+				cycle_led=0;
+				nano_led(simpleIni.nano.killreset,cycle_led);
+			}else{
+				cycle_led=1;
+				nano_led(simpleIni.nano.killreset,cycle_led);
+			}
+		}
+			
+	
+		
 	}
 	
 	
@@ -303,13 +327,13 @@ function compute(dat){
 			}
 		break;
 		case TT_CHART_CLEAR:
-		
+			chart_cls();
 		break;
 		case TT_CHART_LINE:
-			var x1 = helper.bytes_to_signed(dat[2],dat[3]);
-			var y1 = helper.bytes_to_signed(dat[4],dat[5]);
-			var x2 = helper.bytes_to_signed(dat[6],dat[7]);
-			var y2 = helper.bytes_to_signed(dat[8],dat[9]);
+			var x1 = helper.bytes_to_signed(dat[2],dat[3])+TRIGGER_SPACE;
+			var y1 = helper.bytes_to_signed(dat[4],dat[5])+top_space;
+			var x2 = helper.bytes_to_signed(dat[6],dat[7])+TRIGGER_SPACE;
+			var y2 = helper.bytes_to_signed(dat[8],dat[9])+top_space;
 			var color = dat[10].valueOf();
 			ctx.beginPath();
 			ctx.lineWidth = pixel;
@@ -334,6 +358,13 @@ function compute(dat){
 		break;
 		
 	}
+}
+
+function chart_cls(){
+	var ctxb = waveback.getContext('2d');
+	ctxb.clearRect(0, 0, waveback.width, waveback.height);
+	ctx.clearRect(0, 0, waveback.width, waveback.height);
+	
 }
 
 
@@ -421,6 +452,7 @@ function getdevs(devices){
    }
    
    var test = w2ui['toolbar'].get('port');
+   
    if(test.value){
 		t.io.println('UD3 not found connect to: '+ test.value);
 		chrome.serial.connect(test.value, connected_cb);
@@ -441,6 +473,7 @@ function connect(){
 		helper.delay(200);
 		if(connected==2) chrome.serial.disconnect(connid,disconnected_cb);
 		if(connected==1) chrome.sockets.tcp.disconnect(socket, disconnected_cb);
+		if(connected==1) chrome.sockets.tcp.disconnect(socket_midi, disconnected_cb);
 		w2ui['toolbar'].get('connect').text = 'Connect';
 		w2ui['toolbar'].refresh();
 		connected= 0;
@@ -703,12 +736,54 @@ function readmidi(file){
 	fs.onload = event_read_midi;
 	
 }
+var simpleIni;
+
+function readini(file){
+	chrome.runtime.getPackageDirectoryEntry(function(root) {
+	root.getFile("config.ini", {}, function(fileEntry) {
+    fileEntry.file(function(file) {
+      var reader = new FileReader();
+      reader.onloadend = event_read_ini;
+      reader.readAsText(file);
+    }, errorHandler);
+  }, errorHandler);
+});
+
+
+	/*
+	var fs = new FileReader();
+	fs.readAsArrayBuffer(file);
+	fs.onload = event_read_ini;
+	*/
+}
+
+function errorHandler(result){
+	
+}
 
 function event_read_midi(progressEvent){
 
 	Player.loadArrayBuffer(progressEvent.srcElement.result);
 
 }
+
+
+function event_read_ini(ev){
+	var inicontent=this.result;
+	simpleIni = new SimpleIni(function() { 
+        return inicontent;
+    });
+	
+	
+	if(simpleIni.general.port){
+		
+		w2ui['toolbar'].get('port').value = simpleIni.get('general.port');
+		
+		w2ui['toolbar'].refresh();
+   }
+   
+}
+
 
 function ondrop(e){
    e.stopPropagation();
@@ -957,7 +1032,7 @@ function populateMIDIInSelect() {
 	 var str=output.name.toString(); 
 	 if(str.includes("nano")){
 		nano_out=output;
-		
+		nano_startup();
 	}
 	
 	  
@@ -967,6 +1042,15 @@ function populateMIDIInSelect() {
       if (midiIn)
         midiIn.onmidimessage = midiMessageReceived;
   }
+}
+
+function nano_startup(){
+	nano_led(simpleIni.nano.killset,1);
+	nano_led(simpleIni.nano.killreset,0);
+	
+	nano_led(simpleIni.nano.play,0);
+	nano_led(simpleIni.nano.stop,1);
+	
 }
 
 
@@ -979,7 +1063,7 @@ function midiMessageReceived( ev ) {
   var channel = ev.data[0] & 0xf;
   var noteNumber = ev.data[1];
   var velocity = ev.data[2];
-	console.log(ev);
+	//console.log(ev);
   if (channel == 9)
     return
 
@@ -992,17 +1076,19 @@ function midiMessageReceived( ev ) {
 		} else if (cmd == 9) {
 		// note on
 		//noteOn( noteNumber, velocity/127.0);
-		switch(noteNumber){
-			case 10:
-				nano_led(10,1);
-				nano_led(11,0);
+
+
+		switch(String(noteNumber)){
+			case simpleIni.nano.play:
+				nano_led(simpleIni.nano.play,1);
+				nano_led(simpleIni.nano.stop,0);
 				Player.play();
 				midi_state.state = 'playing';
 				redrawTop();
 			break;
-			case 11:
-				nano_led(10,0);
-				nano_led(11,1);
+			case simpleIni.nano.stop:
+				nano_led(simpleIni.nano.play,0);
+				nano_led(simpleIni.nano.stop,1);
 				Player.stop();
 					midi_state.state = 'stopped';
 					redrawTop();
@@ -1015,21 +1101,33 @@ function midiMessageReceived( ev ) {
 						chrome.sockets.tcp.send(socket_midi, msg, sendcb);
 					}
 			break;
+			case simpleIni.nano.killset:
+				coil_hot_led=0;
+				nano_led(simpleIni.nano.killset,1);
+				nano_led(simpleIni.nano.killreset,0);
+				send_command('kill set\r');
+			break;
+			case simpleIni.nano.killreset:
+				coil_hot_led=1;
+				nano_led(simpleIni.nano.killset,0);
+				nano_led(simpleIni.nano.killreset,1);
+				send_command('kill reset\r');
+			break;
 		}
-		//console.log(noteNumber);
+		console.log(noteNumber);
 		} else if (cmd == 11) {
 		//controller( noteNumber, velocity/127.0);
-		switch(noteNumber){
-			case 36:
+		switch(String(noteNumber)){
+			case simpleIni.nano.slider0:
 				set_slider0(velocity/127.0);
 			break;
-			case 37:
+			case simpleIni.nano.slider1:
 				set_slider1(velocity/127.0);
 			break;
-			case 38:
+			case simpleIni.nano.slider2:
 				set_slider2(velocity/127.0);
 			break;
-			case 39:
+			case simpleIni.nano.slider3:
 				set_slider3(velocity/127.0);
 			break;
 		}
@@ -1046,6 +1144,18 @@ function midiMessageReceived( ev ) {
 	}
 
 }
+
+function ascii_to_hexa(str)
+  {
+	var arr1 = [];
+	for (var n = 0, l = str.length; n < l; n ++) 
+     {
+		var hex = Number(str.charCodeAt(n)).toString(16);
+		arr1.push(hex);
+		arr1.push(' ');
+	 }
+	return arr1.join('');
+   }
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -1202,6 +1312,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				break;
 		
 				case 'kill_set':
+					chart_cls();
 					send_command('kill set\r');
 				break;
 				case 'kill_reset':
@@ -1277,12 +1388,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('slider2').addEventListener("input", slider2);
 	document.getElementById('slider3').addEventListener("input", slider3);
 	
+	readini("config.ini");
+	
 	wavecanvas = document.getElementById("wavecanvas");
 	backcanvas = document.getElementById("backcanvas");
 	
 	wavecanvas.onmousedown = wave_mouse_down;
     ctx = wavecanvas.getContext('2d');
-
+	
+	coil_hot_led=1;
 	
 	
 	for(var i=0;i<NUM_GAUGES;i++){
