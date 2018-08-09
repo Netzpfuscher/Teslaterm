@@ -31,6 +31,8 @@ var blink=0;
 var coil_hot_led=0;
 var cycle_led=0;
 
+var draw_mode=0;
+
 
 var uitime = setInterval(refresh_UI, 20);
 
@@ -241,7 +243,7 @@ const DATA_NUM = 2;
 
 
 function compute(dat){
-	response_timeout = TIMEOUT;
+	
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
 			gauge_buf[dat[DATA_NUM]] = helper.bytes_to_signed(dat[3],dat[4]);
@@ -303,6 +305,14 @@ function compute(dat){
 			if(tterm[chart_num].value < -1) tterm[chart_num].value = -1;
 		break;
 		case TT_CHART_DRAW:
+			if(draw_mode==1){
+				chart_cls();
+				draw_grid();
+				redrawTrigger();
+				redrawMeas();
+				
+				draw_mode=0;
+			}
 			if(tterm.trigger==-1){
 				plot();
 			}else{
@@ -328,6 +338,7 @@ function compute(dat){
 		break;
 		case TT_CHART_CLEAR:
 			chart_cls();
+			draw_mode=1;
 		break;
 		case TT_CHART_LINE:
 			var x1 = helper.bytes_to_signed(dat[2],dat[3])+TRIGGER_SPACE;
@@ -372,6 +383,8 @@ function receive(info){
 
 	var buf = new Uint8Array(info.data);
 	var txt = '';
+	
+	response_timeout = TIMEOUT;
 	
 	for (var i = 0; i < buf.length; i++) {
 		
@@ -687,6 +700,7 @@ draw_grid.grid=50;
 
 
 function resize(){
+	
 	plot.xpos = TRIGGER_SPACE+1;
 	wavecanvas.style.width=(90-control_space)+'%';
 	wavecanvas.style.height='100%';
@@ -712,10 +726,11 @@ function resize(){
 		waveback.style.width = width+"px";
 		waveback.style.height = height+"px";
 	}
-
-	draw_grid();
-	redrawTrigger();
-	redrawMeas();
+	if(draw_mode!=1){
+		draw_grid();
+		redrawTrigger();
+		redrawMeas();
+	}
 }
 
 function send_command(command){
