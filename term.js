@@ -7,14 +7,8 @@ var midi_state=[];
 
 
 const NUM_GAUGES = 7;
-var gauge_buf = [];
-var gauge_buf_old = [];
-var chart_buf =[];
 
 var ctx;
-
-var g = [];
-
 
 var wavecanvas;
 var backcanvas;
@@ -38,13 +32,18 @@ var cycle_led=0;
 var draw_mode=0;
 
 
+
+var meters; 
+
+
+
 var uitime = setInterval(refresh_UI, 20);
 
 function connect_ip(){
 	chrome.sockets.tcp.create({}, createInfo);
 	chrome.sockets.tcp.create({}, createInfo_midi);
-	
 }
+
 function reconnect_tel(){
 	chrome.sockets.tcp.disconnect(socket,callback_dsk);	
 }
@@ -65,8 +64,9 @@ function createInfo(info){
 	socket = info.socketId;
 	
 	console.log(ipaddr);
-	
+
 	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
+	
 	
 }
 function createInfo_midi(info){
@@ -93,16 +93,6 @@ function callback_sck_midi(info){
 	
 }
 
-
-
-/*function send_tcp(data){
-	chrome.sockets.tcp.send(socket, data, send_complete)
-}
-*/
-function send_complete(result){
-	console.log(result);
-}
-
 var onReceive = function(info) {
   if (info.socketId !== socket)
     return;
@@ -126,8 +116,6 @@ function telnet_socket_ckeck(info){
 		reconnect_tel();
 	}
 }
-
-var reconnect_flag=0;
 
 function refresh_UI(){
 	
@@ -179,21 +167,11 @@ function refresh_UI(){
 		
 	}
 	
-	
-	
-	var gauges =g.length;
-	
-	while(gauges){
-		gauges--;
-		if(gauge_buf[gauges]!=gauge_buf_old[gauges]){
-			g[gauges].refresh(gauge_buf[gauges]);
-			gauge_buf_old[gauges]=gauge_buf[gauges];
-		}
-	}
+	meters.refresh();
 }
 
 function sendcb(info){
-	console.log(info);
+	//console.log(info);
    //println("send " + info.bytesSent + " bytes");
    //println("error: " + info.error);
 }
@@ -325,8 +303,7 @@ function compute(dat){
 	
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
-			gauge_buf[dat[DATA_NUM]] = helper.bytes_to_signed(dat[3],dat[4]);
-			
+			meters.value(dat[DATA_NUM], helper.bytes_to_signed(dat[3],dat[4]));
 		break;
 		case TT_GAUGE_CONF:
 			var gauge_num = dat[2].valueOf();
@@ -334,8 +311,8 @@ function compute(dat){
 			var gauge_max = helper.bytes_to_signed(dat[5],dat[6]);
 			dat.splice(0,7);
 			var str = helper.convertArrayBufferToString(dat);
-			g[gauge_num].refreshTitle(str);
-			g[gauge_num].refresh(gauge_min,gauge_max);
+			meters.text(gauge_num, str);
+			meters.range(gauge_num, gauge_min, gauge_max);
 		break;
 		case TT_CHART_CONF:
 		
@@ -569,8 +546,9 @@ function getdevs(devices){
    
 
 }
-
-
+function disconnected_cb(){
+	t.io.println('\r\nDisconnected');
+}
 
 function connect(){
 	var port = w2ui['toolbar'].get('port');
@@ -585,14 +563,20 @@ function connect(){
 		connected= 0;
 		
 	}else{
+		
 		if(String(port.value).includes(".")){
 			ipaddr=String(port.value);
+			t.io.println("\r\nConnect: "+ ipaddr);
 			connect_ip();
+			
 		}else{
+			t.io.println("\r\nConnect: Serial");
 			chrome.serial.getDevices(getdevs);
 		}
 	}
 }
+
+
 
 function disconnected_cb_tel(){
 	chrome.sockets.tcp.close(socket,function clb(){});
@@ -729,17 +713,15 @@ function redrawMeas(){
   for(i=0;i<NUM_GAUGES;i++){
 	if (tterm[i].name){
 		ctx.fillStyle = wavecolor[i];
-		ctx.fillText("Min: " +meas[0].min ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Max: " +meas[0].max ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Avg: "+meas[0].avg ,text_pos+=60, y_res - meas_position);
+		ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - meas_position);
+		ctx.fillText("Max: " +meas[i].max ,text_pos+=60, y_res - meas_position);
+		ctx.fillText("Avg: "+meas[i].avg ,text_pos+=60, y_res - meas_position);
 	}
   }
   
 }
 
 function redrawTop(){
-
-	//var ctx = wavecanvas.getContext('2d');
 	var x_res = wavecanvas.width;
 	var y_res = wavecanvas.height;
 	ctx.clearRect(TRIGGER_SPACE, 0, x_res - info_space, top_space);
@@ -756,7 +738,6 @@ function redrawTop(){
 
 
 function draw_grid(){
-	
 	var x_res = wavecanvas.width-info_space;
 	var y_res = wavecanvas.height-meas_space-top_space;
 
@@ -895,6 +876,9 @@ function event_read_ini(ev){
 		
 		w2ui['toolbar'].refresh();
    }
+   if(simpleIni.general.autoconnect=="true"){
+	   connect();
+   }
    
 }
 
@@ -954,18 +938,18 @@ function wave_mouse_down(e){
 
 function nano_led(num,val){
 	var uint8 = new Uint8Array(3);
-	if(nano_out){
-	if(val>0){
-		uint8[0]=157;
-		uint8[1]=num;
-		uint8[2]=127;
-		nano_out.send(uint8);
-	}else{
-		uint8[0]=141;
-		uint8[1]=num;
-		uint8[2]=0;
-		nano_out.send(uint8);
-	}
+	if(nano_out != null){
+		if(val>0){
+			uint8[0]=157;
+			uint8[1]=num;
+			uint8[2]=127;
+			nano_out.send(uint8);
+		}else{
+			uint8[0]=141;
+			uint8[1]=num;
+			uint8[2]=0;
+			nano_out.send(uint8);
+		}
 	}
 }
 
@@ -1259,17 +1243,7 @@ function midiMessageReceived( ev ) {
 
 }
 
-function ascii_to_hexa(str)
-  {
-	var arr1 = [];
-	for (var n = 0, l = str.length; n < l; n ++) 
-     {
-		var hex = Number(str.charCodeAt(n)).toString(16);
-		arr1.push(hex);
-		arr1.push(' ');
-	 }
-	return arr1.join('');
-   }
+
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -1459,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				'</article>'+ 
 				'<aside>'+
 				'Ontime<br><br>'+
-				'<input type="range" id="slider0" min="0" max="250" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
+				'<input type="range" id="slider0" min="0" max="400" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
 				'<br><br>Offtime<br><br>'+
 				'<input type="range" id="slider1" min="20" max="1000" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
 				'<br><br>Burst On<br><br>'+
@@ -1488,8 +1462,11 @@ document.addEventListener('DOMContentLoaded', function () {
 	t.decorate(document.querySelector('#terminal'));
 	t.installKeyboard();
 	chrome.serial.onReceive.addListener(receive);
+	
 	chrome.sockets.tcp.onReceive.addListener(receive);
+	
 	chrome.serial.onReceiveError.addListener(error);
+	
 	document.getElementById('layout').addEventListener("drop", ondrop);
 	document.getElementById('layout').addEventListener("dragover", ondragover);
 	document.getElementById('slider0').addEventListener("input", slider0);
@@ -1507,18 +1484,11 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	coil_hot_led=1;
 	
+	meters = new cls_meter(NUM_GAUGES);
 	
 	for(var i=0;i<NUM_GAUGES;i++){
-		gauge_buf_old[i]=255;
-		gauge_buf[i]=0;
-		g[i]= new JustGage({
-			id: ("gauge"+i),
-			value: 255,
-			min: 0,
-			max: 255,
-			title: ("Gauge"+i)
-		});
 		
+	
 		tterm.push({min: 0, max: 1024.0, offset: 1024.0,span: 2048,unit: '', value: 0, value_real: 0, count_div:0, name: ''});
 		meas_backbuffer.push({min: 0, max: 0, avg_sum: 0, avg_samp: 0});
 		meas.push({min: 0, max: 0, avg: 0});
@@ -1532,9 +1502,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	tterm.trigger_old=0;
 	tterm.trigger_block=0;
 	
-	gauge_buf[0]=0;
+	
 	
 	midi_start();
+	
 
 	
 });
