@@ -15,6 +15,9 @@ var ctx;
 
 var gauges = [];
 
+hterm.defaultStorage = new lib.Storage.Memory();
+
+const terminal = new hterm.Terminal();
 
 var wavecanvas;
 var backcanvas;
@@ -39,6 +42,7 @@ var draw_mode=0;
 
 
 var uitime = setInterval(refresh_UI, 20);
+var scriptModule;
 
 function connect_ip(){
 	chrome.sockets.tcp.create({}, createInfo);
@@ -79,7 +83,7 @@ function createInfo_midi(info){
 
 function callback_sck(result){
 	if(!result){
-		t.io.println("connected");
+		terminal.io.println("connected");
    		connected = 1;
 		w2ui['toolbar'].get('connect').text = 'Disconnect';
 		w2ui['toolbar'].refresh();
@@ -136,7 +140,7 @@ function refresh_UI(){
 	
 		if(response_timeout==0){
 			response_timeout=TIMEOUT;
-			t.io.println('Connection lost, reconnecting...');
+			terminal.io.println('Connection lost, reconnecting...');
 	
 			reconnect();
 			chrome.sockets.tcp.getInfo(socket_midi, midi_socket_ckeck);
@@ -208,7 +212,6 @@ var Player = new MidiPlayer.Player(process_midi);
 
 
 function process_midi(event){
-	
 	if(connected && event.bytes_buf[0] != 0x00){
 		var msg=new Uint8Array(event.bytes_buf);
 		if(connected==1){
@@ -227,17 +230,11 @@ function process_midi(event){
 	}
 }
 
-
-hterm.defaultStorage = new lib.Storage.Memory();
-
-const t = new hterm.Terminal();
-
-
-t.onTerminalReady = function() {
+terminal.onTerminalReady = function() {
   // Create a new terminal IO object and give it the foreground.
   // (The default IO object just prints warning messages about unhandled
   // things to the the JS console.)
-  const io = t.io.push();
+  const io = terminal.io.push();
 
   processInput = (str) => {
 	if(connected==2)chrome.serial.send(connid, helper.convertStringToArrayBuffer(str), sendcb);
@@ -466,7 +463,7 @@ function receive(info){
 					term_state = TT_STATE_FRAME;
 				}else{
 					var str = String.fromCharCode.apply(null, [buf[i]]);
-					t.io.print(str);
+					terminal.io.print(str);
 				}
 			break;
 				
@@ -507,7 +504,7 @@ receive.bytes_done = 0;
 
 function connected_cb(connectionInfo){
 	if(connectionInfo.connectionId){
-   	t.io.println("connected");
+   	terminal.io.println("connected");
    	connid = connectionInfo.connectionId;
 		connected = 2;
 		w2ui['toolbar'].get('connect').text = 'Disconnect';
@@ -528,20 +525,20 @@ function getdevs(devices){
    for (var i = 0; i < devices.length; i++) {
       if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 1204 && devices[i].productId && devices[i].productId == 62002)){
 		path = devices[i].path;
-        t.io.println("Connecting to " + devices[i].path);
+        terminal.io.println("Connecting to " + devices[i].path);
         chrome.serial.connect(devices[i].path, connected_cb);
         return;
       }
-      t.io.println(devices[i].path + ' ' + devices[i].displayName + ' ' + devices[i].vendorId + ' ' + devices[i].productId );
+      terminal.io.println(devices[i].path + ' ' + devices[i].displayName + ' ' + devices[i].vendorId + ' ' + devices[i].productId );
    }
    
    var test = w2ui['toolbar'].get('port');
    
    if(test.value){
-		t.io.println('UD3 not found connect to: '+ test.value);
+		terminal.io.println('UD3 not found connect to: '+ test.value);
 		chrome.serial.connect(test.value, connected_cb);
    }else{
-	   t.io.println('No COM specified trying COM12');
+	   terminal.io.println('No COM specified trying COM12');
 	   chrome.serial.connect('COM12', connected_cb);
    }
    
@@ -574,7 +571,7 @@ function connect(){
 
 function disconnected_cb_tel(){
 	chrome.sockets.tcp.close(socket,function clb(){});
-	t.io.println('\r\nDisconnected');
+	terminal.io.println('\r\nDisconnected');
 }
 
 function disconnected_cb_midi(){
@@ -582,13 +579,13 @@ function disconnected_cb_midi(){
 }
 
 function error(info){
-	t.io.println(info.error);
+	terminal.io.println(info.error);
 	//disconnect();
 }
 
 
 function clear(){
-	t.io.print('\033[2J\033[0;0H');
+	terminal.io.print('\033[2J\033[0;0H');
 	send_command('cls\r');
 
 }
@@ -876,15 +873,82 @@ function event_read_ini(ev){
    
 }
 
+function loadMidiFile(file) {
+	w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: '+file.name;
+	w2ui['toolbar'].refresh();
+	midi_state.file = file.name;
+	readmidi(file);
+}
+
+function startCurrentMidiFile() {
+	Player.play();
+	nano_led(simpleIni.nano.play,1);
+	nano_led(simpleIni.nano.stop,0);
+	midi_state.state = 'playing';
+	redrawTop();
+}
+
+function stopMidiFile() {
+	nano_led(simpleIni.nano.play,0);
+	nano_led(simpleIni.nano.stop,1);
+	Player.stop();
+	midi_state.state = 'stopped';
+	redrawTop();
+	if(connected==2){
+		var msg=new Uint8Array([0xB0,0x77,0x00]);
+		chrome.serial.send(connid, msg, sendcb);
+	}
+	if(connected==1){
+		var msg=new Uint8Array([0xB0,0x77,0x00]);
+		chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
+	}
+}
 
 function ondrop(e){
    e.stopPropagation();
    e.preventDefault();
    if(e.dataTransfer.items.length == 1){//only one file
-		w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: '+e.dataTransfer.files[0].name;
-		w2ui['toolbar'].refresh();
-		midi_state.file = e.dataTransfer.files[0].name;
-		readmidi(e.dataTransfer.files[0]);
+   		const file = e.dataTransfer.files[0];
+		const extension = file.name.substring(file.name.lastIndexOf(".")+1);
+		terminal.io.println(extension+";"+new String(file));
+		if (extension==="mid"){
+			loadMidiFile(file);
+		} else if (extension=="js") {
+			var modTmp = require(file.path);
+			if (typeof modTmp.run != "function" || typeof modTmp.isRunning != "function" || typeof modTmp.setAllowedCalls != "function"){
+				w2alert('Invalid script!');
+				return;
+			}
+			var shouldLoad = typeof modTmp.cancel == "function";
+			var loadScript = function () {
+				var allowedCalls = [];
+				allowedCalls.println = (s)=>terminal.io.println(s);
+				allowedCalls.setOntime = setOntime;
+				allowedCalls.setBPS = setBPS;
+				allowedCalls.loadMidi = loadMidiFile;
+				allowedCalls.startMidi = startCurrentMidiFile;
+				allowedCalls.setBurstOntime = setBurstOntime;
+				allowedCalls.setBurstOfftime = setBurstOfftime;
+				allowedCalls.onScriptStopped = function() {
+					stopMidiFile();
+					setOntime(0);
+					terminal.io.println("Script stopped");
+				};
+				allowedCalls.cancelMidi = stopMidiFile;
+				allowedCalls.waitForInput = (text, callback)=>w2confirm(text).no(allowedCalls.onScriptStopped).yes(callback);
+				modTmp.setAllowedCalls(allowedCalls);
+				scriptModule = modTmp;
+				w2ui['toolbar'].get('mnu_script').text = 'Script: '+file.name;
+				w2ui['toolbar'].refresh();
+			};
+			if (!shouldLoad) {
+				w2confirm('WARNING!<br>This script can not be canceled. Continue?')
+				.no(function () { })
+				.yes(loadScript);
+			} else {
+				loadScript();
+			}
+		}
    }
 }
 
@@ -947,6 +1011,15 @@ function nano_led(num,val){
 	}
 }
 
+function setSliderValue(name, value) {
+	var slider = document.getElementById(name);
+	if (value<slider.min||value>slider.max) {
+		terminal.io.println("Tried to set slider \""+name+"\" out of range (To "+value+")!");
+		return;
+	}
+	slider.value = value;
+}
+
 function slider0(){
 	var slider = document.getElementById('slider0');
 	var slider_disp = document.getElementById('slider0_disp');
@@ -954,9 +1027,8 @@ function slider0(){
 	send_command('set pw ' + slider.value + '\r');
 }
 
-function set_slider0(val){
-	var slider = document.getElementById('slider0');
-	slider.value = slider.max*val;
+function setOntime(time) {
+	setSliderValue("slider0", time);
 	slider0();
 }
 
@@ -968,9 +1040,8 @@ function slider1(){
 	send_command('set pwd ' + pwd + '\r');
 }
 
-function set_slider1(val){
-	var slider = document.getElementById('slider1');
-	slider.value = slider.max*val;
+function setBPS(bps){
+	setSliderValue("slider1", bps);
 	slider1();
 }
 
@@ -981,9 +1052,8 @@ function slider2(){
 	send_command('set bon ' + slider.value + '\r');
 }
 
-function set_slider2(val){
-	var slider = document.getElementById('slider1');
-	slider.value = slider.max*val;
+function setBurstOntime(time){
+	setSliderValue("slider2", time);
 	slider2();
 }
 
@@ -993,9 +1063,9 @@ function slider3(){
 	slider_disp.innerHTML = slider.value + ' ms';
 	send_command('set boff ' + slider.value + '\r');
 }
-function set_slider3(val){
-	var slider = document.getElementById('slider3');
-	slider.value = slider.max*val;
+
+function setBurstOfftime(time){
+	setSliderValue("slider3", time);
 	slider3();
 }
 
@@ -1136,6 +1206,10 @@ function nano_startup(){
 	
 }
 
+const maxOntime = 250;
+const maxBPS = 1000;
+const maxBurstOntime = 1000;
+const maxBurstOfftime = 1000;
 
 function midiMessageReceived( ev ) {
 	if(connected==1 && !ev.currentTarget.name.includes("nano")){
@@ -1170,19 +1244,7 @@ function midiMessageReceived( ev ) {
 				redrawTop();
 			break;
 			case simpleIni.nano.stop:
-				nano_led(simpleIni.nano.play,0);
-				nano_led(simpleIni.nano.stop,1);
-				Player.stop();
-					midi_state.state = 'stopped';
-					redrawTop();
-					if(connected==2){
-						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.serial.send(connid, msg, sendcb);
-					}
-					if(connected==1){
-						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
-					}
+				stopMidiFile();
 			break;
 			case simpleIni.nano.killset:
 				coil_hot_led=0;
@@ -1202,16 +1264,16 @@ function midiMessageReceived( ev ) {
 		//controller( noteNumber, velocity/127.0);
 		switch(String(noteNumber)){
 			case simpleIni.nano.slider0:
-				set_slider0(velocity/127.0);
+				setOntime(maxOntime*velocity/127.0);
 			break;
 			case simpleIni.nano.slider1:
-				set_slider1(velocity/127.0);
+				setBPS(maxBPS*velocity/127.0);
 			break;
 			case simpleIni.nano.slider2:
-				set_slider2(velocity/127.0);
+				setBurstOntime(maxBurstOntime*velocity/127.0);
 			break;
 			case simpleIni.nano.slider3:
-				set_slider3(velocity/127.0);
+				setBurstOfftime(maxBurstOfftime*velocity/127.0);
 			break;
 		}
 		
@@ -1325,6 +1387,11 @@ document.addEventListener('DOMContentLoaded', function () {
 				{ text: 'Stop', icon: 'fa fa-bolt'}
             ]},
 			
+			{ type: 'menu', id: 'mnu_script', text: 'Script: none', icon: 'fa fa-table', items: [
+				{ text: 'Start', icon: 'fa fa-bolt'},
+				{ text: 'Stop', icon: 'fa fa-bolt'}
+            ]},
+			
             { type: 'spacer' },
 			{ type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off' },
 			{ type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off' },
@@ -1372,28 +1439,41 @@ document.addEventListener('DOMContentLoaded', function () {
 					warn_eeprom_save();
 				break;
 				case 'mnu_midi:Play':
-					Player.play();
-					nano_led(10,1);
-					nano_led(11,0);
-					midi_state.state = 'playing';
-					redrawTop();
+					if (midi_state.file==null){
+						terminal.io.println("Please select a MIDI file using drag&drop");
+						break;
+					}
+					startCurrentMidiFile();
 				break;
 				case 'mnu_midi:Stop':
-					Player.stop();
-					nano_led(10,0);
-					nano_led(11,1);
-					midi_state.state = 'stopped';
-					redrawTop();
-					if(connected==2){
-						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.serial.send(connid, msg, sendcb);
+					if (midi_state.file==null || midi_state.state!='playing'){
+						terminal.io.println("No MIDI file is currently playing");
+						break;
 					}
-					if(connected==1){
-						var msg=new Uint8Array([0xB0,0x77,0x00]);
-						chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
-					}
+					stopMidiFile();
 				break;
-		
+				case 'mnu_script:Start':
+					if (scriptModule==null) {
+						terminal.io.println("Please select a script file using drag&drop first");
+						break;
+					}
+					scriptModule.run();
+					break;
+				case 'mnu_script:Stop':
+					if (scriptModule==null) {
+						terminal.io.println("Please select a script file using drag&drop first");
+						break;
+					}
+					if (!scriptModule.isRunning()) {
+						terminal.io.println("The script can not be stopped since it isn't running");
+						break;
+					}
+					if (typeof scriptModule.cancel != "function") {
+						terminal.io.println("The script does not support stopping");
+						break;
+					}
+					scriptModule.cancel();
+					break;
 				case 'kill_set':
 					send_command('kill set\r');
 				break;
@@ -1428,13 +1508,13 @@ document.addEventListener('DOMContentLoaded', function () {
 				'</article>'+ 
 				'<aside>'+
 				'Ontime<br><br>'+
-				'<input type="range" id="slider0" min="0" max="250" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
+				'<input type="range" id="slider0" min="0" max="'+maxOntime+'" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
 				'<br><br>Offtime<br><br>'+
-				'<input type="range" id="slider1" min="20" max="1000" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
+				'<input type="range" id="slider1" min="20" max="'+maxBPS+'" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
 				'<br><br>Burst On<br><br>'+
-				'<input type="range" id="slider2" min="0" max="1000" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
+				'<input type="range" id="slider2" min="0" max="'+maxBurstOntime+'" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
 				'<br><br>Burst Off<br><br>'+
-				'<input type="range" id="slider3" min="0" max="1000" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
+				'<input type="range" id="slider3" min="0" max="'+maxBurstOfftime+'" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
 				'<br><br><select id="midiIn"></select>'+
 				'</aside>'+ 
 				'</div>'
@@ -1454,8 +1534,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	w2ui['layout'].on({ type : 'resize', execute : 'after'}, function (target, eventData) {
 		resize();
 	});
-	t.decorate(document.querySelector('#terminal'));
-	t.installKeyboard();
+	terminal.decorate(document.querySelector('#terminal'));
+	terminal.installKeyboard();
 	chrome.serial.onReceive.addListener(receive);
 	chrome.sockets.tcp.onReceive.addListener(receive);
 	chrome.serial.onReceiveError.addListener(error);
@@ -1504,7 +1584,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	gauge_buf[0]=0;
 	
 	midi_start();
-
+	midi_state.progress = 0;
 	
 });
+
 

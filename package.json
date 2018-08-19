@@ -1,0 +1,11 @@
+{
+  "name": "Teslaterm",
+  "version": "0.1",
+  "main": "index.html",
+  "window": {
+    "width": 1024,
+    "height": 768
+  },
+  "permissions": ["serial", {"fileSystem": ["write"]}],
+  "sockets": {"tcp": {"connect": "*"}}
+}
