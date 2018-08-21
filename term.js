@@ -528,7 +528,7 @@ function getdevs(devices){
 }
 
 function disconnected_cb(){
-	t.io.println('\r\nDisconnected');
+	terminal.io.println('\r\nDisconnected');
 }
 
 function connect(){
@@ -549,11 +549,11 @@ function connect(){
 		
 		if(String(port.value).includes(".")){
 			ipaddr=String(port.value);
-			t.io.println("\r\nConnect: "+ ipaddr);
+			terminal.io.println("\r\nConnect: "+ ipaddr);
 			connect_ip();
 			
 		}else{
-			t.io.println("\r\nConnect: Serial");
+			terminal.io.println("\r\nConnect: Serial");
 			chrome.serial.getDevices(getdevs);
 		}
 	}

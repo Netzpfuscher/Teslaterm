@@ -8,7 +8,7 @@ class helper {
 			return  x;
 		}
 	}
-	
+
 	static convertArrayBufferToString(buf){
 		var bufView = new Uint8Array(buf);
 		var encodedString = String.fromCharCode.apply(null, bufView);
@@ -24,13 +24,12 @@ class helper {
 		}
 		return buf;
 	}
-}
 
 	static delay(ms) {
 		ms += new Date().getTime();
 		while (new Date() < ms){}
 	}
-	
+
 	static ascii_to_hex(str) {
 		var arr1 = [];
 		for (var n = 0, l = str.length; n < l; n ++) {
@@ -40,7 +39,7 @@ class helper {
 		}
 	return arr1.join('');
    }
-	
+
 }
 
 class cls_meter {
@@ -49,7 +48,7 @@ class cls_meter {
 		this.meter_buf_old = [];
 		this.meter_buf = [];
 		this.g = [];
-		
+
 		for(var i=0;i<this.num_meters;i++){
 			this.meter_buf_old[i]=255;
 			this.meter_buf[i]=0;
@@ -61,15 +60,15 @@ class cls_meter {
 				title: ("Gauge"+i)
 			});
 		}
-		
+
 	}
-	
+
 	refresh_all(){
 		for(var i=0;i<this.num_meters;i++){
 			this.g[i].refresh(this.meter_buf[i]);
 		}
 	}
-	
+
 	refresh(){
 		for(var i=0;i<this.num_meters;i++){
 			if(this.meter_buf[i]!=this.meter_buf_old[i]){
@@ -78,7 +77,7 @@ class cls_meter {
 			}
 		}
 	}
-	
+
 	value(num, value){
 		if(num<this.num_meters){
 			this.meter_buf[num] = value;
@@ -86,15 +85,15 @@ class cls_meter {
 			console.log('Meter: '+num+'not found');
 		}
 	}
-	
+
 	text(num,text){
 		if(num<this.num_meters){
 			this.g[num].refreshTitle(text);
 		}else{
 			console.log('Meter: '+num+'not found');
-		}		
+		}
 	}
-	
+
 	range(num, min, max){
 		if(num<this.num_meters){
 			this.g[num].refresh(min,max);
@@ -102,5 +101,4 @@ class cls_meter {
 			console.log('Meter: '+num+'not found');
 		}
 	}
-	
 }
