@@ -35,7 +35,7 @@ var cycle_led=0;
 
 var draw_mode=0;
 
-
+var midiServer;
 
 var meters; 
 
@@ -219,10 +219,7 @@ terminal.onTerminalReady = function() {
   // things to the the JS console.)
   const io = terminal.io.push();
 
-  processInput = (str) => {
-	if(connected==2)chrome.serial.send(connid, helper.convertStringToArrayBuffer(str), sendcb);
-	if(connected==1)chrome.sockets.tcp.send(socket, helper.convertStringToArrayBuffer(str), sendtel);
-  };
+  processInput = send_command;
   io.onVTKeystroke = processInput;
 
   io.sendString = processInput;
@@ -429,6 +426,9 @@ function chart_cls(){
 
 
 function receive(info){
+	if (info.socketId!=socket) {
+		return;
+	}
 
 	var buf = new Uint8Array(info.data);
 	var txt = '';
@@ -797,6 +797,7 @@ function resize(){
 }
 
 function send_command(command){
+	midiServer.sendToAllAccepting(helper.convertStringToArrayBuffer(command));
 	if(connected==2){
 
 		chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), sendcb);
@@ -1540,7 +1541,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ctx = wavecanvas.getContext('2d');
 	
 	coil_hot_led=1;
-	
+
 	meters = new cls_meter(NUM_GAUGES);
 	
 	for(var i=0;i<NUM_GAUGES;i++){
@@ -1549,6 +1550,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		meas.push({min: 0, max: 0, avg: 0});
 		
 	}
+	midiServer = new MidiIpServer(56789, s=>terminal.io.println(s), "TestTT");
 	tterm.trigger=-1;
 	tterm.trigger_lvl= 0;
 	tterm.value_old= 0;
