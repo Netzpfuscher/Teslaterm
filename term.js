@@ -37,9 +37,7 @@ var draw_mode=0;
 
 var midiServer;
 
-var meters; 
-
-
+var meters;
 
 var uitime = setInterval(refresh_UI, 20);
 var scriptModule;
@@ -797,7 +795,7 @@ function resize(){
 }
 
 function send_command(command){
-	midiServer.sendToAllAccepting(helper.convertStringToArrayBuffer(command));
+	midiServer.sendToAll(helper.convertStringToArrayBuffer(command));
 	if(connected==2){
 
 		chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), sendcb);
@@ -1095,20 +1093,70 @@ function redrawTrigger(){
 
 var selectMIDI = null;
 var midiAccess = null;
-var midiIn = null;
+var midiIn = {cancel: ()=>{}, isActive: ()=>false, source: null};
 var nano=null;
 var nano_out=null;
 
 function selectMIDIIn( ev ) {
-  if (midiIn)
-    midiIn.onmidimessage = null;
+  if (midiIn.isActive())
+    midiIn.cancel();
+  
   var id = ev.target[ev.target.selectedIndex].value;
-  if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
-    midiIn = midiAccess.inputs()[ev.target.selectedIndex];
-  else
-    midiIn = midiAccess.inputs.get(id);
-  if (midiIn)
-    midiIn.onmidimessage = midiMessageReceived;
+  if (id=="<Network>") {
+    term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork);
+  } else if (id.indexOf('<')<0) {
+    var midiSource;
+    if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
+      midiSource = midiAccess.inputs()[id];
+    else
+      midiSource = midiAccess.inputs.get(id);
+    setMidiInToPort(midiSource);
+  }
+}
+
+function setMidiInToPort(source) {
+	source.onmidimessage = midiMessageReceived;
+	var canceled = false;
+	midiIn.cancel = ()=> {
+		source.onmidimessage = null;
+		canceled = true;
+	};
+	midiIn.isActive = ()=>(!canceled && source.state!="disconnected");
+	midiIn.source = source;
+}
+
+function setMidiInToNetwork(ip, port) {
+	terminal.io.println("Connecting to MIDI server at "+ip+":"+port+"...");
+	chrome.sockets.tcp.create({}, function(createInfo) {
+		chrome.sockets.tcp.connect(createInfo.socketId,
+			ip, port, s=>onMidiNetworkConnect(s, ip, port, createInfo.socketId));
+	});
+}
+
+function onMidiNetworkConnect(status, ip, port, socketId) {
+	var error = "Connection to MIDI server at "+ip+":"+port+" failed!";
+	if (status>=0) {
+		terminal.io.println("Connected to MIDI server at "+ip+":"+port+"...");
+		var listener = (info)=>{
+			if (info.socketId != socketId)
+				return;
+			// info.data is an arrayBuffer.
+			var name = helper.convertArrayBufferToString(info.data);
+			chrome.sockets.tcp.onReceive.removeListener(listener);
+			source.onmidimessage = midiMessageReceived;
+			var canceled = false;
+			midiIn.cancel = ()=>(canceled = true);
+			midiIn.isActive = ()=>!canceled;
+			midiIn.source = source;
+			chrome.sockets.tcp.send(socketId, ttNameAsBuffer, s=>{
+				if (s<0)
+					midiIn.cancel();
+			});
+		};
+		chrome.sockets.tcp.onReceive.addListener(listener);
+	} else {
+		terminal.io.println(error);
+	}
 }
 
 function midi_start(){
@@ -1147,29 +1195,28 @@ function onMIDISystemError( err ) {
 function populateMIDIInSelect() {
   // clear the MIDI input select
   selectMIDI.options.length = 0;
-  if (midiIn && midiIn.state=="disconnected")
-    midiIn=null;
   var firstInput = null;
 
+  selectMIDI.appendChild(new Option("None","<Invalid ID>",true,true));
+  selectMIDI.appendChild(new Option("Network","<Network>",true,true));//TODO make this not break on refresh
   var inputs=midiAccess.inputs.values();
   for ( var input = inputs.next(); input && !input.done; input = inputs.next()){
     input = input.value;
     if (!firstInput)
       firstInput=input;
     var str=input.name.toString();
-    var preferred = !midiIn && ((str.indexOf("Tesla") != -1)||(str.toLowerCase().indexOf("keyboard") != -1));
+    var preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1)||(str.toLowerCase().indexOf("keyboard") != -1));
 	if(str.includes("nano")){
 		nano=input;
 		nano.onmidimessage = midiMessageReceived;
 	}
     // if we're rebuilding the list, but we already had this port open, reselect it.
-    if (midiIn && midiIn==input)
+    if (midiIn.isActive() && midiIn.source==input)
       preferred = true;
 
     selectMIDI.appendChild(new Option(input.name,input.id,preferred,preferred));
     if (preferred) {
-      midiIn = input;
-      midiIn.onmidimessage = midiMessageReceived;
+      setMidiInToPort(input);
     }
   }
   var outputs=midiAccess.outputs.values();
@@ -1183,10 +1230,8 @@ function populateMIDIInSelect() {
 	
 	  
   }
-  if (!midiIn) {
-      midiIn = firstInput;
-      if (midiIn)
-        midiIn.onmidimessage = midiMessageReceived;
+  if (!midiIn.isActive() && firstInput) {
+    setMidiInToPort(firstInput);
   }
 }
 
@@ -1297,7 +1342,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				{ text: 'TR Start', icon: 'fa fa-bolt'},
 				{ text: 'TR Stop', icon: 'fa fa-bolt'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
-				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'}
+				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
+				{ text: 'Stop MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
             ]},
 			
 			{ type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
@@ -1414,6 +1460,16 @@ document.addEventListener('DOMContentLoaded', function () {
 				break;
 				case 'mnu_command:TR Stop':
 					send_command('tr stop\r');
+				break;
+				case 'mnu_command:startStopMidi':
+					if (midiServer.active) {
+						midiServer.close();
+						helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
+					} else {
+						term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server", false, true,
+							(ip, port)=>midiServer.setPort(port));
+						helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Stop MIDI server');
+					}
 				break;
 				case 'mnu_command:Load EEPROM-Config':
 					warn_eeprom_load();

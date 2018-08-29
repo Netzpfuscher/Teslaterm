@@ -39,6 +39,19 @@ class helper {
 		}
 	return arr1.join('');
    }
+
+	static changeMenuEntry(menu, id, newName) {
+		var items = $('#toolbar').w2toolbar().get(menu, false).items;
+		for (var i = 0;i<items.length;i++) {
+			console.log(items[i].id+" vs "+id);
+			if (items[i].id==id) {
+				items[i].text = newName;
+				$('#toolbar').w2toolbar().set(menu, items);
+				return;
+			}
+		}
+		console.log("Didn't find name to replace!");
+	}
 }
 
 class cls_meter {
@@ -102,17 +115,25 @@ class cls_meter {
 	}
 }
 
+
+/**
+ * Protocol:
+ * When connecting, the server sends its name, afterwards the client sends its name.
+ * Afterwards the first byte indicates type of message:
+ * 'M': MIDI
+ * 'C': Close connection
+ * 'L': Loop detection, TBD
+ */
 class MidiIpServer {
 	
 	constructor(port, println, ttName) {
 		this.println = println;
 		this.ttName = ttName;
 		this.ttNameAsBuffer = helper.convertStringToArrayBuffer(ttName);
-		this.port = port;
 		this.clients = [];
-
-		console.log(this.port);
-		chrome.sockets.tcpServer.create({}, info=>this.createCallback(info));
+		this.active = false;
+		chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
+		this.setPort(port);
 	}
 
 	//PUBLIC METHODS
@@ -120,7 +141,7 @@ class MidiIpServer {
 	 * Sends `data` to all connected sockets that accept the data.
 	 * Returns null if no socket fully accepts the data (see filter definition), `data` otherwise
 	*/
-	sendToAllAccepting(data) {
+	sendToAll(data) {
 		var ret = data;
 		for (var i = 0;i<this.clients.length;i++) {
 			//TODO check whether the socket accepts this data
@@ -137,10 +158,36 @@ class MidiIpServer {
 		return ret;
 	}
 
+	close() {
+		chrome.sockets.tcp.close(this.serverSocketId, (state)=>this.println("MIDI server at "+this.port+" closed!"));
+		var data = helper.convertStringToArrayBuffer("C");
+		for (var i = 0;i<this.clients.length;i++) {
+			var client = this.clients[i];
+			var iConst = i;
+			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
+				if (sendInfo.resultCode>=0) {
+					chrome.sockets.tcp.close(client.socketId, function (state){});
+				}
+			});
+		}
+		this.clients.length = 0;
+		this.active = false;
+	}
+
+	setPort(newPort) {
+		if (this.active) {
+			close();
+		}
+		this.port = newPort;
+		chrome.sockets.tcpServer.create({}, info=>this.createCallback(info));
+	}
+
 	//INTERNAL USE ONLY!
 	createCallback(createInfo) {
 		var socketId = createInfo.socketId;
-		console.log(this);
+		this.active = true;
+		this.serverSocketId = socketId;
+		this.println("MIDI server at "+this.port+" started!");
 		chrome.sockets.tcpServer.listen(socketId,
 			"127.0.0.1", this.port, resultCode=>this.onListenCallback(socketId, resultCode)
 		);
@@ -152,8 +199,6 @@ class MidiIpServer {
 				chrome.runtime.lastError.message);
 			return;
 		}
-		this.serverSocketId = socketId;
-		chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
 	}
 	
 	onAccept(info) {
