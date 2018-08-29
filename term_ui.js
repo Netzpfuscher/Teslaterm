@@ -45,7 +45,4 @@ class term_ui {
 		    }
 		};
 	}
-	static callbackIpDialog() {
-		
-	}
 }

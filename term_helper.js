@@ -158,6 +158,19 @@ class MidiIpServer {
 		return ret;
 	}
 
+	sendMidiData(data) {
+		if (!this.active) {
+			return;
+		}
+		var buf=new ArrayBuffer(1+data.length);
+		var bufView=new Uint8Array(buf);
+		bufView[0] = "M".charCodeAt(0);
+		for (var i=0; i<data.length; i++) {
+			bufView[i+1]=data[i];
+		}
+		this.sendToAll(buf);
+	}
+
 	close() {
 		chrome.sockets.tcp.close(this.serverSocketId, (state)=>this.println("MIDI server at "+this.port+" closed!"));
 		var data = helper.convertStringToArrayBuffer("C");
@@ -185,9 +198,6 @@ class MidiIpServer {
 	//INTERNAL USE ONLY!
 	createCallback(createInfo) {
 		var socketId = createInfo.socketId;
-		this.active = true;
-		this.serverSocketId = socketId;
-		this.println("MIDI server at "+this.port+" started!");
 		chrome.sockets.tcpServer.listen(socketId,
 			"127.0.0.1", this.port, resultCode=>this.onListenCallback(socketId, resultCode)
 		);
@@ -195,9 +205,11 @@ class MidiIpServer {
 
 	onListenCallback(socketId, resultCode) {
 		if (resultCode < 0) {
-			console.log("Error listening: " +
-				chrome.runtime.lastError.message);
-			return;
+			this.println("Failed to start MIDI server at "+this.port+": "+chrome.runtime.lastError.message);
+		} else {
+			this.println("MIDI server at "+this.port+" started!");
+			this.active = true;
+			this.serverSocketId = socketId;
 		}
 	}
 	

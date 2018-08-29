@@ -189,25 +189,44 @@ function sendmidi(info){
 
  
 // Initialize player and register event handler
-var Player = new MidiPlayer.Player(process_midi);
+var Player = new MidiPlayer.Player(processMidiFromPlayer);
 
 
-function process_midi(event){
-	if(connected && event.bytes_buf[0] != 0x00){
-		var msg=new Uint8Array(event.bytes_buf);
+function processMidiFromPlayer(event){
+	if(playMidiData(event.bytes_buf)){
+		midi_state.progress=Player.getSongPercentRemaining();
+		redrawTop();
+	} else if(!connected) {
+		Player.stop();
+		midi_state.state = 'stopped';
+	}
+}
+var expectedByteCounts = {0x80: 3,
+	0x90: 3,
+	0xA0: 3,
+	0xB0: 3,
+	0xC0: 2,
+	0xD0: 2,
+	0xE0: 3
+}
+function playMidiData(data) {
+	var firstByte = data[0];
+	if (connected && data[0] != 0x00) {
+		var expectedByteCount = expectedByteCounts[firstByte & 0xF0]
+		if (expectedByteCount && expectedByteCount<data.length) {
+			data = data.slice(0, expectedByteCount)
+		}
+		var msg=new Uint8Array(data);
 		if(connected==1){
 			chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
 		}
 		if(connected==2){
-			chrome.serial.send(connid, msg, sendcb);
+			terminal.io.println("The internal MIDI processor does not support serial connections yet!");
 		}
-		midi_state.progress=Player.getSongPercentRemaining();
-		redrawTop();
-	}else{
-		if(connected==0) {
-			Player.stop();
-			midi_state.state = 'stopped';
-		}
+		midiServer.sendMidiData(msg);
+		return true;
+	} else {
+		return false;
 	}
 }
 
@@ -795,7 +814,6 @@ function resize(){
 }
 
 function send_command(command){
-	midiServer.sendToAll(helper.convertStringToArrayBuffer(command));
 	if(connected==2){
 
 		chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), sendcb);
@@ -901,7 +919,6 @@ function ondrop(e){
    if(e.dataTransfer.items.length == 1){//only one file
    		const file = e.dataTransfer.files[0];
 		const extension = file.name.substring(file.name.lastIndexOf(".")+1);
-		terminal.io.println(extension+";"+new String(file));
 		if (extension==="mid"){
 			loadMidiFile(file);
 		} else if (extension=="js") {
@@ -1111,6 +1128,12 @@ function selectMIDIIn( ev ) {
     else
       midiSource = midiAccess.inputs.get(id);
     setMidiInToPort(midiSource);
+  } else {
+    midiIn.cancel();
+    midiIn.isActive = ()=>false;
+    midiIn.cancel = ()=>{};
+    midiIn.data = null;
+    midiIn.source = null;
   }
 }
 
@@ -1123,6 +1146,7 @@ function setMidiInToPort(source) {
 	};
 	midiIn.isActive = ()=>(!canceled && source.state!="disconnected");
 	midiIn.source = source;
+	midiIn.data = null;
 }
 
 function setMidiInToNetwork(ip, port) {
@@ -1136,26 +1160,47 @@ function setMidiInToNetwork(ip, port) {
 function onMidiNetworkConnect(status, ip, port, socketId) {
 	var error = "Connection to MIDI server at "+ip+":"+port+" failed!";
 	if (status>=0) {
-		terminal.io.println("Connected to MIDI server at "+ip+":"+port+"...");
-		var listener = (info)=>{
+		var connectListener = (info)=>{
 			if (info.socketId != socketId)
 				return;
 			// info.data is an arrayBuffer.
 			var name = helper.convertArrayBufferToString(info.data);
-			chrome.sockets.tcp.onReceive.removeListener(listener);
-			source.onmidimessage = midiMessageReceived;
-			var canceled = false;
-			midiIn.cancel = ()=>(canceled = true);
-			midiIn.isActive = ()=>!canceled;
-			midiIn.source = source;
-			chrome.sockets.tcp.send(socketId, ttNameAsBuffer, s=>{
-				if (s<0)
+			chrome.sockets.tcp.onReceive.removeListener(connectListener);
+			chrome.sockets.tcp.send(socketId, midiServer.ttNameAsBuffer, s=>{
+				if (s<0) {
 					midiIn.cancel();
+					terminal.io.println("Failed to connect to MIDI server at "+ip+":"+port);
+				} else {
+					terminal.io.println("Connected to MIDI server at "+ip+":"+port);
+					var source = ip+":"+port;
+					var canceled = false;
+					midiIn.cancel = ()=>(canceled = true);
+					midiIn.isActive = ()=>!canceled;
+					midiIn.source = source;
+					midiIn.data = socketId;
+				}
 			});
 		};
-		chrome.sockets.tcp.onReceive.addListener(listener);
+		chrome.sockets.tcp.onReceive.addListener(connectListener);
 	} else {
 		terminal.io.println(error);
+	}
+}
+
+function onMIDIoverIP(info) {
+	if (!midiIn.isActive() || info.socketId != midiIn.data)
+		return;
+	var data = new Uint8Array(info.data);
+	switch (data[0]) {
+		case 'M'.charCodeAt(0):
+			playMidiData(data.slice(1, data.length));
+			break;
+		case 'C'.charCodeAt(0):
+			midiIn.cancel();
+			break;
+		case 'L'.charCodeAt(0):
+			//TODO loop detection (A is client to B which is client to C which is client to A etc)
+			break;
 	}
 }
 
@@ -1198,7 +1243,7 @@ function populateMIDIInSelect() {
   var firstInput = null;
 
   selectMIDI.appendChild(new Option("None","<Invalid ID>",true,true));
-  selectMIDI.appendChild(new Option("Network","<Network>",true,true));//TODO make this not break on refresh
+  selectMIDI.appendChild(new Option("Network","<Network>",true,true));//TODO make this show the current remote address and  not break on refresh
   var inputs=midiAccess.inputs.values();
   for ( var input = inputs.next(); input && !input.done; input = inputs.next()){
     input = input.value;
@@ -1250,19 +1295,16 @@ const maxBurstOntime = 1000;
 const maxBurstOfftime = 1000;
 
 function midiMessageReceived( ev ) {
-	if(connected==1 && !ev.currentTarget.name.includes("nano")){
-		chrome.sockets.tcp.send(socket_midi, ev.data, sendmidi);
-	}
-	
-  var cmd = ev.data[0] >> 4;
-  var channel = ev.data[0] & 0xf;
-  var noteNumber = ev.data[1];
-  var velocity = ev.data[2];
-	//console.log(ev);
-  if (channel == 9)
-    return
-
-	if(ev.currentTarget.name.includes("nano")){
+	if(!ev.currentTarget.name.includes("nano")){
+		playMidiData(ev.data);
+	} else {
+		var cmd = ev.data[0] >> 4;
+		var channel = ev.data[0] & 0xf;
+		var noteNumber = ev.data[1];
+		var velocity = ev.data[2];
+			//console.log(ev);
+		if (channel == 9)
+			return
 
 		if ( cmd==8 || ((cmd==9)&&(velocity==0)) ) { // with MIDI, note on with velocity zero is the same as note off
 			// note off
@@ -1323,9 +1365,7 @@ function midiMessageReceived( ev ) {
 		} else{
 			console.log( "" + ev.data[0] + " " + ev.data[1] + " " + ev.data[2])
 		}
-	
 	}
-
 }
 
 
@@ -1607,6 +1647,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 	}
 	midiServer = new MidiIpServer(56789, s=>terminal.io.println(s), "TestTT");
+	chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
 	tterm.trigger=-1;
 	tterm.trigger_lvl= 0;
 	tterm.value_old= 0;
@@ -1622,4 +1663,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 });
 
-
+// Allow multiple windows to be opened
+nw.App.on('open', function(args) {
+	var new_win = nw.Window.open('index.html', nw.App.manifest.window);
+});
