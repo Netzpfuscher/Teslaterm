@@ -126,14 +126,14 @@ class cls_meter {
  */
 class MidiIpServer {
 	
-	constructor(port, println, ttName) {
+	constructor(println, onStarted = ()=>{}, onClosed = ()=>{}) {
 		this.println = println;
-		this.ttName = ttName;
-		this.ttNameAsBuffer = helper.convertStringToArrayBuffer(ttName);
+		this.setPort(5678);
 		this.clients = [];
 		this.active = false;
+		this.onStarted = onStarted;
+		this.onClosed = onClosed;
 		chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
-		this.setPort(port);
 	}
 
 	//PUBLIC METHODS
@@ -142,11 +142,14 @@ class MidiIpServer {
 	 * Returns null if no socket fully accepts the data (see filter definition), `data` otherwise
 	*/
 	sendToAll(data) {
+		if (typeof(data)==="string") {
+			data = helper.convertStringToArrayBuffer(data);
+		}
 		var ret = data;
 		for (var i = 0;i<this.clients.length;i++) {
 			//TODO check whether the socket accepts this data
-			var client = this.clients[i];
-			var iConst = i;
+			const client = this.clients[i];
+			const iConst = i;
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode<0) {
 					this.println("TCP MIDI client \""+client.name+"\" disconnected!");
@@ -172,11 +175,10 @@ class MidiIpServer {
 	}
 
 	close() {
-		chrome.sockets.tcp.close(this.serverSocketId, (state)=>this.println("MIDI server at "+this.port+" closed!"));
+		chrome.sockets.tcpServer.disconnect(this.serverSocketId, ()=>this.onClosed());
 		var data = helper.convertStringToArrayBuffer("C");
 		for (var i = 0;i<this.clients.length;i++) {
-			var client = this.clients[i];
-			var iConst = i;
+			const client = this.clients[i];
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode>=0) {
 					chrome.sockets.tcp.close(client.socketId, function (state){});
@@ -188,10 +190,36 @@ class MidiIpServer {
 	}
 
 	setPort(newPort) {
-		if (this.active) {
+		var wasActive = this.active;
+		if (wasActive) {
 			close();
 		}
 		this.port = newPort;
+		if (wasActive) {
+			this.start();
+		}
+	}
+
+	setName(newName) {
+		this.ttName = newName;
+		this.ttNameAsBuffer = helper.convertStringToArrayBuffer(this.ttName);
+		if (this.active) {
+			sendToAll("N"+ttName);
+		}
+	}
+
+	requestNameAnd(callback) {
+		if (!this.ttName) {
+			term_ui.inputString("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
+				midiServer.setName(name);
+				callback();
+			});
+		} else {
+			callback();
+		}
+	}
+
+	start() {
 		chrome.sockets.tcpServer.create({}, info=>this.createCallback(info));
 	}
 
@@ -207,7 +235,7 @@ class MidiIpServer {
 		if (resultCode < 0) {
 			this.println("Failed to start MIDI server at "+this.port+": "+chrome.runtime.lastError.message);
 		} else {
-			this.println("MIDI server at "+this.port+" started!");
+			this.onStarted();
 			this.active = true;
 			this.serverSocketId = socketId;
 		}

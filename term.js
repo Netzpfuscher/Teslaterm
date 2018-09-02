@@ -1117,10 +1117,12 @@ var nano_out=null;
 function selectMIDIIn( ev ) {
   if (midiIn.isActive())
     midiIn.cancel();
-  
+
   var id = ev.target[ev.target.selectedIndex].value;
   if (id=="<Network>") {
-    term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork);
+    midiServer.requestNameAnd(
+      ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
+    )
   } else if (id.indexOf('<')<0) {
     var midiSource;
     if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
@@ -1171,7 +1173,7 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 					midiIn.cancel();
 					terminal.io.println("Failed to connect to MIDI server at "+ip+":"+port);
 				} else {
-					terminal.io.println("Connected to MIDI server at "+ip+":"+port);
+					terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
 					var source = ip+":"+port;
 					var canceled = false;
 					midiIn.cancel = ()=>(canceled = true);
@@ -1383,7 +1385,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				{ text: 'TR Stop', icon: 'fa fa-bolt'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
-				{ text: 'Stop MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
+				{ text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
             ]},
 			
 			{ type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
@@ -1504,11 +1506,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				case 'mnu_command:startStopMidi':
 					if (midiServer.active) {
 						midiServer.close();
-						helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
 					} else {
-						term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server", false, true,
-							(ip, port)=>midiServer.setPort(port));
-						helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Stop MIDI server');
+						midiServer.requestNameAnd(()=> {
+							term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server", false, true,
+								(ip, port) => {
+									midiServer.setPort(port);
+									midiServer.start();
+								}, null, midiServer.port
+							);
+						});
 					}
 				break;
 				case 'mnu_command:Load EEPROM-Config':
@@ -1646,7 +1652,15 @@ document.addEventListener('DOMContentLoaded', function () {
 		meas.push({min: 0, max: 0, avg: 0});
 		
 	}
-	midiServer = new MidiIpServer(56789, s=>terminal.io.println(s), "TestTT");
+	midiServer = new MidiIpServer(s=>terminal.io.println(s),
+		()=> {
+			terminal.io.println("MIDI server at " + midiServer.port + " started!");
+			helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Stop MIDI server');
+		},
+		()=> {
+			terminal.io.println("MIDI server at " + midiServer.port + " closed!");
+			helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
+		});
 	chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
 	tterm.trigger=-1;
 	tterm.trigger_lvl= 0;
