@@ -1110,13 +1110,13 @@ function redrawTrigger(){
 
 var selectMIDI = null;
 var midiAccess = null;
-var midiIn = {cancel: ()=>{}, isActive: ()=>false, source: null};
+var midiIn = {cancel: (reason)=>{}, isActive: ()=>false, source: null};
 var nano=null;
 var nano_out=null;
 
 function selectMIDIIn( ev ) {
   if (midiIn.isActive())
-    midiIn.cancel();
+    midiIn.cancel(null);
 
   var id = ev.target[ev.target.selectedIndex].value;
   if (id=="<Network>") {
@@ -1131,9 +1131,9 @@ function selectMIDIIn( ev ) {
       midiSource = midiAccess.inputs.get(id);
     setMidiInToPort(midiSource);
   } else {
-    midiIn.cancel();
+    midiIn.cancel(null);
     midiIn.isActive = ()=>false;
-    midiIn.cancel = ()=>{};
+    midiIn.cancel = (arg)=>{};
     midiIn.data = null;
     midiIn.source = null;
   }
@@ -1142,7 +1142,7 @@ function selectMIDIIn( ev ) {
 function setMidiInToPort(source) {
 	source.onmidimessage = midiMessageReceived;
 	var canceled = false;
-	midiIn.cancel = ()=> {
+	midiIn.cancel = (arg)=> {
 		source.onmidimessage = null;
 		canceled = true;
 	};
@@ -1176,7 +1176,12 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 					terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
 					var source = ip+":"+port;
 					var canceled = false;
-					midiIn.cancel = ()=>(canceled = true);
+					midiIn.cancel = (reason)=> {
+						canceled = true;
+						if (reason) {
+							terminal.io.println("Disconnected from MIDI server. Reason: "+reason);
+						}
+					};
 					midiIn.isActive = ()=>!canceled;
 					midiIn.source = source;
 					midiIn.data = socketId;
@@ -1193,15 +1198,16 @@ function onMIDIoverIP(info) {
 	if (!midiIn.isActive() || info.socketId != midiIn.data)
 		return;
 	var data = new Uint8Array(info.data);
+	let param = helper.convertArrayBufferToString(info.data).substring(1);
 	switch (data[0]) {
 		case 'M'.charCodeAt(0):
 			playMidiData(data.slice(1, data.length));
 			break;
 		case 'C'.charCodeAt(0):
-			midiIn.cancel();
+			midiIn.cancel(param);
 			break;
 		case 'L'.charCodeAt(0):
-			//TODO loop detection (A is client to B which is client to C which is client to A etc)
+			midiServer.loopTest(param);
 			break;
 	}
 }
@@ -1557,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						terminal.io.println("The script does not support stopping");
 						break;
 					}
-					scriptModule.cancel();
+					scriptModule.cancel(null);
 					break;
 				case 'kill_set':
 					send_command('kill set\r');

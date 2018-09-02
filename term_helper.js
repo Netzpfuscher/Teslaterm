@@ -122,14 +122,14 @@ class cls_meter {
  * Afterwards the first byte indicates type of message:
  * 'M': MIDI
  * 'C': Close connection
- * 'L': Loop detection, TBD
+ * 'L': Loop detection
  */
 class MidiIpServer {
 	
 	constructor(println, onStarted = ()=>{}, onClosed = ()=>{}) {
 		this.println = println;
 		this.setPort(5678);
-		this.clients = [];
+		this.clients = {};
 		this.active = false;
 		this.onStarted = onStarted;
 		this.onClosed = onClosed;
@@ -146,15 +146,15 @@ class MidiIpServer {
 			data = helper.convertStringToArrayBuffer(data);
 		}
 		var ret = data;
-		for (var i = 0;i<this.clients.length;i++) {
+		for (let key in this.clients) {
+			if (!this.clients.hasOwnProperty(key)) continue;
 			//TODO check whether the socket accepts this data
-			const client = this.clients[i];
-			const iConst = i;
+			const client = this.clients[key];
+			const keyConst = key;
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode<0) {
 					this.println("TCP MIDI client \""+client.name+"\" disconnected!");
-					this.clients[iConst] = this.clients[this.clients.length-1];
-					this.clients.pop();
+					delete this.clients[keyConst];
 				}
 			});
 		}
@@ -177,15 +177,17 @@ class MidiIpServer {
 	close() {
 		chrome.sockets.tcpServer.disconnect(this.serverSocketId, ()=>this.onClosed());
 		var data = helper.convertStringToArrayBuffer("C");
-		for (var i = 0;i<this.clients.length;i++) {
-			const client = this.clients[i];
+		for (let key in this.clients) {
+			if (!this.clients.hasOwnProperty(key)) continue;
+			//TODO check whether the socket accepts this data
+			const client = this.clients[key];
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode>=0) {
 					chrome.sockets.tcp.close(client.socketId, function (state){});
 				}
 			});
 		}
-		this.clients.length = 0;
+		this.clients = {};
 		this.active = false;
 	}
 
@@ -203,9 +205,6 @@ class MidiIpServer {
 	setName(newName) {
 		this.ttName = newName;
 		this.ttNameAsBuffer = helper.convertStringToArrayBuffer(this.ttName);
-		if (this.active) {
-			sendToAll("N"+ttName);
-		}
 	}
 
 	requestNameAnd(callback) {
@@ -221,6 +220,42 @@ class MidiIpServer {
 
 	start() {
 		chrome.sockets.tcpServer.create({}, info=>this.createCallback(info));
+	}
+
+	/**
+	 * Parameter format:
+	 * <first instance name>;<second instance name>;...
+	 * Names are assumed to be unique
+	 */
+	loopTest(currentLoopString) {
+		const previous = currentLoopString.split(';');
+		let newLoopString;
+		if (currentLoopString) {
+			newLoopString = currentLoopString+";"+this.ttName;
+		} else {
+			newLoopString = this.ttName;
+		}
+		if (previous.length>0 && previous[0]==this.ttName) {
+			let loopingName;
+			if (previous.length==1) {// This instance is connected to itself
+				loopingName = this.ttName;
+			} else {// A "real" loop (non-leaf)
+				loopingName = previous[1];
+			}
+			this.removeClient(loopingName, "The connection formed a loop ("+newLoopString+")");
+		} else {
+			this.sendToAll("L"+newLoopString);
+		}
+	}
+
+	removeClient(name, reason) {
+		const client = this.clients[name];
+		const data = helper.convertStringToArrayBuffer("C"+reason);
+		chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
+			chrome.sockets.tcp.close(client.socketId, function (state){});
+			this.println("Removed client \""+name+"\". Reason: "+reason);
+			delete this.clients[name];
+		});
 	}
 
 	//INTERNAL USE ONLY!
@@ -259,7 +294,8 @@ class MidiIpServer {
 			this.println("Client instance \""+remoteName+"\" connected");
 			chrome.sockets.tcp.setPaused(info.clientSocketId, true);
 			chrome.sockets.tcp.onReceive.removeListener(receiveListener);
-			this.clients.push({socketId: info.clientSocketId, name: remoteName});//Object to make adding filter data later easier
+			this.clients[remoteName] = {socketId: info.clientSocketId, name: remoteName};//Object to make adding filter data later easier
+			this.loopTest("");
 		};
 		chrome.sockets.tcp.onReceive.addListener(receiveListener);
 		chrome.sockets.tcp.setPaused(info.clientSocketId, false);
