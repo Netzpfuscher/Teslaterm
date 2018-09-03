@@ -1115,10 +1115,12 @@ var nano=null;
 var nano_out=null;
 
 function selectMIDIIn( ev ) {
+  const selected = ev.target.selectedIndex;
   if (midiIn.isActive())
     midiIn.cancel(null);
 
-  var id = ev.target[ev.target.selectedIndex].value;
+  ev.target.selectedIndex = selected;
+  var id = ev.target[selected].value;
   if (id=="<Network>") {
     midiServer.requestNameAnd(
       ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
@@ -1131,12 +1133,19 @@ function selectMIDIIn( ev ) {
       midiSource = midiAccess.inputs.get(id);
     setMidiInToPort(midiSource);
   } else {
-    midiIn.cancel(null);
-    midiIn.isActive = ()=>false;
-    midiIn.cancel = (arg)=>{};
-    midiIn.data = null;
-    midiIn.source = null;
+  	setMidiInAsNone();
   }
+}
+
+function setMidiInAsNone() {
+	if (midiIn.isActive()) {
+		midiIn.cancel(null);
+	}
+	midiIn.isActive = ()=>false;
+	midiIn.cancel = (arg)=>setMidiInAsNone();
+	midiIn.data = null;
+	midiIn.source = null;
+	selectMIDI.selectedIndex = 0;
 }
 
 function setMidiInToPort(source) {
@@ -1145,6 +1154,7 @@ function setMidiInToPort(source) {
 	midiIn.cancel = (arg)=> {
 		source.onmidimessage = null;
 		canceled = true;
+		setMidiInAsNone();
 	};
 	midiIn.isActive = ()=>(!canceled && source.state!="disconnected");
 	midiIn.source = source;
@@ -1170,14 +1180,15 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 			chrome.sockets.tcp.onReceive.removeListener(connectListener);
 			chrome.sockets.tcp.send(socketId, midiServer.ttNameAsBuffer, s=>{
 				if (s<0) {
-					midiIn.cancel();
-					terminal.io.println("Failed to connect to MIDI server at "+ip+":"+port);
+					terminal.io.println(error);
+					setMidiInAsNone();
 				} else {
 					terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
 					var source = ip+":"+port;
 					var canceled = false;
 					midiIn.cancel = (reason)=> {
 						canceled = true;
+						setMidiInAsNone();
 						if (reason) {
 							terminal.io.println("Disconnected from MIDI server. Reason: "+reason);
 						}
@@ -1191,6 +1202,7 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 		chrome.sockets.tcp.onReceive.addListener(connectListener);
 	} else {
 		terminal.io.println(error);
+		setMidiInAsNone();
 	}
 }
 
