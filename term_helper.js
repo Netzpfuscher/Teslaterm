@@ -130,10 +130,12 @@ class MidiIpServer {
 		this.println = println;
 		this.setPort(5678);
 		this.clients = {};
+		this.clientsBySocket = {};
 		this.active = false;
 		this.onStarted = onStarted;
 		this.onClosed = onClosed;
 		chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
+		chrome.sockets.tcp.onReceive.addListener(args=>this.onMessage(args.socketId, args.data));
 	}
 
 	//PUBLIC METHODS
@@ -153,8 +155,7 @@ class MidiIpServer {
 			const keyConst = key;
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode<0) {
-					this.println("TCP MIDI client \""+client.name+"\" disconnected!");
-					delete this.clients[keyConst];
+					this.deleteClient(client);
 				}
 			});
 		}
@@ -188,6 +189,7 @@ class MidiIpServer {
 			});
 		}
 		this.clients = {};
+		this.clientsBySocket = {};
 		this.active = false;
 	}
 
@@ -254,7 +256,7 @@ class MidiIpServer {
 		chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 			chrome.sockets.tcp.close(client.socketId, function (state){});
 			this.println("Removed client \""+name+"\". Reason: "+reason);
-			delete this.clients[name];
+			this.removeClient(client);
 		});
 	}
 
@@ -294,10 +296,31 @@ class MidiIpServer {
 			this.println("Client instance \""+remoteName+"\" connected");
 			chrome.sockets.tcp.setPaused(info.clientSocketId, true);
 			chrome.sockets.tcp.onReceive.removeListener(receiveListener);
-			this.clients[remoteName] = {socketId: info.clientSocketId, name: remoteName};//Object to make adding filter data later easier
+			this.addClient({socketId: info.clientSocketId, name: remoteName});//Object to make adding filter data later easier
 			this.loopTest("");
 		};
 		chrome.sockets.tcp.onReceive.addListener(receiveListener);
 		chrome.sockets.tcp.setPaused(info.clientSocketId, false);
+	}
+
+	onMessage(socketId, data) {
+		const client = this.clientsBySocket[socketId];
+		if (client) {
+			const firstByte = new Uint8Array(data)[0];
+			if (firstByte=='C'.charCodeAt(0)) {
+				this.deleteClient(client);
+			}
+		}
+	}
+
+	deleteClient(client) {
+		this.println("TCP MIDI client \""+client.name+"\" disconnected!");
+		delete this.clients[client.name];
+		delete this.clientsBySocket[client.socketId];
+	}
+
+	addClient(client) {
+		this.clients[client.name] = client;
+		this.clientsBySocket[client.socketId] = client;
 	}
 }

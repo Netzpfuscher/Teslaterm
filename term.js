@@ -1192,7 +1192,11 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 							setMidiInAsNone();
 							if (reason) {
 								terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
+							} else {
+								terminal.io.println("Disconnected from MIDI server");
 							}
+							chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
+								s=>chrome.sockets.tcp.close(socketId));
 						},
 						isActive: () => !canceled,
 						source: "<Network>",
