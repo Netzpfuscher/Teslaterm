@@ -4,6 +4,7 @@ var path;
 const wavecolor = ["white", "red", "blue", "green", "rgb(255, 128, 0)", "rgb(128, 128, 64)", "rgb(128, 64, 128)", "rgb(64, 128, 128)", "DimGray"];
 var pixel = 1;
 var midi_state=[];
+const simulated = false;
 
 
 const NUM_GAUGES = 7;
@@ -196,33 +197,30 @@ function processMidiFromPlayer(event){
 	if(playMidiData(event.bytes_buf)){
 		midi_state.progress=Player.getSongPercentRemaining();
 		redrawTop();
-	} else if(!connected) {
+	} else if(!simulated && !connected) {
 		Player.stop();
 		midi_state.state = 'stopped';
 	}
 }
-var expectedByteCounts = {0x80: 3,
+var expectedByteCounts = {
+	0x80: 3,
 	0x90: 3,
 	0xA0: 3,
 	0xB0: 3,
 	0xC0: 2,
 	0xD0: 2,
 	0xE0: 3
-}
+};
+
 function playMidiData(data) {
 	var firstByte = data[0];
-	if (connected && data[0] != 0x00) {
-		var expectedByteCount = expectedByteCounts[firstByte & 0xF0]
+	if ((simulated || connected) && data[0] != 0x00) {
+		var expectedByteCount = expectedByteCounts[firstByte & 0xF0];
 		if (expectedByteCount && expectedByteCount<data.length) {
 			data = data.slice(0, expectedByteCount)
 		}
 		var msg=new Uint8Array(data);
-		if(connected==1){
-			chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
-		}
-		if(connected==2){
-			terminal.io.println("The internal MIDI processor does not support serial connections yet!");
-		}
+		midiOut.send(msg);
 		midiServer.sendMidiData(msg);
 		return true;
 	} else {
@@ -903,14 +901,7 @@ function stopMidiFile() {
 	Player.stop();
 	midi_state.state = 'stopped';
 	redrawTop();
-	if(connected==2){
-		var msg=new Uint8Array([0xB0,0x77,0x00]);
-		chrome.serial.send(connid, msg, sendcb);
-	}
-	if(connected==1){
-		var msg=new Uint8Array([0xB0,0x77,0x00]);
-		chrome.sockets.tcp.send(socket_midi, msg, sendmidi);
-	}
+	stopMidiOutput();
 }
 
 function ondrop(e){
@@ -1108,24 +1099,26 @@ function redrawTrigger(){
   }
 }
 
-var selectMIDI = null;
+var selectMidiIn = null;
+var selectMidiOut = null;
 var midiAccess = null;
-var midiIn = {cancel: (reason)=>{}, isActive: ()=>false, source: null};
+var midiIn = {cancel: (reason)=>{}, isActive: ()=>false, source: ""};
+var midiOut = {send: (data)=>{}, dest: ""};
 var nano=null;
 var nano_out=null;
 
-function selectMIDIIn( ev ) {
-  const selected = ev.target.selectedIndex;
+function onSelectMidiIn(ev ) {
+  const selected = selectMidiIn.selectedIndex;
   if (midiIn.isActive())
     midiIn.cancel(null);
 
-  ev.target.selectedIndex = selected;
-  var id = ev.target[selected].value;
+  selectMidiIn.selectedIndex = selected;
+  var id = selectMidiIn[selected].value;
   if (id=="<Network>") {
     midiServer.requestNameAnd(
       ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
     )
-  } else if (id.indexOf('<')<0) {
+  } else if (id) {
     var midiSource;
     if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
       midiSource = midiAccess.inputs()[id];
@@ -1144,8 +1137,8 @@ function setMidiInAsNone() {
 	midiIn.isActive = ()=>false;
 	midiIn.cancel = (arg)=>setMidiInAsNone();
 	midiIn.data = null;
-	midiIn.source = null;
-	selectMIDI.selectedIndex = 0;
+	midiIn.source = "";
+	selectMidiIn.selectedIndex = 0;
 }
 
 function setMidiInToPort(source) {
@@ -1157,7 +1150,7 @@ function setMidiInToPort(source) {
 		setMidiInAsNone();
 	};
 	midiIn.isActive = ()=>(!canceled && source.state!="disconnected");
-	midiIn.source = source;
+	midiIn.source = source.id;
 	midiIn.data = null;
 }
 
@@ -1184,7 +1177,6 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 					setMidiInAsNone();
 				} else {
 					terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
-					var source = ip+":"+port;
 					var canceled = false;
 					midiIn.cancel = (reason)=> {
 						canceled = true;
@@ -1194,7 +1186,7 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 						}
 					};
 					midiIn.isActive = ()=>!canceled;
-					midiIn.source = source;
+					midiIn.source = "<Network>";
 					midiIn.data = socketId;
 				}
 			});
@@ -1224,6 +1216,39 @@ function onMIDIoverIP(info) {
 	}
 }
 
+function onSelectMidiOut(ev) {
+	const selected = selectMidiOut.selectedIndex;
+	var id = selectMidiOut[selected].value;
+	if (id!=midiOut.dest) {
+		stopMidiOutput();
+		if (id == "<Network>") {
+			midiOut = {
+				send: (data) => chrome.sockets.tcp.send(socket_midi, data, sendmidi)
+			};
+		} else if (id) {
+			var midiSink;
+			if ((typeof(midiAccess.outputs) == "function"))   //Old Skool MIDI inputs() code
+				midiSink = midiAccess.outputs()[id];
+			else
+				midiSink = midiAccess.outputs.get(id);
+			midiOut = {
+				send: (data) => midiSink.send(data)
+			};
+		} else {
+			midiOut = {
+				send: (data) => {
+				}
+			};
+		}
+		midiOut.dest = id;
+	}
+}
+
+function stopMidiOutput() {
+	playMidiData([0xB0,0x7B,0x00]);
+	console.log(midiOut);
+}
+
 function midi_start(){
 	
 if (navigator.requestMIDIAccess) {
@@ -1236,7 +1261,7 @@ if (navigator.requestMIDIAccess) {
 
 function midiConnectionStateChange( e ) {
   console.log("connection: " + e.port.name + " " + e.port.connection + " " + e.port.state );
-  populateMIDIInSelect();
+  populateMIDISelects();
 }
 
 function onMIDIStarted( midi ) {
@@ -1245,10 +1270,12 @@ function onMIDIStarted( midi ) {
   midiAccess = midi;
 
   //document.getElementById("synthbox").className = "loaded";
-  selectMIDI=document.getElementById("midiIn");
+  selectMidiIn=document.getElementById("midiIn");
+  selectMidiIn.onchange = onSelectMidiIn;
+  selectMidiOut=document.getElementById("midiOut");
+  selectMidiOut.onchange = onSelectMidiOut;
   midi.onstatechange = midiConnectionStateChange;
-  populateMIDIInSelect();
-  selectMIDI.onchange = selectMIDIIn;
+  populateMIDISelects();
 }
 
 function onMIDISystemError( err ) {
@@ -1257,47 +1284,48 @@ function onMIDISystemError( err ) {
 }
 
 
-function populateMIDIInSelect() {
-  // clear the MIDI input select
-  selectMIDI.options.length = 0;
-  var firstInput = null;
+function populateMIDISelects() {
+	// clear the MIDI input select
+	selectMidiIn.options.length = 0;
+	var firstInput = null;
 
-  selectMIDI.appendChild(new Option("None","<Invalid ID>",true,true));
-  selectMIDI.appendChild(new Option("Network","<Network>",true,true));//TODO make this show the current remote address and  not break on refresh
-  var inputs=midiAccess.inputs.values();
-  for ( var input = inputs.next(); input && !input.done; input = inputs.next()){
-    input = input.value;
-    if (!firstInput)
-      firstInput=input;
-    var str=input.name.toString();
-    var preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1)||(str.toLowerCase().indexOf("keyboard") != -1));
-	if(str.includes("nano")){
-		nano=input;
-		nano.onmidimessage = midiMessageReceived;
+	addElementKeepingSelected("None", "", midiIn.source, selectMidiIn);
+	addElementKeepingSelected("Network", "<Network>", midiIn.source, selectMidiIn);//TODO make this show the current remote address without breaking on refresh
+	for (let input of midiAccess.inputs.values()) {
+		if (!firstInput)
+			firstInput = input;
+		var str = input.name.toString();
+		var preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1) || (str.toLowerCase().indexOf("keyboard") != -1));
+		if (str.includes("nano")) {
+			nano = input;
+			nano.onmidimessage = midiMessageReceived;
+		}
+		addElementKeepingSelected(input.name, input.id, midiIn.source, selectMidiIn, preferred)
 	}
-    // if we're rebuilding the list, but we already had this port open, reselect it.
-    if (midiIn.isActive() && midiIn.source==input)
-      preferred = true;
+	if (!midiIn.isActive() && firstInput) {
+		setMidiInToPort(firstInput);
+	}
+	onSelectMidiIn(null);
+	selectMidiOut.options.length = 0;
+	addElementKeepingSelected("None", "", midiOut.dest, selectMidiOut);
+	if (connected==1) {
+		addElementKeepingSelected("UD3 over Ethernet", "<Network>", midiOut.dest, selectMidiOut);
+	}
+	for (let output of midiAccess.outputs.values()) {
+		var str = output.name.toString();
+		if (str.includes("nano")) {
+			nano_out = output;
+			nano_startup();
+		} else {
+			addElementKeepingSelected(str, output.id, midiOut.dest, selectMidiOut, str.indexOf("UD3")>=0);
+		}
+	}
+	onSelectMidiOut(null);
+}
 
-    selectMIDI.appendChild(new Option(input.name,input.id,preferred,preferred));
-    if (preferred) {
-      setMidiInToPort(input);
-    }
-  }
-  var outputs=midiAccess.outputs.values();
-  for ( var output = outputs.next(); output && !output.done; output = outputs.next()){
-	 output = output.value;
-	 var str=output.name.toString(); 
-	 if(str.includes("nano")){
-		nano_out=output;
-		nano_startup();
-	}
-	
-	  
-  }
-  if (!midiIn.isActive() && firstInput) {
-    setMidiInToPort(firstInput);
-  }
+function addElementKeepingSelected(name, id, oldId, selector, forceSelect = false) {
+	var preferred = forceSelect || id == oldId;
+	selector.appendChild(new Option(name, id, preferred, preferred));
 }
 
 function nano_startup(){
@@ -1618,8 +1646,9 @@ document.addEventListener('DOMContentLoaded', function () {
 				'<input type="range" id="slider2" min="0" max="'+maxBurstOntime+'" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
 				'<br><br>Burst Off<br><br>'+
 				'<input type="range" id="slider3" min="0" max="'+maxBurstOfftime+'" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
-				'<br><br><select id="midiIn"></select>'+
-				'</aside>'+ 
+				'<br><br>MIDI Input: <select id="midiIn"></select>'+
+				'<br>MIDI Output: <select id="midiOut"></select>'+
+				'</aside>'+
 				'</div>'
 			},
 			{ type: 'right', size: 120, resizable: false, style: pstyle, content:
