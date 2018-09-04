@@ -1109,24 +1109,26 @@ var nano_out=null;
 
 function onSelectMidiIn(ev ) {
   const selected = selectMidiIn.selectedIndex;
-  if (midiIn.isActive())
-    midiIn.cancel(null);
-
-  selectMidiIn.selectedIndex = selected;
   var id = selectMidiIn[selected].value;
-  if (id=="<Network>") {
-    midiServer.requestNameAnd(
-      ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
-    )
-  } else if (id) {
-    var midiSource;
-    if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
-      midiSource = midiAccess.inputs()[id];
-    else
-      midiSource = midiAccess.inputs.get(id);
-    setMidiInToPort(midiSource);
-  } else {
-  	setMidiInAsNone();
+  if (id!=midiIn.source) {
+	  if (midiIn.isActive())
+		midiIn.cancel(null);
+
+	  selectMidiIn.selectedIndex = selected;
+	  if (id=="<Network>") {
+		midiServer.requestNameAnd(
+		  ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
+		)
+	  } else if (id) {
+		var midiSource;
+		if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
+		  midiSource = midiAccess.inputs()[id];
+		else
+		  midiSource = midiAccess.inputs.get(id);
+		setMidiInToPort(midiSource);
+	  } else {
+		setMidiInAsNone();
+	  }
   }
 }
 
@@ -1134,24 +1136,30 @@ function setMidiInAsNone() {
 	if (midiIn.isActive()) {
 		midiIn.cancel(null);
 	}
-	midiIn.isActive = ()=>false;
-	midiIn.cancel = (arg)=>setMidiInAsNone();
-	midiIn.data = null;
-	midiIn.source = "";
+	midiIn = {
+		isActive: () => false,
+		cancel: (arg) => setMidiInAsNone(),
+		data: null,
+		source: ""
+	};
 	selectMidiIn.selectedIndex = 0;
+	populateMIDISelects();
 }
 
 function setMidiInToPort(source) {
 	source.onmidimessage = midiMessageReceived;
 	var canceled = false;
-	midiIn.cancel = (arg)=> {
-		source.onmidimessage = null;
-		canceled = true;
-		setMidiInAsNone();
+	midiIn = {
+		cancel: (arg) => {
+			source.onmidimessage = null;
+			canceled = true;
+			setMidiInAsNone();
+		},
+		isActive: () => (!canceled && source.state != "disconnected"),
+		source: source.id,
+		data: null
 	};
-	midiIn.isActive = ()=>(!canceled && source.state!="disconnected");
-	midiIn.source = source.id;
-	midiIn.data = null;
+	populateMIDISelects();
 }
 
 function setMidiInToNetwork(ip, port) {
@@ -1178,16 +1186,20 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 				} else {
 					terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
 					var canceled = false;
-					midiIn.cancel = (reason)=> {
-						canceled = true;
-						setMidiInAsNone();
-						if (reason) {
-							terminal.io.println("Disconnected from MIDI server. Reason: "+reason);
-						}
+					midiIn = {
+						cancel: (reason) => {
+							canceled = true;
+							setMidiInAsNone();
+							if (reason) {
+								terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
+							}
+						},
+						isActive: () => !canceled,
+						source: "<Network>",
+						remote: name + " at " + ip + ":" + port,
+						data: socketId
 					};
-					midiIn.isActive = ()=>!canceled;
-					midiIn.source = "<Network>";
-					midiIn.data = socketId;
+					populateMIDISelects();
 				}
 			});
 		};
@@ -1287,13 +1299,15 @@ function onMIDISystemError( err ) {
 function populateMIDISelects() {
 	// clear the MIDI input select
 	selectMidiIn.options.length = 0;
-	var firstInput = null;
 
 	addElementKeepingSelected("None", "", midiIn.source, selectMidiIn);
-	addElementKeepingSelected("Network", "<Network>", midiIn.source, selectMidiIn);//TODO make this show the current remote address without breaking on refresh
+	let networkText = "Network";
+	const networkId = "<Network>";
+	if (midiIn.source==networkId) {
+		networkText = midiIn.remote;
+	}
+	addElementKeepingSelected(networkText, networkId, midiIn.source, selectMidiIn);
 	for (let input of midiAccess.inputs.values()) {
-		if (!firstInput)
-			firstInput = input;
 		var str = input.name.toString();
 		var preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1) || (str.toLowerCase().indexOf("keyboard") != -1));
 		if (str.includes("nano")) {
@@ -1301,9 +1315,6 @@ function populateMIDISelects() {
 			nano.onmidimessage = midiMessageReceived;
 		}
 		addElementKeepingSelected(input.name, input.id, midiIn.source, selectMidiIn, preferred)
-	}
-	if (!midiIn.isActive() && firstInput) {
-		setMidiInToPort(firstInput);
 	}
 	onSelectMidiIn(null);
 	selectMidiOut.options.length = 0;
