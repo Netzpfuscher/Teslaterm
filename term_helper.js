@@ -25,11 +25,6 @@ class helper {
 		return buf;
 	}
 
-	static delay(ms) {
-		ms += new Date().getTime();
-		while (new Date() < ms){}
-	}
-
 	static ascii_to_hex(str) {
 		var arr1 = [];
 		for (var n = 0, l = str.length; n < l; n ++) {
@@ -43,7 +38,6 @@ class helper {
 	static changeMenuEntry(menu, id, newName) {
 		var items = $('#toolbar').w2toolbar().get(menu, false).items;
 		for (var i = 0;i<items.length;i++) {
-			console.log(items[i].id+" vs "+id);
 			if (items[i].id==id) {
 				items[i].text = newName;
 				$('#toolbar').w2toolbar().set(menu, items);
@@ -51,6 +45,32 @@ class helper {
 			}
 		}
 		console.log("Didn't find name to replace!");
+	}
+
+	static parseFilter(str) {
+		if (str=="") {
+			return [];
+		}
+		if (!/^(\d+(-\d+)?)(,\d+(-\d+)?)*$/.test(str)) {
+			return null;
+		}
+		let ret = [];
+		const sections = str.split(",");
+		for (let i = 0;i<sections.length;i++) {
+			const bounds = sections[i].split("-");
+			if (bounds.length<2) {
+				const bound = parseInt(bounds[0]);
+				ret.push([bound, bound]);
+			} else {
+				const lower = parseInt(bounds[0]);
+				const upper = parseInt(bounds[1]);
+				if (lower>upper) {
+					return null;
+				}
+				ret.push([lower, upper]);
+			}
+		}
+		return ret;
 	}
 }
 
@@ -211,16 +231,16 @@ class MidiIpServer {
 
 	requestNameAnd(callback) {
 		if (!this.ttName) {
-			term_ui.inputString("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
+			term_ui.inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
 				for (let i = 0;i<name.length;i++) {
 					if (name[i]==';') {
-						this.requestNameAnd(callback);
-						return;
+						return 0;
 					}
 				}
 				midiServer.setName(name);
-				callback();
-			});
+				setTimeout(callback, 10);
+				return -1;
+			}, ["Name"]);
 		} else {
 			callback();
 		}
@@ -261,8 +281,7 @@ class MidiIpServer {
 		const data = helper.convertStringToArrayBuffer("C"+reason);
 		chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 			chrome.sockets.tcp.close(client.socketId, function (state){});
-			this.println("Removed client \""+name+"\". Reason: "+reason);
-			this.removeClient(client);
+			this.deleteClient(client, reason);
 		});
 	}
 
@@ -297,12 +316,14 @@ class MidiIpServer {
 			if (recvInfo.socketId != info.clientSocketId)
 				return;
 			console.log(recvInfo.data);
-			var remoteName = helper.convertArrayBufferToString(recvInfo.data);
-			//TODO future format will be: <remoteName>\n<JSON defining filters. GUI TBD>
+			var data = helper.convertArrayBufferToString(recvInfo.data);
+			const remoteName = data.substring(0, data.indexOf(';'));
+			const filterString = data.substring(data.indexOf(';')+1);
+			const filter = JSON.parse(filterString);
 			this.println("Client instance \""+remoteName+"\" connected");
 			chrome.sockets.tcp.setPaused(info.clientSocketId, true);
 			chrome.sockets.tcp.onReceive.removeListener(receiveListener);
-			this.addClient({socketId: info.clientSocketId, name: remoteName});//Object to make adding filter data later easier
+			this.addClient({socketId: info.clientSocketId, name: remoteName, filter: filter});//Object to make adding filter data later easier
 			this.loopTest("");
 		};
 		chrome.sockets.tcp.onReceive.addListener(receiveListener);
@@ -319,8 +340,12 @@ class MidiIpServer {
 		}
 	}
 
-	deleteClient(client) {
-		this.println("TCP MIDI client \""+client.name+"\" disconnected!");
+	deleteClient(client, reason = null) {
+		if (reason) {
+			this.println("Removed TCP MIDI client \""+client.name+"\". Reason: "+reason);
+		} else {
+			this.println("TCP MIDI client \""+client.name+"\" disconnected!");
+		}
 		delete this.clients[client.name];
 		delete this.clientsBySocket[client.socketId];
 	}

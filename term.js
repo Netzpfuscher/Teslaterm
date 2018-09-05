@@ -1117,7 +1117,8 @@ function onSelectMidiIn(ev ) {
 	  selectMidiIn.selectedIndex = selected;
 	  if (id=="<Network>") {
 		midiServer.requestNameAnd(
-		  ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
+		  ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true,
+			  (ip, port)=>setTimeout(enterFilterForMidi, 10, ip, port))
 		);
 	  } else if (id) {
 		var midiSource;
@@ -1162,15 +1163,30 @@ function setMidiInToPort(source) {
 	populateMIDISelects();
 }
 
-function setMidiInToNetwork(ip, port) {
+function enterFilterForMidi(ip, port) {
+	term_ui.inputStrings("Please enter the filters", "MIDI filters", (channel, note)=>{
+		const filterChannel = helper.parseFilter(channel);
+		if (filterChannel==null) {
+			return 0;
+		}
+		const filterNote = helper.parseFilter(note);
+		if (filterNote==null) {
+			return 1;
+		}
+		setMidiInToNetwork(ip, port, {channel: filterChannel, note: filterNote});
+		return -1;
+	}, ["Channel", "Note"]);
+}
+
+function setMidiInToNetwork(ip, port, filter) {
 	terminal.io.println("Connecting to MIDI server at "+ip+":"+port+"...");
 	chrome.sockets.tcp.create({}, function(createInfo) {
 		chrome.sockets.tcp.connect(createInfo.socketId,
-			ip, port, s=>onMidiNetworkConnect(s, ip, port, createInfo.socketId));
+			ip, port, s=>onMidiNetworkConnect(s, ip, port, createInfo.socketId, filter));
 	});
 }
 
-function onMidiNetworkConnect(status, ip, port, socketId) {
+function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 	var error = "Connection to MIDI server at "+ip+":"+port+" failed!";
 	if (status>=0) {
 		var connectListener = (info)=>{
@@ -1179,7 +1195,8 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 			// info.data is an arrayBuffer.
 			var name = helper.convertArrayBufferToString(info.data);
 			chrome.sockets.tcp.onReceive.removeListener(connectListener);
-			chrome.sockets.tcp.send(socketId, midiServer.ttNameAsBuffer, s=>{
+			const data = name+";"+JSON.stringify(filter);
+			chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer(data), s=>{
 				if (s<0) {
 					terminal.io.println(error);
 					setMidiInAsNone();
@@ -1193,10 +1210,10 @@ function onMidiNetworkConnect(status, ip, port, socketId) {
 							if (reason) {
 								terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
 							} else {
+								chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
+									s=>chrome.sockets.tcp.close(socketId));
 								terminal.io.println("Disconnected from MIDI server");
 							}
-							chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
-								s=>chrome.sockets.tcp.close(socketId));
 						},
 						isActive: () => !canceled,
 						source: "<Network>",
