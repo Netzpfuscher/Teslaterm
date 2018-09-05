@@ -1118,7 +1118,7 @@ function onSelectMidiIn(ev ) {
 	  if (id=="<Network>") {
 		midiServer.requestNameAnd(
 		  ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true, setMidiInToNetwork)
-		)
+		);
 	  } else if (id) {
 		var midiSource;
 		if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
