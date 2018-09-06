@@ -72,6 +72,15 @@ class helper {
 		}
 		return ret;
 	}
+
+	static matchesFilter(filter, num) {
+		for (let i = 0;i<filter.length;i++) {
+			if (filter[i][0]<=num && num<=filter[i][1]) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 class cls_meter {
@@ -161,38 +170,48 @@ class MidiIpServer {
 	//PUBLIC METHODS
 	/**
 	 * Sends `data` to all connected sockets that accept the data.
-	 * Returns null if no socket fully accepts the data (see filter definition), `data` otherwise
 	*/
 	sendToAll(data) {
 		if (typeof(data)==="string") {
 			data = helper.convertStringToArrayBuffer(data);
 		}
-		var ret = data;
 		for (let key in this.clients) {
 			if (!this.clients.hasOwnProperty(key)) continue;
-			//TODO check whether the socket accepts this data
-			const client = this.clients[key];
-			const keyConst = key;
-			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
-				if (sendInfo.resultCode<0) {
-					this.deleteClient(client);
-				}
-			});
+			this.sendToClient(this.clients[key], data)
 		}
-		return ret;
 	}
 
 	sendMidiData(data) {
 		if (!this.active) {
-			return;
+			return false;
 		}
-		var buf=new ArrayBuffer(1+data.length);
-		var bufView=new Uint8Array(buf);
+		const buf=new ArrayBuffer(1+data.length);
+		const bufView=new Uint8Array(buf);
 		bufView[0] = "M".charCodeAt(0);
 		for (var i=0; i<data.length; i++) {
 			bufView[i+1]=data[i];
 		}
-		this.sendToAll(buf);
+		let accepted = false;
+		for (let key in this.clients) {
+			if (!this.clients.hasOwnProperty(key)) continue;
+			const client = this.clients[key];
+			const result = MidiIpServer.matchesFilter(data, client.filter);
+			if (result!=0) {
+				this.sendToClient(client, bufView);
+				if (result>0) {
+					accepted = true;
+				}
+			}
+		}
+		return accepted;
+	}
+
+	sendToClient(client, data) {
+		chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
+			if (sendInfo.resultCode < 0) {
+				this.deleteClient(client);
+			}
+		});
 	}
 
 	close() {
@@ -200,7 +219,6 @@ class MidiIpServer {
 		var data = helper.convertStringToArrayBuffer("C");
 		for (let key in this.clients) {
 			if (!this.clients.hasOwnProperty(key)) continue;
-			//TODO check whether the socket accepts this data
 			const client = this.clients[key];
 			chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
 				if (sendInfo.resultCode>=0) {
@@ -285,30 +303,52 @@ class MidiIpServer {
 		});
 	}
 
+	static matchesFilter(data, filter) {
+		var channel = undefined;
+		var note = undefined;
+		switch (data[0] & 0xF0) {
+			case 0x80:
+			case 0x90:
+			case 0xA0:
+				channel = data[0] & 0x0F;
+				note = data[1] & 0x7F;
+				break;
+			case 0xB0:
+			case 0xC0:
+			case 0xD0:
+			case 0xE0:
+				channel = data[0] & 0x0F;
+				break;
+			default:
+				return -1;
+		}
+		return this.matchesFilterExtracted(filter, channel, note);
+	}
+
 	//INTERNAL USE ONLY!
 	createCallback(createInfo) {
 		var socketId = createInfo.socketId;
 		chrome.sockets.tcpServer.listen(socketId,
-			"127.0.0.1", this.port, resultCode=>this.onListenCallback(socketId, resultCode)
+			"127.0.0.1", this.port, resultCode => this.onListenCallback(socketId, resultCode)
 		);
 	}
 
 	onListenCallback(socketId, resultCode) {
 		if (resultCode < 0) {
-			this.println("Failed to start MIDI server at "+this.port+": "+chrome.runtime.lastError.message);
+			this.println("Failed to start MIDI server at " + this.port + ": " + chrome.runtime.lastError.message);
 		} else {
 			this.onStarted();
 			this.active = true;
 			this.serverSocketId = socketId;
 		}
 	}
-	
+
 	onAccept(info) {
 		if (info.socketId != this.serverSocketId)
 			return;
 
 		// A new TCP connection has been established.
-		chrome.sockets.tcp.send(info.clientSocketId, this.ttNameAsBuffer, result=>this.waitForClientName(result, info));
+		chrome.sockets.tcp.send(info.clientSocketId, this.ttNameAsBuffer, result => this.waitForClientName(result, info));
 	}
 
 	waitForClientName(resultCode, info) {
@@ -318,9 +358,9 @@ class MidiIpServer {
 			console.log(recvInfo.data);
 			var data = helper.convertArrayBufferToString(recvInfo.data);
 			const remoteName = data.substring(0, data.indexOf(';'));
-			const filterString = data.substring(data.indexOf(';')+1);
+			const filterString = data.substring(data.indexOf(';') + 1);
 			const filter = JSON.parse(filterString);
-			this.println("Client instance \""+remoteName+"\" connected");
+			this.println("Client instance \"" + remoteName + "\" connected");
 			chrome.sockets.tcp.setPaused(info.clientSocketId, true);
 			chrome.sockets.tcp.onReceive.removeListener(receiveListener);
 			this.addClient({socketId: info.clientSocketId, name: remoteName, filter: filter});//Object to make adding filter data later easier
@@ -334,7 +374,7 @@ class MidiIpServer {
 		const client = this.clientsBySocket[socketId];
 		if (client) {
 			const firstByte = new Uint8Array(data)[0];
-			if (firstByte=='C'.charCodeAt(0)) {
+			if (firstByte == 'C'.charCodeAt(0)) {
 				this.deleteClient(client);
 			}
 		}
@@ -342,9 +382,9 @@ class MidiIpServer {
 
 	deleteClient(client, reason = null) {
 		if (reason) {
-			this.println("Removed TCP MIDI client \""+client.name+"\". Reason: "+reason);
+			this.println("Removed TCP MIDI client \"" + client.name + "\". Reason: " + reason);
 		} else {
-			this.println("TCP MIDI client \""+client.name+"\" disconnected!");
+			this.println("TCP MIDI client \"" + client.name + "\" disconnected!");
 		}
 		delete this.clients[client.name];
 		delete this.clientsBySocket[client.socketId];
@@ -353,5 +393,21 @@ class MidiIpServer {
 	addClient(client) {
 		this.clients[client.name] = client;
 		this.clientsBySocket[client.socketId] = client;
+	}
+
+	static matchesFilterExtracted(filter, channel, note) {
+		let resultChannel;
+		if (filter.channel.length == 0 || channel == undefined) {
+			resultChannel = true;
+		} else {
+			resultChannel = helper.matchesFilter(filter.channel, channel);
+		}
+		let resultNote;
+		if (filter.note.length == 0 || note == undefined) {
+			resultNote = true;
+		} else {
+			resultNote = helper.matchesFilter(filter.note, note);
+		}
+		return resultChannel && resultNote;
 	}
 }

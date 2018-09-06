@@ -220,8 +220,9 @@ function playMidiData(data) {
 			data = data.slice(0, expectedByteCount)
 		}
 		var msg=new Uint8Array(data);
-		midiOut.send(msg);
-		midiServer.sendMidiData(msg);
+		if (!midiServer.sendMidiData(msg)) {
+			midiOut.send(msg);
+		}
 		return true;
 	} else {
 		return false;
