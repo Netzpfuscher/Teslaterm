@@ -42,6 +42,7 @@ var meters;
 
 var uitime = setInterval(refresh_UI, 20);
 var scriptModule;
+var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 
 function connect_ip(){
 	chrome.sockets.tcp.create({}, createInfo);
@@ -923,7 +924,7 @@ function ondrop(e){
 			var loadScript = function () {
 				var allowedCalls = [];
 				allowedCalls.println = (s)=>terminal.io.println(s);
-				allowedCalls.setOntime = setOntime;
+				allowedCalls.setOntime = setAbsoluteOntime;
 				allowedCalls.setBPS = setBPS;
 				allowedCalls.loadMidi = loadMidiFile;
 				allowedCalls.startMidi = startCurrentMidiFile;
@@ -931,7 +932,7 @@ function ondrop(e){
 				allowedCalls.setBurstOfftime = setBurstOfftime;
 				allowedCalls.onScriptStopped = function() {
 					stopMidiFile();
-					setOntime(0);
+					setAbsoluteOntime(0);
 					terminal.io.println("Script stopped");
 				};
 				allowedCalls.cancelMidi = stopMidiFile;
@@ -967,7 +968,7 @@ function warn_energ() {
 function warn_tr() {
     w2confirm('WARNING!<br>The coil will produce sparks.')
     .no(function () { })
-	.yes(function () { slider0(); slider1(); send_command('tr start\r'); });
+	.yes(function () { ontimeSliderMoved(); slider1(); send_command('tr start\r'); });
 }
 
 function warn_eeprom_save() {
@@ -1011,25 +1012,70 @@ function nano_led(num,val){
 	}
 }
 
-function setSliderValue(name, value) {
-	var slider = document.getElementById(name);
+function setSliderValue(name, value, slider = undefined) {
+	if (!slider) {
+		slider = document.getElementById(name);
+	}
 	if (value<slider.min||value>slider.max) {
-		terminal.io.println("Tried to set slider \""+name+"\" out of range (To "+value+")!");
-		return;
+		terminal.io.println("Tried to set slider \""+slider.id+"\" out of range (To "+value+")!");
+		value = Math.min(slider.max, Math.max(slider.min, value));
 	}
 	slider.value = value;
 }
 
-function slider0(){
-	var slider = document.getElementById('slider0');
-	var slider_disp = document.getElementById('slider0_disp');
-	slider_disp.innerHTML = slider.value + ' µs';
-	send_command('set pw ' + slider.value + '\r');
+function ontimeSliderMoved(){
+	if (ontimeUI.relativeSelect.checked) {
+		setRelativeOntime(parseInt(ontimeUI.slider.value));
+	} else {
+		setAbsoluteOntime(parseInt(ontimeUI.slider.value));
+	}
 }
 
-function setOntime(time) {
-	setSliderValue("slider0", time);
-	slider0();
+function ontimeChanged() {
+	ontimeUI.totalVal = ontimeUI.totalVal = Math.round(ontimeUI.absoluteVal*ontimeUI.relativeVal/100.);
+	send_command('set pw ' + ontimeUI.totalVal + '\r');
+	updateOntimeLabels();
+}
+
+function setAbsoluteOntime(time) {
+	if (!ontimeUI.relativeSelect.checked) {
+		setSliderValue(null, time, ontimeUI.slider);
+	}
+	time = Math.min(maxOntime, Math.max(0, time));
+	ontimeUI.absolute.textContent = ontimeUI.absoluteVal = time;
+	ontimeChanged();
+}
+
+function setRelativeOntime(percentage) {
+	if (ontimeUI.relativeSelect.checked) {
+		setSliderValue(null, percentage, ontimeUI.slider);
+	}
+	percentage = Math.min(100, Math.max(0, percentage));
+	ontimeUI.relative.textContent = ontimeUI.relativeVal = percentage;
+	midiServer.sendRelativeOntime(ontimeUI.relativeVal);
+	ontimeChanged();
+}
+
+function updateOntimeLabels() {
+	if (ontimeUI.relativeSelect.checked) {
+		ontimeUI.relative.innerHTML = "<b>"+ontimeUI.relativeVal+"</b>";
+		ontimeUI.absolute.innerHTML = ontimeUI.absoluteVal;
+	} else {
+		ontimeUI.absolute.innerHTML = "<b>"+ontimeUI.absoluteVal+"</b>";
+		ontimeUI.relative.innerHTML = ontimeUI.relativeVal;
+	}
+	ontimeUI.total.innerHTML = ontimeUI.totalVal;
+}
+
+function onRelativeOntimeSelect() {
+	if (ontimeUI.relativeSelect.checked) {
+		ontimeUI.slider.max = 100;
+		ontimeUI.slider.value = ontimeUI.relativeVal;
+	} else {
+		ontimeUI.slider.max = maxOntime;
+		ontimeUI.slider.value = ontimeUI.absoluteVal;
+	}
+	updateOntimeLabels();
 }
 
 function slider1(){
@@ -1208,6 +1254,7 @@ function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 						cancel: (reason) => {
 							canceled = true;
 							setMidiInAsNone();
+							ontimeUI.relativeSelect.disabled = false;
 							if (reason) {
 								terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
 							} else {
@@ -1222,6 +1269,9 @@ function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 						data: socketId
 					};
 					populateMIDISelects();
+					ontimeUI.relativeSelect.checked = false;
+					ontimeUI.relativeSelect.onclick();
+					ontimeUI.relativeSelect.disabled = true;
 				}
 			});
 		};
@@ -1246,6 +1296,9 @@ function onMIDIoverIP(info) {
 			break;
 		case 'L'.charCodeAt(0):
 			midiServer.loopTest(param);
+			break;
+		case 'O'.charCodeAt(0):
+			setRelativeOntime(data[1]);
 			break;
 	}
 }
@@ -1425,7 +1478,7 @@ function midiMessageReceived( ev ) {
 		//controller( noteNumber, velocity/127.0);
 		switch(String(noteNumber)){
 			case simpleIni.nano.slider0:
-				setOntime(maxOntime*velocity/127.0);
+				setAbsoluteOntime(maxOntime*velocity/127.0);
 			break;
 			case simpleIni.nano.slider1:
 				setBPS(maxBPS*velocity/127.0);
@@ -1669,10 +1722,12 @@ document.addEventListener('DOMContentLoaded', function () {
 				'<article>'+
 				'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>'+
 				'<canvas id="wavecanvas" style= "position: absolute; left: 0; top: 0;width: 75%; z-index: 1;"></canvas>'+
-				'</article>'+ 
+				'</article>'+
 				'<aside>'+
-				'Ontime<br><br>'+
-				'<input type="range" id="slider0" min="0" max="'+maxOntime+'" value="0" class="slider" data-show-value="true"><label id="slider0_disp">0 µs</label>'+
+				'<div id="ontime">Ontime<br><br>'+
+				'<input type="range" id="slider" min="0" max="'+maxOntime+'" value="0" class="slider" data-show-value="true">' +
+				'<input type="checkbox" id="relativeSelect"><label for="relativeSelect">Relative</label>' +
+				'<br><span id="total">0</span> µs (<span id="relative">100</span>% of <span id="absolute"><b>0</b></span> µs)</div>'+
 				'<br><br>Offtime<br><br>'+
 				'<input type="range" id="slider1" min="20" max="'+maxBPS+'" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
 				'<br><br>Burst On<br><br>'+
@@ -1709,7 +1764,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	document.getElementById('layout').addEventListener("drop", ondrop);
 	document.getElementById('layout').addEventListener("dragover", ondragover);
-	document.getElementById('slider0').addEventListener("input", slider0);
+	ontimeUI.slider = $(".w2ui-panel-content .scopeview #ontime #slider")[0];
+	ontimeUI.relativeSelect = $(".w2ui-panel-content .scopeview #ontime #relativeSelect")[0];
+	ontimeUI.total = $(".w2ui-panel-content .scopeview #ontime #total")[0];
+	ontimeUI.relative = $(".w2ui-panel-content .scopeview #ontime #relative")[0];
+	ontimeUI.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
+	ontimeUI.slider.addEventListener("input", ontimeSliderMoved);
+	ontimeUI.relativeSelect.onclick = onRelativeOntimeSelect;
 	document.getElementById('slider1').addEventListener("input", slider1);
 	document.getElementById('slider2').addEventListener("input", slider2);
 	document.getElementById('slider3').addEventListener("input", slider3);
@@ -1740,6 +1801,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		()=> {
 			terminal.io.println("MIDI server at " + midiServer.port + " closed!");
 			helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
+		},
+		client=> {
+			midiServer.sendRelativeOntime(ontimeUI.relativeVal, client)
+			this.println("Client instance \"" + client.remoteName + "\" connected");
 		});
 	chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
 	tterm.trigger=-1;

@@ -152,10 +152,11 @@ class cls_meter {
  * 'M': MIDI
  * 'C': Close connection
  * 'L': Loop detection
+ * 'O': Set relative ontime
  */
 class MidiIpServer {
 	
-	constructor(println, onStarted = ()=>{}, onClosed = ()=>{}) {
+	constructor(println, onStarted = ()=>{}, onClosed = ()=>{}, onConnected = (client)=>{}) {
 		this.println = println;
 		this.setPort(5678);
 		this.clients = {};
@@ -163,6 +164,7 @@ class MidiIpServer {
 		this.active = false;
 		this.onStarted = onStarted;
 		this.onClosed = onClosed;
+		this.onConnected = onConnected;
 		chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
 		chrome.sockets.tcp.onReceive.addListener(args=>this.onMessage(args.socketId, args.data));
 	}
@@ -303,6 +305,21 @@ class MidiIpServer {
 		});
 	}
 
+	sendRelativeOntime(percentage, client = undefined) {
+		if (!this.active) {
+			return;
+		}
+		let data = new ArrayBuffer(2);
+		let dataView = new Uint8Array(data);
+		dataView[0] = 'O'.charCodeAt(0);
+		dataView[1] = percentage;//Always between 0 and 100
+		if (client) {
+			this.sendToClient(client, data);
+		} else {
+			this.sendToAll(data);
+		}
+	}
+
 	static matchesFilter(data, filter) {
 		var channel = undefined;
 		var note = undefined;
@@ -360,11 +377,12 @@ class MidiIpServer {
 			const remoteName = data.substring(0, data.indexOf(';'));
 			const filterString = data.substring(data.indexOf(';') + 1);
 			const filter = JSON.parse(filterString);
-			this.println("Client instance \"" + remoteName + "\" connected");
 			chrome.sockets.tcp.setPaused(info.clientSocketId, true);
 			chrome.sockets.tcp.onReceive.removeListener(receiveListener);
-			this.addClient({socketId: info.clientSocketId, name: remoteName, filter: filter});//Object to make adding filter data later easier
+			const client = {socketId: info.clientSocketId, name: remoteName, filter: filter};
+			this.addClient(client);//Object to make adding filter data later easier
 			this.loopTest("");
+			this.onConnected(client);
 		};
 		chrome.sockets.tcp.onReceive.addListener(receiveListener);
 		chrome.sockets.tcp.setPaused(info.clientSocketId, false);
