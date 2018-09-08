@@ -252,12 +252,16 @@ class MidiIpServer {
 	requestNameAnd(callback) {
 		if (!this.ttName) {
 			term_ui.inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
+				if ($.trim(name)=='') {
+					return 0;
+				}
 				for (let i = 0;i<name.length;i++) {
 					if (name[i]==';') {
 						return 0;
 					}
 				}
 				midiServer.setName(name);
+				document.title = "Teslaterm: "+name;
 				setTimeout(callback, 10);
 				return -1;
 			}, ["Name"]);

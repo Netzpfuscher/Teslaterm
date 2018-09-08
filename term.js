@@ -1502,7 +1502,9 @@ function midiMessageReceived( ev ) {
 	}
 }
 
-
+function stopTransient() {
+	send_command('tr stop\r');
+}
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -1633,7 +1635,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					warn_tr();
 				break;
 				case 'mnu_command:TR Stop':
-					send_command('tr stop\r');
+					stopTransient();
 				break;
 				case 'mnu_command:startStopMidi':
 					if (midiServer.active) {
@@ -1660,6 +1662,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						terminal.io.println("Please select a MIDI file using drag&drop");
 						break;
 					}
+					stopTransient();
 					startCurrentMidiFile();
 				break;
 				case 'mnu_midi:Stop':
@@ -1803,8 +1806,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
 		},
 		client=> {
-			midiServer.sendRelativeOntime(ontimeUI.relativeVal, client)
-			this.println("Client instance \"" + client.remoteName + "\" connected");
+			midiServer.sendRelativeOntime(ontimeUI.relativeVal, client);
+			terminal.io.println("Client instance \"" + client.name + "\" connected");
 		});
 	chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
 	tterm.trigger=-1;

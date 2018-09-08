@@ -16,7 +16,7 @@ class term_ui {
 			bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="'+defPort+'">';
 		}
 		bodyHtml += "</div>";
-		var onClose = function () {
+		var process = function () {
 			var ip;
 			if (reqIp) {
 				ip = $('#w2ui-popup .w2ui-box .w2ui-popup-body #ipIn')[0].value;
@@ -35,8 +35,12 @@ class term_ui {
 		        width   : 400,
 		        height  : 170,
 		        body    : bodyHtml,
-		        buttons : '<button onclick="w2popup.message();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose : onClose,
+		        buttons : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onOpen: () => setTimeout(() =>
+					$('#w2ui-popup .w2ui-popup-btn')[0].onclick = () => {
+						process();
+						w2popup.message();
+					}, 10),
 				onKeydown: this.keyDownListener
 			});
 		} else {
@@ -47,8 +51,12 @@ class term_ui {
 		        showClose : false,
 		        title     : title,
 		        body      : bodyHtml,
-		        buttons   : '<button onclick="w2popup.close();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose   : onClose,
+		        buttons   : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onOpen: () => setTimeout(() =>
+					$('#w2ui-popup .w2ui-popup-btn')[0].onclick = () => {
+						process();
+						w2popup.close();
+					}, 10),
 				onKeydown: this.keyDownListener
 		    });
 		}
@@ -123,7 +131,7 @@ class term_ui {
 					$('#w2ui-popup .w2ui-popup-btn').focus().addClass('clicked'); // no need fo click as enter will do click
 					break;
 				case 27: // esc
-					$('#w2ui-popup .w2ui-popup-btn').focus().click().blur();
+					// Don't click Ok when the user pressed escape
 					w2popup.close();
 					break;
 			}
