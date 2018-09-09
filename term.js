@@ -1163,10 +1163,13 @@ function onSelectMidiIn(ev ) {
 
 	  selectMidiIn.selectedIndex = selected;
 	  if (id=="<Network>") {
-		midiServer.requestNameAnd(
-		  ()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true,
-			  (ip, port)=>setTimeout(enterFilterForMidi, 10, ip, port))
-		);
+		midiServer.requestName()
+			.then(()=>term_ui.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true))
+			.then(enterFilterForMidi)
+			.catch((err)=>{
+				console.log("Caught something!", err);
+				setMidiInAsNone();
+			});
 	  } else if (id) {
 		var midiSource;
 		if ((typeof(midiAccess.inputs) == "function"))   //Old Skool MIDI inputs() code
@@ -1210,7 +1213,7 @@ function setMidiInToPort(source) {
 	populateMIDISelects();
 }
 
-function enterFilterForMidi(ip, port) {
+function enterFilterForMidi(result) {
 	term_ui.inputStrings("Please enter the filters", "MIDI filters", (channel, note)=>{
 		const filterChannel = helper.parseFilter(channel);
 		if (filterChannel==null) {
@@ -1220,9 +1223,9 @@ function enterFilterForMidi(ip, port) {
 		if (filterNote==null) {
 			return 1;
 		}
-		setMidiInToNetwork(ip, port, {channel: filterChannel, note: filterNote});
 		return -1;
-	}, ["Channel", "Note"]);
+	}, ["Channel", "Note"])
+		.then(filter=>setMidiInToNetwork(result.ip, result.port, {channel: filter[0], note: filter[1]}));
 }
 
 function setMidiInToNetwork(ip, port, filter) {
@@ -1641,14 +1644,14 @@ document.addEventListener('DOMContentLoaded', function () {
 					if (midiServer.active) {
 						midiServer.close();
 					} else {
-						midiServer.requestNameAnd(()=> {
-							term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server", false, true,
-								(ip, port) => {
-									midiServer.setPort(port);
-									midiServer.start();
-								}, null, midiServer.port
-							);
-						});
+						midiServer.requestName()
+							.then(() =>
+								term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server",
+									false, true, null, midiServer.port)
+							).then(port=> {
+								midiServer.setPort(port);
+								midiServer.start();
+							});
 					}
 				break;
 				case 'mnu_command:Load EEPROM-Config':

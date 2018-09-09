@@ -247,11 +247,12 @@ class MidiIpServer {
 	setName(newName) {
 		this.ttName = newName;
 		this.ttNameAsBuffer = helper.convertStringToArrayBuffer(this.ttName);
+		document.title = "Teslaterm: "+name;
 	}
 
-	requestNameAnd(callback) {
+	requestName() {
 		if (!this.ttName) {
-			term_ui.inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
+			return term_ui.inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
 				if ($.trim(name)=='') {
 					return 0;
 				}
@@ -260,13 +261,13 @@ class MidiIpServer {
 						return 0;
 					}
 				}
-				midiServer.setName(name);
-				document.title = "Teslaterm: "+name;
-				setTimeout(callback, 10);
 				return -1;
-			}, ["Name"]);
+			}, ["Name"]).then((name)=>{
+				this.setName(name);
+				return Promise.resolve();
+			});
 		} else {
-			callback();
+			return Promise.resolve();
 		}
 	}
 
