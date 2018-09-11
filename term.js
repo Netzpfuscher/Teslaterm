@@ -41,7 +41,8 @@ var midiServer;
 var meters;
 
 var uitime = setInterval(refresh_UI, 20);
-var scriptModule;
+const scripting = require('./term_scripting');
+let currentScript = null;
 var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 
 function connect_ip(){
@@ -201,6 +202,7 @@ function processMidiFromPlayer(event){
 	} else if(!simulated && !connected) {
 		Player.stop();
 		midi_state.state = 'stopped';
+		scripting.onMidiStopped();
 	}
 }
 var expectedByteCounts = {
@@ -904,6 +906,7 @@ function stopMidiFile() {
 	midi_state.state = 'stopped';
 	redrawTop();
 	stopMidiOutput();
+	scripting.onMidiStopped();
 }
 
 function ondrop(e){
@@ -915,40 +918,16 @@ function ondrop(e){
 		if (extension==="mid"){
 			loadMidiFile(file);
 		} else if (extension=="js") {
-			var modTmp = require(file.path);
-			if (typeof modTmp.run != "function" || typeof modTmp.isRunning != "function" || typeof modTmp.setAllowedCalls != "function"){
-				w2alert('Invalid script!');
-				return;
-			}
-			var shouldLoad = typeof modTmp.cancel == "function";
-			var loadScript = function () {
-				var allowedCalls = [];
-				allowedCalls.println = (s)=>terminal.io.println(s);
-				allowedCalls.setOntime = setAbsoluteOntime;
-				allowedCalls.setBPS = setBPS;
-				allowedCalls.loadMidi = loadMidiFile;
-				allowedCalls.startMidi = startCurrentMidiFile;
-				allowedCalls.setBurstOntime = setBurstOntime;
-				allowedCalls.setBurstOfftime = setBurstOfftime;
-				allowedCalls.onScriptStopped = function() {
-					stopMidiFile();
-					setAbsoluteOntime(0);
-					terminal.io.println("Script stopped");
-				};
-				allowedCalls.cancelMidi = stopMidiFile;
-				allowedCalls.waitForInput = (text, callback)=>w2confirm(text).no(allowedCalls.onScriptStopped).yes(callback);
-				modTmp.setAllowedCalls(allowedCalls);
-				scriptModule = modTmp;
-				w2ui['toolbar'].get('mnu_script').text = 'Script: '+file.name;
-				w2ui['toolbar'].refresh();
-			};
-			if (!shouldLoad) {
-				w2confirm('WARNING!<br>This script can not be canceled. Continue?')
-				.no(function () { })
-				.yes(loadScript);
-			} else {
-				loadScript();
-			}
+			scripting.loadScript(file.path)
+				.then((script)=> {
+					currentScript = script;
+					w2ui['toolbar'].get('mnu_script').text = 'Script: '+file.name;
+					w2ui['toolbar'].refresh();
+				})
+				.catch((err)=>{
+					terminal.io.println("Failed to load script: "+err);
+					console.log(err);
+				});
 		}
    }
 }
@@ -1676,26 +1655,22 @@ document.addEventListener('DOMContentLoaded', function () {
 					stopMidiFile();
 				break;
 				case 'mnu_script:Start':
-					if (scriptModule==null) {
+					if (currentScript==null) {
 						terminal.io.println("Please select a script file using drag&drop first");
 						break;
 					}
-					scriptModule.run();
+					scripting.startScript(currentScript);
 					break;
 				case 'mnu_script:Stop':
-					if (scriptModule==null) {
+					if (currentScript==null) {
 						terminal.io.println("Please select a script file using drag&drop first");
 						break;
 					}
-					if (!scriptModule.isRunning()) {
+					if (!scripting.isRunning()) {
 						terminal.io.println("The script can not be stopped since it isn't running");
 						break;
 					}
-					if (typeof scriptModule.cancel != "function") {
-						terminal.io.println("The script does not support stopping");
-						break;
-					}
-					scriptModule.cancel(null);
+					scripting.cancel();
 					break;
 				case 'kill_set':
 					send_command('kill set\r');
@@ -1825,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	midi_start();
 	midi_state.progress = 0;
-	
+	scripting.init(terminal, Player, startCurrentMidiFile, helper.convertArrayBufferToString);
 });
 
 // Allow multiple windows to be opened
