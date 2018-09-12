@@ -9,11 +9,14 @@ class helper {
 		}
 	}
 
-	static convertArrayBufferToString(buf){
+	static convertArrayBufferToString(buf, uri = true){
 		var bufView = new Uint8Array(buf);
 		var encodedString = String.fromCharCode.apply(null, bufView);
-		var str = decodeURIComponent(encodedString);
-		return str;
+		if (uri) {
+			return decodeURIComponent(encodedString);
+		} else {
+			return encodedString;
+		}
 	}
 
 	static convertStringToArrayBuffer(str) {

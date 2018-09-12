@@ -7,7 +7,15 @@ let queue = null;
 let terminal = null;
 let player = null;
 let startCurrentMidiFile = null;
+let stopMidiFile = null;
 let arrayBufferToString = null;
+let setOntime = null;
+let setBPS = null;
+let setBurstOntime = null;
+let setBurstOfftime = null;
+let startTransient = null;
+let stopTransient = null;
+let showConfirmDialog = null;
 
 function wrapForSandbox(func) {
 	const wrapped = function() {
@@ -49,19 +57,39 @@ function playMidiBlocking() {
 	startCurrentMidiFile();
 	return ret;
 }
-const sandbox= vm.createContext({
-	delay: wrapForSandbox(timeoutSafe),
-	println: wrapForSandbox(s => terminal.io.println(s)),
-	playMidiBlocking: wrapForSandbox(playMidiBlocking),
-	playMidiAsync: wrapForSandbox(startCurrentMidiFile),
-	stopMidi: wrapForSandbox(() => player.stop())
-});
 
-exports.init = (term, Player, startMidi, convertArrayBufferToString)=> {
-	terminal = term;
-	player = Player;
-	startCurrentMidiFile = startMidi;
-	arrayBufferToString = convertArrayBufferToString;
+function setTransientMode(enable) {
+	if (enable) {
+		startTransient();
+	} else {
+		stopTransient();
+	}
+}
+
+function waitForConfirmation(text, title) {
+	let resolve;
+	const ret = new Promise(res=>resolve = res);
+	showConfirmDialog(text, title)
+		.yes(resolve)
+		.no(()=>{
+			throw "User did not confirm";
+		});
+	return ret;
+}
+
+exports.init = (...args)=> {
+	[terminal,
+		player,
+		startCurrentMidiFile,
+		stopMidiFile,
+		arrayBufferToString,
+		setOntime,
+		setBPS,
+		setBurstOntime,
+		setBurstOfftime,
+		startTransient,
+		stopTransient,
+		showConfirmDialog] = args;
 };
 
 exports.loadScript = (file)=> {
@@ -79,9 +107,25 @@ exports.loadScript = (file)=> {
 				reject(error);
 				return;
 			}
-			const code = arrayBufferToString(content);
+			const code = arrayBufferToString(content, false);
 			console.log(code);
 			queue = [];
+			const sandbox = vm.createContext({
+				// Useful but harmless APIs
+				Math: Math,
+				// calls for the queue
+				delay: wrapForSandbox(timeoutSafe),
+				println: wrapForSandbox(s => terminal.io.println(s)),
+				playMidiBlocking: wrapForSandbox(playMidiBlocking),
+				playMidiAsync: wrapForSandbox(startCurrentMidiFile),
+				stopMidi: wrapForSandbox(stopMidiFile),
+				setOntime: wrapForSandbox(setOntime),
+				setBPS: wrapForSandbox(setBPS),
+				setBurstOntime: wrapForSandbox(setBurstOntime),
+				setBurstOfftime: wrapForSandbox(setBurstOfftime),
+				setTransientMode: wrapForSandbox(setTransientMode),
+				waitForConfirmation: wrapForSandbox(waitForConfirmation)
+			});
 			vm.runInContext(code, sandbox);
 			const retQueue = queue;
 			queue = null;
@@ -119,3 +163,5 @@ exports.cancel = ()=> {
 };
 
 exports.isRunning = ()=> running;
+
+exports.onMidiStopped = ()=>{};

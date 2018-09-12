@@ -944,12 +944,6 @@ function warn_energ() {
 	.yes(function () { send_command('bus on\r'); });
 }
 
-function warn_tr() {
-    w2confirm('WARNING!<br>The coil will produce sparks.')
-    .no(function () { })
-	.yes(function () { ontimeSliderMoved(); slider1(); send_command('tr start\r'); });
-}
-
 function warn_eeprom_save() {
     w2confirm('WARNING!<br>Are you sure to save the configuration to EEPROM?')
     .no(function () { })
@@ -1011,7 +1005,7 @@ function ontimeSliderMoved(){
 }
 
 function ontimeChanged() {
-	ontimeUI.totalVal = ontimeUI.totalVal = Math.round(ontimeUI.absoluteVal*ontimeUI.relativeVal/100.);
+	ontimeUI.totalVal = Math.round(ontimeUI.absoluteVal*ontimeUI.relativeVal/100.);
 	send_command('set pw ' + ontimeUI.totalVal + '\r');
 	updateOntimeLabels();
 }
@@ -1488,6 +1482,11 @@ function stopTransient() {
 	send_command('tr stop\r');
 }
 
+function startTransient() {
+	ontimeChanged();
+	send_command('tr start\r');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	$(function () {
@@ -1614,7 +1613,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					send_command('bus off\r');
 				break;
 				case 'mnu_command:TR Start':
-					warn_tr();
+					startTransient();
 				break;
 				case 'mnu_command:TR Stop':
 					stopTransient();
@@ -1800,7 +1799,18 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	midi_start();
 	midi_state.progress = 0;
-	scripting.init(terminal, Player, startCurrentMidiFile, helper.convertArrayBufferToString);
+	scripting.init(terminal,
+		Player,
+		startCurrentMidiFile,
+		stopMidiFile,
+		helper.convertArrayBufferToString,
+		setRelativeOntime,
+		setBPS,
+		setBurstOntime,
+		setBurstOfftime,
+		startTransient,
+		stopTransient,
+		w2confirm);
 });
 
 // Allow multiple windows to be opened
