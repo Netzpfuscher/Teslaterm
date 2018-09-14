@@ -1,6 +1,8 @@
 class term_ui {
-	static inputIpAddress(msg, title, reqIp, reqPort, callBack, defIp, defPort) {
+	static inputIpAddress(msg, title, reqIp, reqPort, defIp, defPort) {
 		var $ = jQuery;
+		let resolve = (both)=>{};
+		let reject = ()=>{};
 		if (title == null) title = w2utils.lang('Notification');
 		var bodyHtml = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg;
 		if (reqIp) {
@@ -16,27 +18,44 @@ class term_ui {
 			bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="'+defPort+'">';
 		}
 		bodyHtml += "</div>";
-		var onClose = function () {
-			var ip;
-			if (reqIp) {
-				ip = $('#w2ui-popup .w2ui-box .w2ui-popup-body #ipIn')[0].value;
-				if (!ip) {
-					ip = defIp;
+		var process = function (success) {
+			if (success) {
+				var ip;
+				if (reqIp) {
+					ip = $('#w2ui-popup .w2ui-box .w2ui-popup-body #ipIn')[0].value;
+					if (!ip) {
+						ip = defIp;
+					}
+				} else {
+					ip = null;
+				}
+
+				var port = reqPort ? Number($('#w2ui-popup .w2ui-box .w2ui-popup-body #portIn')[0].value) : null;
+				if (ip&&port) {
+					setTimeout(resolve, 10, {ip: ip, port: port});
+				} else if (ip) {
+					setTimeout(resolve, 10, ip);
+				} else {
+					setTimeout(resolve, 10, port);
 				}
 			} else {
-				ip = null;
+				setTimeout(reject, 10);
 			}
-
-			var port = reqPort ? Number($('#w2ui-popup .w2ui-box .w2ui-popup-body #portIn')[0].value) : null;
-			if (typeof callBack == 'function') setTimeout(callBack, 100, ip, port);
 		};
 		if ($('#w2ui-popup').length > 0 && w2popup.status != 'closing') {
 		    w2popup.message({
 		        width   : 400,
 		        height  : 170,
 		        body    : bodyHtml,
-		        buttons : '<button onclick="w2popup.message();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose : onClose,
+		        buttons : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onOpen: () => setTimeout(() => {
+					const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+					btn.onclick = () => {
+						process(true);
+						w2popup.message();
+					};
+					btn.onabort = () =>process(false);
+				}, 10),
 				onKeydown: this.keyDownListener
 			});
 		} else {
@@ -47,57 +66,111 @@ class term_ui {
 		        showClose : false,
 		        title     : title,
 		        body      : bodyHtml,
-		        buttons   : '<button onclick="w2popup.close();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose   : onClose,
+		        buttons   : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onOpen: () => setTimeout(() => {
+					const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+					btn.onclick = () => {
+						process(true);
+						w2popup.close();
+					};
+					btn.onabort = () =>process(false);
+				}, 10),
 				onKeydown: this.keyDownListener
 		    });
 		}
+		return new Promise((res, rej)=>{
+			resolve = res;
+			reject = rej;
+		});
 	}
 
-	static inputString(msg, title, callBack) {
+	static inputStrings(msg, title, checkValid, names) {
 		var $ = jQuery;
 		if (title == null) title = w2utils.lang('Notification');
-		var bodyHtml = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg
-					 + '<br><input id="input"></div>';
-		var onClose = function () {
-				var input = $('#w2ui-popup .w2ui-box .w2ui-popup-body #input')[0].value;
-		        if (typeof callBack == 'function') setTimeout(callBack, 100, input);
-		    };
-		if ($('#w2ui-popup').length > 0 && w2popup.status != 'closing') {
-		    w2popup.message({
-		        width   : 400,
-		        height  : 170,
-		        body    : bodyHtml,
-		        buttons : '<button onclick="w2popup.message();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose : onClose,
-				onKeydown: this.keyDownListener
-		    });
-		} else {
-		    w2popup.open({
-		        width     : 450,
-		        height    : 220,
-		        showMax   : false,
-		        showClose : false,
-		        title     : title,
-		        body      : bodyHtml,
-		        buttons   : '<button onclick="w2popup.close();" class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
-		        onClose   : onClose,
-				onKeydown: this.keyDownListener
-		    });
+		var bodyHtml = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg + '<br>';
+		for (let i = 0; i < names.length; i++) {
+			bodyHtml += '<br>' + names[i] + ': <input id="input' + i + '">';
 		}
+		let resolve = ()=>{};
+		let reject = ()=>{};
+		let onOk = () => {
+			let input = [];
+			let inputFields = [];
+			for (let i = 0; i < names.length; i++) {
+				inputFields.push($('#w2ui-popup .w2ui-box .w2ui-popup-body #input' + i)[0]);
+				input.push(inputFields[i].value);
+			}
+			const failedId = checkValid(...input);
+			if (failedId >= 0) {
+				inputFields[failedId].style.backgroundColor = "red";
+				inputFields[failedId].focus();
+				setTimeout(()=>inputFields[failedId].style.backgroundColor = "white", 750);
+				return false;
+			} else {
+				setTimeout(resolve, 10, input.length==1?input[0]:input);
+				return true;
+			}
+		};
+		if ($('#w2ui-popup').length > 0 && w2popup.status != 'closing') {
+			w2popup.message({
+				width: 400,
+				height: 170,
+				body: bodyHtml,
+				buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onKeydown: this.keyDownListener,
+				onOpen: () => setTimeout(() => {
+					const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+					btn.onclick = () => {
+						if (onOk()) {
+							w2popup.message();
+						}
+					};
+					btn.onabort = ()=>setTimeout(reject, 10);
+				}, 10)
+			});
+		} else {
+			w2popup.open({
+				width: 450,
+				height: 220,
+				showMax: false,
+				showClose: false,
+				title: title,
+				body: bodyHtml,
+				buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+				onKeydown: this.keyDownListener,
+				onOpen: () => setTimeout(() => {
+					const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+					btn.onclick = () => {
+						if (onOk()) {
+							w2popup.close();
+						}
+					};
+					btn.onabort = ()=>setTimeout(reject, 10);
+				}, 10)
+			});
+		}
+		return new Promise((res, rej)=> {
+			resolve = res;
+			reject = rej;
+		});
 	}
+
+
 
 	//INTERNAL USE ONLY
 	static keyDownListener(event) {
 		// if there are no messages
 		if ($('#w2ui-popup .w2ui-message').length === 0) {
+			const btn = $('#w2ui-popup .w2ui-popup-btn');
 			switch (event.originalEvent.keyCode) {
 				case 13: // enter
-					$('#w2ui-popup .w2ui-popup-btn#Ok').focus().addClass('clicked'); // no need fo click as enter will do click
-					w2popup.close();
+					btn.focus().addClass('clicked'); // no need fo click as enter will do click
 					break;
 				case 27: // esc
-					$('#w2ui-popup .w2ui-popup-btn#Ok').focus().click();
+					// Don't click Ok when the user pressed escape
+					if (btn.onabort) {
+						btn.onabort();
+					}
 					w2popup.close();
 					break;
 			}
