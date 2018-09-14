@@ -1000,6 +1000,7 @@ function ondrop(e){
    e.stopPropagation();
    e.preventDefault();
    if(e.dataTransfer.items.length == 1){//only one file
+		sid_state=0;
    		const file = e.dataTransfer.files[0];
 		const extension = file.name.substring(file.name.lastIndexOf(".")+1);
 		if (extension==="mid"){
@@ -1015,6 +1016,8 @@ function ondrop(e){
 					terminal.io.println("Failed to load script: "+err);
 					console.log(err);
 				});
+		}else if (extension=="dmp") {
+			loadSIDFile(file);
 		}
    }
 }
@@ -1733,7 +1736,9 @@ document.addEventListener('DOMContentLoaded', function () {
 					}
 					stopTransient();
 					startCurrentMidiFile();
-					sid_state=2;
+					if(sid_state==1){
+						sid_state=2;
+					}
 				break;
 				case 'mnu_midi:Stop':
 					if (midi_state.file==null || midi_state.state!='playing'){
@@ -1741,9 +1746,11 @@ document.addEventListener('DOMContentLoaded', function () {
 						break;
 					}
 					stopMidiFile();
-					sid_state=0;
-					frame_cnt=byt;
-					frame_cnt_old=0;
+					if(sid_state==2){
+						sid_state=1;
+						frame_cnt=byt;
+						frame_cnt_old=0;
+					}
 				break;
 				case 'mnu_script:Start':
 					if (currentScript==null) {
