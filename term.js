@@ -6,6 +6,7 @@ var pixel = 1;
 var midi_state=[];
 const simulated = false;
 
+const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
 
 const NUM_GAUGES = 7;
 
@@ -90,6 +91,7 @@ function callback_sck(result){
 		w2ui['toolbar'].get('connect').text = 'Disconnect';
 		w2ui['toolbar'].refresh();
 		setTimeout(start_conf, 200);	
+		populateMIDISelects();
 	}
 
 }
@@ -1741,6 +1743,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					}
 				break;
 				case 'mnu_midi:Stop':
+					midiOut.send(kill_msg);
 					if (midi_state.file==null || midi_state.state!='playing'){
 						terminal.io.println("No MIDI file is currently playing");
 						break;
