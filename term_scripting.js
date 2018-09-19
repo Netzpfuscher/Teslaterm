@@ -3,6 +3,7 @@ const fs = require('fs');
 let running = false;
 let interrupt = null;
 let queue = null;
+let timeoutDate = null;
 //local copies of variables
 let terminal = null;
 let player = null;
@@ -17,6 +18,9 @@ let startTransient = null;
 let stopTransient = null;
 let showConfirmDialog = null;
 
+const maxQueueLength = 1000;
+const timeout = 1000;
+
 function wrapForSandbox(func) {
 	const wrapped = function() {
 		if (running) {
@@ -25,6 +29,12 @@ function wrapForSandbox(func) {
 		throw "Script was interrupted";
 	};
 	return function() {
+		if (new Date().getTime()>timeoutDate) {
+			throw "Script timed out!";
+		}
+		if (queue.length>=maxQueueLength) {
+			throw "Maximum queue length reached! "+queue.length;
+		}
 		queue.push(()=>wrapped.apply(this, arguments));
 	}
 }
@@ -108,7 +118,7 @@ exports.loadScript = (file)=> {
 				return;
 			}
 			const code = arrayBufferToString(content, false);
-			console.log(code);
+			timeoutDate = new Date().getTime()+timeout;
 			queue = [];
 			const sandbox = vm.createContext({
 				// Useful but harmless APIs
