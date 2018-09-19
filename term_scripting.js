@@ -17,6 +17,7 @@ let setBurstOfftime = null;
 let startTransient = null;
 let stopTransient = null;
 let showConfirmDialog = null;
+let setRelOntimeAllowed = null;
 
 const maxQueueLength = 1000;
 const timeout = 1000;
@@ -40,21 +41,28 @@ function wrapForSandbox(func) {
 }
 
 function timeoutSafe(delay) {
-	let resolve;
-	const ret = new Promise(res=>resolve = res);
+	let resolve = ()=>{}, reject = ()=>{};
+	const ret = new Promise((res, rej)=>{
+		resolve = res;
+		reject = rej;
+	});
 	const timeoutId = setTimeout(()=> {
 		interrupt = null;
 		resolve();
 	}, delay);
 	interrupt = ()=> {
 		clearTimeout(timeoutId);
+		reject("Canceled");
 	};
 	return ret;
 }
 
 function playMidiBlocking() {
-	let resolve;
-	const ret = new Promise(res => resolve = res);
+	let resolve = ()=>{}, reject = ()=>{};
+	const ret = new Promise((res, rej)=>{
+		resolve = res;
+		reject = rej;
+	});
 	exports.onMidiStopped = () => {
 		exports.onMidiStopped = () => {
 		};
@@ -63,6 +71,7 @@ function playMidiBlocking() {
 	};
 	interrupt = () => {
 		player.stop();
+		reject("Canceled");
 	};
 	startCurrentMidiFile();
 	return ret;
@@ -99,7 +108,9 @@ exports.init = (...args)=> {
 		setBurstOfftime,
 		startTransient,
 		stopTransient,
-		showConfirmDialog] = args;
+		showConfirmDialog,
+		setRelOntimeAllowed
+	] = args;
 };
 
 exports.loadScript = (file)=> {
@@ -148,8 +159,13 @@ exports.loadScript = (file)=> {
 };
 
 exports.startScript = (queue)=> {
+	if (running) {
+		terminal.io.println("The script is already running.");
+		return;
+	}
 	let script = Promise.resolve();
 	running = true;
+	setRelOntimeAllowed(false);
 	for (let i = 0;i<queue.length;i++) {
 		script = script.then(queue[i]);
 	}
@@ -160,7 +176,7 @@ exports.startScript = (queue)=> {
 		running = false;
 		terminal.io.println("Script finished with error: "+e);
 		console.error(e);
-	});
+	}).then(()=>setRelOntimeAllowed(true));
 };
 
 exports.cancel = ()=> {
@@ -168,7 +184,6 @@ exports.cancel = ()=> {
 	if (interrupt) {
 		interrupt();
 		interrupt = null;
-		terminal.io.println("Script was interrupted");
 	}
 };
 

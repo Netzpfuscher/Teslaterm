@@ -1323,7 +1323,7 @@ function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 						cancel: (reason) => {
 							canceled = true;
 							setMidiInAsNone();
-							ontimeUI.relativeSelect.disabled = false;
+							ontimeUI.setRelativeAllowed(true);
 							if (reason) {
 								terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
 							} else {
@@ -1338,9 +1338,7 @@ function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 						data: socketId
 					};
 					populateMIDISelects();
-					ontimeUI.relativeSelect.checked = false;
-					ontimeUI.relativeSelect.onclick();
-					ontimeUI.relativeSelect.disabled = true;
+					ontimeUI.setRelativeAllowed(false);
 				}
 			});
 		};
@@ -1853,6 +1851,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	ontimeUI.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
 	ontimeUI.slider.addEventListener("input", ontimeSliderMoved);
 	ontimeUI.relativeSelect.onclick = onRelativeOntimeSelect;
+	ontimeUI.setRelativeAllowed = function(allow) {
+		if (allow) {
+			ontimeUI.relativeSelect.disabled = false;
+		} else {
+			ontimeUI.relativeSelect.checked = false;
+			ontimeUI.relativeSelect.onclick();
+			ontimeUI.relativeSelect.disabled = true;
+		}
+	};
 	document.getElementById('slider1').addEventListener("input", slider1);
 	document.getElementById('slider2').addEventListener("input", slider2);
 	document.getElementById('slider3').addEventListener("input", slider3);
@@ -1912,7 +1919,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		setBurstOfftime,
 		startTransient,
 		stopTransient,
-		w2confirm);
+		w2confirm,
+		ontimeUI.setRelativeAllowed);
 });
 
 // Allow multiple windows to be opened
