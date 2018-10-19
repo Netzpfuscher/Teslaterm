@@ -39,6 +39,7 @@ class helper {
    }
 
 	static changeMenuEntry(menu, id, newName) {
+		console.log("Setting entry "+id+" in "+menu+" to "+newName);
 		var items = $('#toolbar').w2toolbar().get(menu, false).items;
 		for (var i = 0;i<items.length;i++) {
 			if (items[i].id==id) {

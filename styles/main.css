@@ -48,7 +48,7 @@ aside {
   grid-row-start:1; 
   grid-row-end:1; 
 } 
-.slider {
+.slider, .slider-gray {
     -webkit-appearance: none;
     width: 82%;
     height: 10px;
@@ -65,8 +65,18 @@ aside {
     appearance: none;
     width: 20px;
     height: 20px;
-    border-radius: 50%; 
+    border-radius: 50%;
     background: #4CAF50;
+    cursor: pointer;
+}
+
+.slider-gray::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #a0a0a0;
     cursor: pointer;
 }
 

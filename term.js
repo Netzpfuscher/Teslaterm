@@ -22,7 +22,7 @@ var backcanvas;
 var TIMEOUT = 50;
 var response_timeout = 50  // 50 * 20ms = 1s
 
-const WD_TIMEOUT = 5;
+const WD_TIMEOUT = 50;
 var wd_reset = 5  // 5 * 20ms = 160ms
 var wd_reset_msg=new Uint8Array([0xF0,0x0F,0x00]);
 
@@ -40,6 +40,9 @@ var draw_mode=0;
 var midiServer;
 
 var meters;
+
+let busActive = false;
+let transientActive = false;
 
 var uitime = setInterval(refresh_UI, 20);
 const scripting = require('./term_scripting');
@@ -143,7 +146,7 @@ function refresh_UI(){
 	if(connected){
 		response_timeout--;
 	
-		if(response_timeout==0){
+		if(false && response_timeout==0){
 			response_timeout=TIMEOUT;
 			terminal.io.println('Connection lost, reconnecting...');
 	
@@ -158,7 +161,7 @@ function refresh_UI(){
 		if(wd_reset==0){
 			wd_reset=WD_TIMEOUT;
 			if(connected==2){
-				chrome.serial.send(connid, wd_reset_msg, sendcb);
+				//chrome.serial.send(connid, wd_reset_msg, sendcb);
 			}
 			if(connected==1){
 				if(socket_midi){
@@ -301,6 +304,7 @@ const TT_CHART_CLEAR = 6;
 const TT_CHART_LINE = 7;
 const TT_CHART_TEXT = 8;
 const TT_CHART_TEXT_CENTER = 9;
+const TT_STATE_SYNC = 10;
 
 
 const TT_UNIT_NONE = 0;
@@ -312,8 +316,8 @@ const TT_UNIT_C = 5;
 
 
 const TT_STATE_IDLE = 0;
-const TT_STATE_FRAME = 1
-const TT_STATE_COLLECT = 3
+const TT_STATE_FRAME = 1;
+const TT_STATE_COLLECT = 3;
 
 const TT_STATE_GAUGE = 10;
 
@@ -333,7 +337,8 @@ const DATA_NUM = 2;
 
 
 function compute(dat){
-	
+	console.log(dat);
+	terminal.io.println("Test");
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
 			meters.value(dat[DATA_NUM], helper.bytes_to_signed(dat[3],dat[4]));
@@ -469,8 +474,37 @@ function compute(dat){
 			ctx.fillStyle = wavecolor[color];
 			ctx.fillText(str,x, y);
 		break;
-		
+		case TT_STATE_SYNC:
+			setBusActive((dat[2]&1)!=0);
+			setTransientActive((dat[2]&2)!=0);
+			break;
 	}
+}
+
+function setBusActive(active) {
+	if (active!=busActive) {
+		busActive = active;
+		helper.changeMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"));
+		updateSliderAvailability();
+	}
+}
+
+function setTransientActive(active) {
+	if (active!=transientActive) {
+		transientActive = active;
+		helper.changeMenuEntry("mnu_command", "transient", "TR "+(transientActive?"Stop":"Start"));
+		updateSliderAvailability();
+	}
+}
+
+function updateSliderAvailability() {
+	const offDisable = !(transientActive && busActive);
+	for (let i = 1; i <= 3; ++i) {
+		const slider = $(".w2ui-panel-content .scopeview #slider" + i)[0];
+		slider.className = offDisable?"slider-gray":"slider";
+	}
+	const onDisable = !busActive;
+	ontimeUI.slider.className = onDisable?"slider-gray":"slider";
 }
 
 function chart_cls(){
@@ -553,14 +587,16 @@ receive.bytes_done = 0;
 
 function connected_cb(connectionInfo){
 	if(connectionInfo.connectionId){
-   	terminal.io.println("connected");
-   	connid = connectionInfo.connectionId;
+		terminal.io.println("connected");
+		connid = connectionInfo.connectionId;
 		connected = 2;
 		w2ui['toolbar'].get('connect').text = 'Disconnect';
 		w2ui['toolbar'].refresh();
 		start_conf();	
+	} else {
+		terminal.io.println("failed!");
 	}
-};
+}
 
 function start_conf(){
 	send_command('\r');
@@ -572,7 +608,8 @@ function start_conf(){
 
 function getdevs(devices){
    for (var i = 0; i < devices.length; i++) {
-      if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 1204 && devices[i].productId && devices[i].productId == 62002)){
+      //TODO change this back to the real UD3 data
+      if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 9025 && devices[i].productId && devices[i].productId == 67)){
 		path = devices[i].path;
         terminal.io.println("Connecting to " + devices[i].path);
         chrome.serial.connect(devices[i].path, connected_cb);
@@ -734,6 +771,7 @@ function plot(){
 		
 	}
 }
+
 plot.xpos = TRIGGER_SPACE+1;
 plot.ypos = [];
 
@@ -746,7 +784,7 @@ function redrawMeas(){
 
   ctx.font = "12px Arial";
   ctx.textAlign = "left";
-  ctx.fillStyle = "white"
+  ctx.fillStyle = "white";
   if(tterm.trigger!=-1){
 	ctx.fillText("Trg lvl: " + tterm.trigger_lvl ,TRIGGER_SPACE, y_res - meas_position);
 	var state='';
@@ -778,7 +816,7 @@ function redrawTop(){
 
 	ctx.font = "12px Arial";
 	ctx.textAlign = "left";
-	ctx.fillStyle = "white"
+	ctx.fillStyle = "white";
 
 	ctx.fillText("MIDI-File: " + midi_state.file + ' State: ' + midi_state.state + ' ' + midi_state.progress + '% / 100%'  ,TRIGGER_SPACE, 12);
  
@@ -1585,10 +1623,8 @@ document.addEventListener('DOMContentLoaded', function () {
         name: 'toolbar',
         items: [
 		    { type: 'menu', id: 'mnu_command', text: 'Commands', icon: 'fa fa-table', items: [
-                { text: 'BUS ON', icon: 'fa fa-bolt'},
-				{ text: 'BUS OFF', icon: 'fa fa-bolt'},
-				{ text: 'TR Start', icon: 'fa fa-bolt'},
-				{ text: 'TR Stop', icon: 'fa fa-bolt'},
+                { text: 'BUS ON', icon: 'fa fa-bolt', id: 'bus'},
+				{ text: 'TR Start', icon: 'fa fa-bolt', id: 'transient'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
@@ -1805,15 +1841,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				'</article>'+
 				'<aside>'+
 				'<div id="ontime">Ontime<br><br>'+
-				'<input type="range" id="slider" min="0" max="'+maxOntime+'" value="0" class="slider" data-show-value="true">' +
+				'<input type="range" id="slider" min="0" max="'+maxOntime+'" value="0" class="slider-gray" data-show-value="true">' +
 				'<input type="checkbox" id="relativeSelect"><label for="relativeSelect">Relative</label>' +
 				'<br><span id="total">0</span> µs (<span id="relative">100</span>% of <span id="absolute"><b>0</b></span> µs)</div>'+
 				'<br><br>Offtime<br><br>'+
-				'<input type="range" id="slider1" min="20" max="'+maxBPS+'" value="1" class="slider" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
+				'<input type="range" id="slider1" min="20" max="'+maxBPS+'" value="1" class="slider-gray" data-show-value="true"><label id="slider1_disp">20 Hz</label>'+
 				'<br><br>Burst On<br><br>'+
-				'<input type="range" id="slider2" min="0" max="'+maxBurstOntime+'" value="0" class="slider" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
+				'<input type="range" id="slider2" min="0" max="'+maxBurstOntime+'" value="0" class="slider-gray" data-show-value="true"><label id="slider2_disp">0 ms</label>'+
 				'<br><br>Burst Off<br><br>'+
-				'<input type="range" id="slider3" min="0" max="'+maxBurstOfftime+'" value="500" class="slider" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
+				'<input type="range" id="slider3" min="0" max="'+maxBurstOfftime+'" value="500" class="slider-gray" data-show-value="true"><label id="slider3_disp">500 ms</label>'+
 				'<br><br>MIDI Input: <select id="midiIn"></select>'+
 				'<br>MIDI Output: <select id="midiOut"></select>'+
 				'</aside>'+
