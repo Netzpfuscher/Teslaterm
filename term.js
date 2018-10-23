@@ -20,10 +20,10 @@ var wavecanvas;
 var backcanvas;
 
 var TIMEOUT = 50;
-var response_timeout = 50  // 50 * 20ms = 1s
+var response_timeout = 50;  // 50 * 20ms = 1s
 
-const WD_TIMEOUT = 50;
-var wd_reset = 5  // 5 * 20ms = 160ms
+const WD_TIMEOUT = 5;
+var wd_reset = 5;  // 5 * 20ms = 160ms
 var wd_reset_msg=new Uint8Array([0xF0,0x0F,0x00]);
 
 var socket;
@@ -147,7 +147,7 @@ function refresh_UI(){
 	if(connected){
 		response_timeout--;
 	
-		if(false && response_timeout==0){
+		if(response_timeout==0){
 			response_timeout=TIMEOUT;
 			terminal.io.println('Connection lost, reconnecting...');
 	
@@ -162,7 +162,7 @@ function refresh_UI(){
 		if(wd_reset==0){
 			wd_reset=WD_TIMEOUT;
 			if(connected==2){
-				//chrome.serial.send(connid, wd_reset_msg, sendcb);
+				chrome.serial.send(connid, wd_reset_msg, sendcb);
 			}
 			if(connected==1){
 				if(socket_midi){
@@ -482,7 +482,6 @@ function compute(dat){
 			ctx.fillText(str,x, y);
 		break;
 		case TT_STATE_SYNC:
-			terminal.io.println("State: "+dat[2]);
 			setBusActive((dat[2]&1)!=0);
 			setTransientActive((dat[2]&2)!=0);
 			setBusControllable((dat[2]&4)!=0);
@@ -634,8 +633,7 @@ function start_conf(){
 
 function getdevs(devices){
    for (var i = 0; i < devices.length; i++) {
-      //TODO change this back to the real UD3 data
-      if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 9025 && devices[i].productId && devices[i].productId == 67)){
+	   if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 1204 && devices[i].productId && devices[i].productId == 62002)){
 		path = devices[i].path;
         terminal.io.println("Connecting to " + devices[i].path);
         chrome.serial.connect(devices[i].path, connected_cb);
