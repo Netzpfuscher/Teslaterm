@@ -265,6 +265,14 @@ function playMidiData(data) {
 		}
 		var msg=new Uint8Array(data);
 		if (!midiServer.sendMidiData(msg)) {
+			if (transientActive) {
+				const currTime = new Date().getTime();
+				playMidiData.lastTimeoutReset = playMidiData.lastTimeoutReset || currTime;
+				if (currTime-playMidiData.lastTimeoutReset>500) {
+					stopTransient();
+					playMidiData.lastTimeoutReset = currTime;
+				}
+			}
 			midiOut.send(msg);
 		}
 		return true;
@@ -1787,7 +1795,6 @@ document.addEventListener('DOMContentLoaded', function () {
 						terminal.io.println("Please select a MIDI file using drag&drop");
 						break;
 					}
-					stopTransient();
 					startCurrentMidiFile();
 					if(sid_state==1){
 						sid_state=2;
