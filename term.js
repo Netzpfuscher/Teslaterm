@@ -1758,17 +1758,19 @@ document.addEventListener('DOMContentLoaded', function () {
 				case 'cls':
                     clear();
                 break;
-				case 'mnu_command:BUS ON':
-					warn_energ();
+				case 'mnu_command:bus':
+					if (busActive) {
+						send_command('bus off\r');
+					} else {
+						warn_energ();
+					}
 				break;
-				case 'mnu_command:BUS OFF':
-					send_command('bus off\r');
-				break;
-				case 'mnu_command:TR Start':
-					startTransient();
-				break;
-				case 'mnu_command:TR Stop':
-					stopTransient();
+				case 'mnu_command:transient':
+					if (transientActive) {
+						stopTransient();
+					} else {
+						startTransient();
+					}
 				break;
 				case 'mnu_command:startStopMidi':
 					if (midiServer.active) {
