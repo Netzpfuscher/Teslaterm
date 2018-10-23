@@ -42,6 +42,7 @@ var midiServer;
 var meters;
 
 let busActive = false;
+let busControllable = false;
 let transientActive = false;
 
 var uitime = setInterval(refresh_UI, 20);
@@ -337,8 +338,6 @@ const DATA_NUM = 2;
 
 
 function compute(dat){
-	console.log(dat);
-	terminal.io.println("Test");
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
 			meters.value(dat[DATA_NUM], helper.bytes_to_signed(dat[3],dat[4]));
@@ -475,8 +474,10 @@ function compute(dat){
 			ctx.fillText(str,x, y);
 		break;
 		case TT_STATE_SYNC:
+			terminal.io.println("State: "+dat[2]);
 			setBusActive((dat[2]&1)!=0);
 			setTransientActive((dat[2]&2)!=0);
+			setBusControllable((dat[2]&4)!=0);
 			break;
 	}
 }
@@ -484,7 +485,9 @@ function compute(dat){
 function setBusActive(active) {
 	if (active!=busActive) {
 		busActive = active;
-		helper.changeMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"));
+		if (busControllable) {
+			helper.changeMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"));
+		}
 		updateSliderAvailability();
 	}
 }
@@ -497,13 +500,28 @@ function setTransientActive(active) {
 	}
 }
 
+function setBusControllable(controllable) {
+	if (controllable!=busControllable) {
+		busControllable = controllable;
+		//{ text: 'BUS ON', icon: 'fa fa-bolt', id: 'bus'}
+		if (busControllable) {
+			helper.addFirstMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"), 'fa fa-bolt');
+		} else {
+			helper.removeMenuEntry("mnu_command", "bus");
+		}
+
+		updateSliderAvailability();
+	}
+}
+
 function updateSliderAvailability() {
-	const offDisable = !(transientActive && busActive);
+	const busMaybeActive = busActive || !busControllable;
+	const offDisable = !(transientActive && busMaybeActive);
 	for (let i = 1; i <= 3; ++i) {
 		const slider = $(".w2ui-panel-content .scopeview #slider" + i)[0];
 		slider.className = offDisable?"slider-gray":"slider";
 	}
-	const onDisable = !busActive;
+	const onDisable = !busMaybeActive;
 	ontimeUI.slider.className = onDisable?"slider-gray":"slider";
 }
 
@@ -1623,7 +1641,6 @@ document.addEventListener('DOMContentLoaded', function () {
         name: 'toolbar',
         items: [
 		    { type: 'menu', id: 'mnu_command', text: 'Commands', icon: 'fa fa-table', items: [
-                { text: 'BUS ON', icon: 'fa fa-bolt', id: 'bus'},
 				{ text: 'TR Start', icon: 'fa fa-bolt', id: 'transient'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},

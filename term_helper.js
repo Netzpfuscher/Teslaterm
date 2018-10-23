@@ -39,7 +39,6 @@ class helper {
    }
 
 	static changeMenuEntry(menu, id, newName) {
-		console.log("Setting entry "+id+" in "+menu+" to "+newName);
 		var items = $('#toolbar').w2toolbar().get(menu, false).items;
 		for (var i = 0;i<items.length;i++) {
 			if (items[i].id==id) {
@@ -84,6 +83,23 @@ class helper {
 			}
 		}
 		return false;
+	}
+
+	static addFirstMenuEntry(menu, id, text, icon) {
+		const mnu = $('#toolbar').w2toolbar().get(menu, false);
+		mnu.items = [{text: text, icon: icon, id: id}].concat(mnu.items);
+	}
+
+	static removeMenuEntry(menu, id) {
+		const mnu = $('#toolbar').w2toolbar().get(menu, false);
+		var items = mnu.items;
+		for (var i = 0;i<items.length;i++) {
+			if (items[i].id==id) {
+				mnu.items.splice(i, 1);
+				return;
+			}
+		}
+		console.log("Didn't find name to remove!");
 	}
 }
 
