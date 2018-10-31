@@ -46,6 +46,9 @@ const scripting = require('./term_scripting');
 let currentScript = null;
 var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 
+
+var times = {'pw':0, 'pwd':0, 'bon':0, 'boff':0,'pw_old':0, 'pwd_old':0, 'bon_old':0, 'boff_old':0};
+
 function connect_ip(){
 	chrome.sockets.tcp.create({}, createInfo);
 	chrome.sockets.tcp.create({}, createInfo_midi);
@@ -73,13 +76,13 @@ function createInfo(info){
 	console.log(ipaddr);
 
 	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
-	
+	//chrome.sockets.tcp.connect(socket,ipaddr,40023, callback_sck);
 	
 }
 function createInfo_midi(info){
 	socket_midi = info.socketId;
 	chrome.sockets.tcp.connect(socket_midi,ipaddr,123, callback_sck_midi);
-	
+	//chrome.sockets.tcp.connect(socket_midi,ipaddr,40123, callback_sck_midi);
 }
 
 
@@ -137,7 +140,30 @@ var sid_marker = new Uint8Array([0xFF,0xFF,0xFF,0xFF]);
 var frame_cnt=byt
 var frame_cnt_old=0;
 var flow_ctl=1;
+var settings_refresh=0;
 function refresh_UI(){
+	
+	if(settings_refresh==3){
+		if (times.pw != times.pw_old){
+			send_command('set pw ' + times.pw + '\r');
+			times.pw_old=times.pw;
+		}
+		if (times.pwd != times.pwd_old){
+			send_command('set pwd ' + times.pwd + '\r');
+			times.pwd_old=times.pwd;
+		}
+		if (times.bon != times.bon_old){
+			send_command('set bon ' + times.bon + '\r');
+			times.bon_old=times.bon;
+		}
+		if (times.boff != times.boff_old){
+			send_command('set boff ' + times.boff + '\r');
+			times.boff_old=times.boff;
+		}
+		settings_refresh=0;
+	}else{
+		settings_refresh++;
+	}
 	
 
 	if(connected){
@@ -492,9 +518,10 @@ function receive(info){
 			flow_ctl=1;
 		}
 	}
-	
-	if (info.socketId!=socket) {
-		return;
+	if(connected==1){
+		if (info.socketId!=socket) {
+			return;
+		}
 	}
 
 	var buf = new Uint8Array(info.data);
@@ -1098,7 +1125,8 @@ function ontimeSliderMoved(){
 
 function ontimeChanged() {
 	ontimeUI.totalVal = Math.round(ontimeUI.absoluteVal*ontimeUI.relativeVal/100.);
-	send_command('set pw ' + ontimeUI.totalVal + '\r');
+	times.pw = ontimeUI.totalVal;
+	//send_command('set pw ' + ontimeUI.totalVal + '\r');
 	updateOntimeLabels();
 }
 
@@ -1148,7 +1176,8 @@ function slider1(){
 	var slider_disp = document.getElementById('slider1_disp');
 	var pwd = Math.floor(1/slider.value*1000000);
 	slider_disp.innerHTML = slider.value + ' Hz';
-	send_command('set pwd ' + pwd + '\r');
+	times.pwd = pwd;
+	//send_command('set pwd ' + pwd + '\r');
 }
 
 function setBPS(bps){
@@ -1160,7 +1189,8 @@ function slider2(){
 	var slider = document.getElementById('slider2');
 	var slider_disp = document.getElementById('slider2_disp');
 	slider_disp.innerHTML = slider.value + ' ms';
-	send_command('set bon ' + slider.value + '\r');
+	times.bon = slider.value;
+	//send_command('set bon ' + slider.value + '\r');
 }
 
 function setBurstOntime(time){
@@ -1172,7 +1202,8 @@ function slider3(){
 	var slider = document.getElementById('slider3');
 	var slider_disp = document.getElementById('slider3_disp');
 	slider_disp.innerHTML = slider.value + ' ms';
-	send_command('set boff ' + slider.value + '\r');
+	times.boff = slider.value;
+	//send_command('set boff ' + slider.value + '\r');
 }
 
 function setBurstOfftime(time){
@@ -1736,14 +1767,20 @@ document.addEventListener('DOMContentLoaded', function () {
 						terminal.io.println("Please select a MIDI file using drag&drop");
 						break;
 					}
+					if(sid_state==0){
+						send_command('set synth 1\r');
+						startCurrentMidiFile();
+					}
 					stopTransient();
 					startCurrentMidiFile();
 					if(sid_state==1){
+						send_command('set synth 2\r');
 						sid_state=2;
 					}
 				break;
 				case 'mnu_midi:Stop':
 					midiOut.send(kill_msg);
+					send_command('set synth 0\r');
 					if (midi_state.file==null || midi_state.state!='playing'){
 						terminal.io.println("No MIDI file is currently playing");
 						break;
