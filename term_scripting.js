@@ -3,6 +3,7 @@ const fs = require('fs');
 let running = false;
 let interrupt = null;
 let queue = null;
+let timeoutDate = null;
 //local copies of variables
 let terminal = null;
 let player = null;
@@ -16,6 +17,10 @@ let setBurstOfftime = null;
 let startTransient = null;
 let stopTransient = null;
 let showConfirmDialog = null;
+let setRelOntimeAllowed = null;
+
+const maxQueueLength = 1000;
+const timeout = 1000;
 
 function wrapForSandbox(func) {
 	const wrapped = function() {
@@ -25,26 +30,39 @@ function wrapForSandbox(func) {
 		throw "Script was interrupted";
 	};
 	return function() {
+		if (new Date().getTime()>timeoutDate) {
+			throw "Script timed out!";
+		}
+		if (queue.length>=maxQueueLength) {
+			throw "Maximum queue length reached! "+queue.length;
+		}
 		queue.push(()=>wrapped.apply(this, arguments));
 	}
 }
 
 function timeoutSafe(delay) {
-	let resolve;
-	const ret = new Promise(res=>resolve = res);
+	let resolve = ()=>{}, reject = ()=>{};
+	const ret = new Promise((res, rej)=>{
+		resolve = res;
+		reject = rej;
+	});
 	const timeoutId = setTimeout(()=> {
 		interrupt = null;
 		resolve();
 	}, delay);
 	interrupt = ()=> {
 		clearTimeout(timeoutId);
+		reject("Canceled");
 	};
 	return ret;
 }
 
 function playMidiBlocking() {
-	let resolve;
-	const ret = new Promise(res => resolve = res);
+	let resolve = ()=>{}, reject = ()=>{};
+	const ret = new Promise((res, rej)=>{
+		resolve = res;
+		reject = rej;
+	});
 	exports.onMidiStopped = () => {
 		exports.onMidiStopped = () => {
 		};
@@ -53,6 +71,7 @@ function playMidiBlocking() {
 	};
 	interrupt = () => {
 		player.stop();
+		reject("Canceled");
 	};
 	startCurrentMidiFile();
 	return ret;
@@ -89,7 +108,9 @@ exports.init = (...args)=> {
 		setBurstOfftime,
 		startTransient,
 		stopTransient,
-		showConfirmDialog] = args;
+		showConfirmDialog,
+		setRelOntimeAllowed
+	] = args;
 };
 
 exports.loadScript = (file)=> {
@@ -108,7 +129,7 @@ exports.loadScript = (file)=> {
 				return;
 			}
 			const code = arrayBufferToString(content, false);
-			console.log(code);
+			timeoutDate = new Date().getTime()+timeout;
 			queue = [];
 			const sandbox = vm.createContext({
 				// Useful but harmless APIs
@@ -138,8 +159,13 @@ exports.loadScript = (file)=> {
 };
 
 exports.startScript = (queue)=> {
+	if (running) {
+		terminal.io.println("The script is already running.");
+		return;
+	}
 	let script = Promise.resolve();
 	running = true;
+	setRelOntimeAllowed(false);
 	for (let i = 0;i<queue.length;i++) {
 		script = script.then(queue[i]);
 	}
@@ -150,7 +176,7 @@ exports.startScript = (queue)=> {
 		running = false;
 		terminal.io.println("Script finished with error: "+e);
 		console.error(e);
-	});
+	}).then(()=>setRelOntimeAllowed(true));
 };
 
 exports.cancel = ()=> {
@@ -158,7 +184,6 @@ exports.cancel = ()=> {
 	if (interrupt) {
 		interrupt();
 		interrupt = null;
-		terminal.io.println("Script was interrupted");
 	}
 };
 
