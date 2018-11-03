@@ -340,6 +340,7 @@ const TT_CHART_LINE = 7;
 const TT_CHART_TEXT = 8;
 const TT_CHART_TEXT_CENTER = 9;
 const TT_STATE_SYNC = 10;
+const TT_CONFIG_GET = 11;
 
 
 const TT_UNIT_NONE = 0;
@@ -370,6 +371,7 @@ const DATA_TYPE = 0;
 const DATA_LEN = 1;
 const DATA_NUM = 2;
 
+var udconfig=[];
 
 function compute(dat){
 	switch(dat[DATA_TYPE]){
@@ -512,6 +514,16 @@ function compute(dat){
 			setTransientActive((dat[2]&2)!=0);
 			setBusControllable((dat[2]&4)!=0);
 			break;
+		case TT_CONFIG_GET:
+			dat.splice(0,2);
+			var str = helper.convertArrayBufferToString(dat, false);
+			if(str == "NULL;NULL"){
+				settings();
+			}else{
+				var substrings = str.split(";")
+				udconfig.push(substrings);
+			}
+		break;
 	}
 }
 
@@ -655,7 +667,6 @@ function start_conf(){
 	send_command('set pw 0\r');
 	send_command('set pwd 50000\r');
 	send_command('kill reset\rtterm start\rcls\r');
-	
 }
 
 function getdevs(devices){
@@ -1671,6 +1682,81 @@ function startTransient() {
 	send_command('tr start\r');
 }
 
+function settings () {
+	var tfields = [];
+	var trecords = [];
+	for(var i=0;i<udconfig.length;i++){
+		var data = udconfig[i];
+
+		var inipage = simpleIni.get('config.'+data[0]);
+		if(!inipage) inipage=0;
+		tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: data[2] ,page: inipage, column: 0 } });
+		trecords[data[0]] = data[1];
+	}
+	if (w2ui.foo) {
+		w2ui.foo.original = trecords;
+		w2ui.foo.record = trecords;
+		w2ui.foo.refresh();
+	}
+	
+    if (!w2ui.foo) {
+        $().w2form({
+            name: 'foo',
+            style: 'border: 0px; background-color: transparent;',
+			tabs: [
+            { id: 'tab1', caption: 'General' },
+            { id: 'tab2', caption: 'Timing'},
+            { id: 'tab3', caption: 'Feedback'},
+			{ id: 'tab4', caption: 'IP'},
+			{ id: 'tab5', caption: 'Serial'},
+			{ id: 'tab6', caption: 'Current'},
+			],
+            fields: tfields,
+            record: trecords,
+            actions: {
+                "save": function () { 
+					for (changes in this.getChanges()){
+						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
+						this.original[changes] = this.record[changes];
+					}
+					w2popup.close();
+				},
+                "save EEPROM": function () { 
+					for (changes in this.getChanges()){
+						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
+						this.original[changes] = this.record[changes];
+					}
+					send_command('eeprom save\r');
+				}	
+            }
+        });
+    }
+
+    $().w2popup('open', {
+        title   : 'UD3 Settings',
+        body    : '<div id="form" style="width: 100%; height: 100%;"></div>',
+        style   : 'padding: 15px 0px 0px 0px',
+        width   : 650,
+        height  : 600, 
+        showMax : true,
+        onToggle: function (event) {
+            $(w2ui.foo.box).hide();
+            event.onComplete = function () {
+                $(w2ui.foo.box).show();
+                w2ui.foo.resize();
+            }
+        },
+        onOpen: function (event) {
+            event.onComplete = function () {
+                // specifying an onOpen handler instead is equivalent to specifying an onBeforeOpen handler, which would make this code execute too early and hence not deliver.
+                $('#w2ui-popup #form').w2render('foo');
+            }
+        }
+    });
+}
+
+
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	$(function () {
@@ -1681,7 +1767,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				{ text: 'TR Start', icon: 'fa fa-bolt', id: 'transient'},
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
-				{ text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
+				{ text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'},
+				{ text: 'Settings', id: 'settings', icon: 'fa fa-table'}
             ]},
 			
 			{ type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
@@ -1815,6 +1902,10 @@ document.addEventListener('DOMContentLoaded', function () {
 							});
 					}
 				break;
+				case 'mnu_command:settings':
+					udconfig = [];
+					send_command('config_get\r');
+				break;
 				case 'mnu_command:Load EEPROM-Config':
 					warn_eeprom_load();
 				break;
@@ -1927,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		]
 	});
-
+	
 
 	w2ui['layout'].on({ type : 'resize', execute : 'after'}, function (target, eventData) {
 		resize();

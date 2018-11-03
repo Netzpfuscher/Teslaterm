@@ -87,7 +87,7 @@ class term_ui {
 	static inputStrings(msg, title, checkValid, names) {
 		var $ = jQuery;
 		if (title == null) title = w2utils.lang('Notification');
-		var bodyHtml = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg + '<br>';
+		var bodyHtml = '<div class="w2ui-left w2ui-alert-msg" style="font-size: 13px;"><br>' + msg + '<br>';
 		for (let i = 0; i < names.length; i++) {
 			bodyHtml += '<br>' + names[i] + ': <input id="input' + i + '">';
 		}
