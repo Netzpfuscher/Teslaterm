@@ -1692,10 +1692,15 @@ function settings () {
 		if(!inipage) inipage=0;
 		tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: data[2] ,page: inipage, column: 0 } });
 		trecords[data[0]] = data[1];
-	}
+	}	
+
 	if (w2ui.foo) {
-		w2ui.foo.original = trecords;
-		w2ui.foo.record = trecords;
+			w2ui.foo.original = [];
+			w2ui.foo.record = [];
+		for(copy in trecords){
+			w2ui.foo.original[copy] =  trecords[copy];
+			w2ui.foo.record[copy] =  trecords[copy];
+		}
 		w2ui.foo.refresh();
 	}
 	
@@ -1716,6 +1721,7 @@ function settings () {
             actions: {
                 "save": function () { 
 					for (changes in this.getChanges()){
+						this.record[changes] = this.record[changes].replace(',','.');
 						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
 						this.original[changes] = this.record[changes];
 					}
@@ -1723,6 +1729,7 @@ function settings () {
 				},
                 "save EEPROM": function () { 
 					for (changes in this.getChanges()){
+						this.record[changes] = this.record[changes].replace(',','.');
 						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
 						this.original[changes] = this.record[changes];
 					}
