@@ -350,6 +350,12 @@ const TT_UNIT_W = 3;
 const TT_UNIT_Hz = 4;
 const TT_UNIT_C = 5;
 
+const TYPE_UNSIGNED = 0;
+const TYPE_SIGNED = 1;
+const TYPE_FLOAT = 2;
+const TYPE_CHAR = 3;
+const TYPE_STRING = 4;
+
 
 const TT_STATE_IDLE = 0;
 const TT_STATE_FRAME = 1;
@@ -1685,12 +1691,30 @@ function startTransient() {
 function settings () {
 	var tfields = [];
 	var trecords = [];
+	//console.log(udconfig);
 	for(var i=0;i<udconfig.length;i++){
 		var data = udconfig[i];
 
 		var inipage = simpleIni.get('config.'+data[0]);
 		if(!inipage) inipage=0;
-		tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: data[2] ,page: inipage, column: 0 } });
+		switch (parseInt(data[2])){
+			case TYPE_CHAR:
+				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
+			break;
+			case TYPE_FLOAT:
+				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+			break;
+			case TYPE_SIGNED:
+				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+			break;
+			case TYPE_STRING:
+				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
+			break;
+			case TYPE_UNSIGNED:
+				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+			break;			
+		}
+	
 		trecords[data[0]] = data[1];
 	}	
 
@@ -1744,7 +1768,7 @@ function settings () {
         body    : '<div id="form" style="width: 100%; height: 100%;"></div>',
         style   : 'padding: 15px 0px 0px 0px',
         width   : 650,
-        height  : 600, 
+        height  : 650, 
         showMax : true,
         onToggle: function (event) {
             $(w2ui.foo.box).hide();
