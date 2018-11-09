@@ -1,9 +1,9 @@
-import {CONTROL_SPACE, INFO_SPACE, MEAS_SPACE, redrawMeas, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
+import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, redrawMeas, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 
-const wavecanvas = <HTMLCanvasElement>document.getElementById("wavecanvas");
-const backcanvas = <HTMLCanvasElement>document.getElementById("backcanvas");
-const waveContext:CanvasRenderingContext2D = wavecanvas.getContext('2d');
-const backContext:CanvasRenderingContext2D = backcanvas.getContext('2d');
+const waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
+const backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
+const waveContext:CanvasRenderingContext2D = waveCanvas.getContext('2d');
+const backContext:CanvasRenderingContext2D = backCanvas.getContext('2d');
 
 export class TraceStats {
     min: number;
@@ -26,7 +26,7 @@ export class TraceStats {
 }
 
 export class Trace {
-    stats: TraceStats;//TODO type
+    stats: TraceStats;
     value_real: number;
     wavecolor: string;
     value: number;
@@ -36,12 +36,8 @@ export class Trace {
     span: number;
     offset: number;
 
-    update(): void {
-        this.stats.update(this.value_real);
-    }
-
     plot(): void {
-        const y_res:number = wavecanvas.height-MEAS_SPACE-TOP_SPACE;
+        const y_res:number = waveCanvas.height-MEAS_SPACE-TOP_SPACE;
         const newYPos:number = (this.value * -1 + 1) * (y_res / 2.0);
         if (this.yPos && (this.yPos != (y_res / 2.0) || this.value)) {
             waveContext.lineWidth = scope.pixelRatio;
@@ -59,9 +55,10 @@ export class Trace {
         this.value=(1/this.span) *(val-this.offset);
         if(this.value > 1) this.value = 1;
         if(this.value < -1) this.value = -1;
+        this.stats.update(this.value_real);
     }
 }
-//TODO better name
+
 export class Oscilloscope {
     trigger: number;
     trigger_lvl: number;
@@ -69,67 +66,159 @@ export class Oscilloscope {
     trigger_trgt: boolean;
     trigger_old: boolean;
     traces: Trace[];
-    xPos: number = TRIGGER_SPACE+1;
-    pixelRatio:number = 1;
+    xPos: number = TRIGGER_SPACE + 1;
+    pixelRatio: number = 1;
+    cleared: boolean = false;//Before: draw_mode
+    static readonly gridResolution = 50;
 
     plot(): void {
 
-        const x_res = wavecanvas.width-INFO_SPACE;
-        const y_res = wavecanvas.height-MEAS_SPACE-TOP_SPACE;
+        const x_res = waveCanvas.width - INFO_SPACE;
+        const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
 
         waveContext.clearRect(this.xPos, TOP_SPACE, this.pixelRatio, y_res);
 
-        for(var i = 0; i<scope.traces.length; i++){
+        for (let i:number = 0; i < scope.traces.length; i++) {
             //Meas
             scope.traces[i].plot();
         }
 
-        this.xPos+=this.pixelRatio;
-        if(this.xPos>=x_res){
-            calc_meas();
-            scope.trigger_trgt=false;
-            scope.trigger_block=false;
+        this.xPos += this.pixelRatio;
+        if (this.xPos >= x_res) {
+            scope.trigger_trgt = false;
+            scope.trigger_block = false;
             redrawMeas();
-            this.xPos = TRIGGER_SPACE+1;
-
+            this.xPos = TRIGGER_SPACE + 1;
         }
+        this.cleared = false;
     }
 
+    //TODO also redraw gauge labels on resize!
     onResize(): void {
-        this.xPos = TRIGGER_SPACE+1;
-        wavecanvas.style.width=(90-CONTROL_SPACE)+'%';
-        wavecanvas.style.height='100%';
-        wavecanvas.width  = wavecanvas.offsetWidth;
-        wavecanvas.height = wavecanvas.offsetHeight;
-        backcanvas.style.width=(90-CONTROL_SPACE)+'%';
-        backcanvas.style.height='100%';
-        backcanvas.width  = wavecanvas.offsetWidth;
-        backcanvas.height = wavecanvas.offsetHeight;
+        this.xPos = TRIGGER_SPACE + 1;
+        waveCanvas.style.width = (90 - CONTROL_SPACE) + '%';
+        waveCanvas.style.height = '100%';
+        waveCanvas.width = waveCanvas.offsetWidth;
+        waveCanvas.height = waveCanvas.offsetHeight;
+        backCanvas.style.width = (90 - CONTROL_SPACE) + '%';
+        backCanvas.style.height = '100%';
+        backCanvas.width = waveCanvas.offsetWidth;
+        backCanvas.height = waveCanvas.offsetHeight;
         //HiDPI display support
-        if(window.devicePixelRatio){
+        if (window.devicePixelRatio) {
             this.pixelRatio = window.devicePixelRatio;
-            var height = wavecanvas.getAttribute('height');
-            var width = wavecanvas.getAttribute('width');
+            const height: number = Number(waveCanvas.getAttribute('height'));
+            const width: number = Number(waveCanvas.getAttribute('width'));
             // reset the canvas width and height with window.devicePixelRatio applied
-            wavecanvas.setAttribute('width', Math.round(width * window.devicePixelRatio));
-            wavecanvas.setAttribute('height', Math.round( height * window.devicePixelRatio));
-            backcanvas.setAttribute('width', Math.round(width * window.devicePixelRatio));
-            backcanvas.setAttribute('height', Math.round( height * window.devicePixelRatio));
+            waveCanvas.setAttribute('width', Math.round(width * window.devicePixelRatio).toString());
+            waveCanvas.setAttribute('height', Math.round(height * window.devicePixelRatio).toString());
+            backCanvas.setAttribute('width', Math.round(width * window.devicePixelRatio).toString());
+            backCanvas.setAttribute('height', Math.round(height * window.devicePixelRatio).toString());
             // force the canvas back to the original size using css
-            wavecanvas.style.width = width+"px";
-            wavecanvas.style.height = height+"px";
-            backcanvas.style.width = width+"px";
-            backcanvas.style.height = height+"px";
+            waveCanvas.style.width = width + "px";
+            waveCanvas.style.height = height + "px";
+            backCanvas.style.width = width + "px";
+            backCanvas.style.height = height + "px";
         }
-        if(draw_mode!=1){
-            draw_grid();
-            redrawTrigger();
-            redrawMeas();
+        if (!this.cleared) {
+            this.draw_grid();
+            this.drawTrigger();
+            this.drawLabels();
         }
     }
 
     addValue(chart_num: number, val: number): void {
         this.traces[chart_num].addValue(val);
+    }
+
+    drawLabels() {
+
+        const x_res = waveCanvas.width;
+        const y_res = waveCanvas.height;
+        waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - INFO_SPACE, y_res);
+
+        waveContext.font = "12px Arial";
+        waveContext.textAlign = "left";
+        waveContext.fillStyle = "white";
+        if (this.trigger != -1) {
+            waveContext.fillText("Trg lvl: " + this.trigger_lvl, TRIGGER_SPACE, y_res - MEAS_POSITION);
+            let state:string;
+            if (this.trigger_trgt) {
+                state = 'Trg...'
+            } else {
+                state = 'Wait...'
+            }
+            waveContext.fillText("Trg state: " + state, TRIGGER_SPACE + 100, y_res - MEAS_POSITION);
+        } else {
+            waveContext.fillText("Trg lvl: off", TRIGGER_SPACE, y_res - MEAS_POSITION);
+        }
+
+    }
+
+    draw_grid() {
+        const x_res = waveCanvas.width - INFO_SPACE;
+        const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
+
+        backContext.beginPath();
+        backContext.strokeStyle = "yellow";
+        backContext.lineWidth = this.pixelRatio;
+
+        backContext.moveTo(TRIGGER_SPACE, Math.floor(y_res / 2) + TOP_SPACE);
+        backContext.lineTo(x_res, Math.floor(y_res / 2) + TOP_SPACE);
+
+        backContext.stroke();
+
+        backContext.beginPath();
+        backContext.lineWidth = this.pixelRatio;
+        backContext.strokeStyle = "yellow";
+        backContext.moveTo(TRIGGER_SPACE + 1, TOP_SPACE);
+        backContext.lineTo(TRIGGER_SPACE + 1, y_res + TOP_SPACE);
+        backContext.stroke();
+        backContext.beginPath();
+        backContext.lineWidth = this.pixelRatio;
+        backContext.strokeStyle = "grey";
+        for (let i:number = TRIGGER_SPACE + Oscilloscope.gridResolution; i < x_res; i = i + Oscilloscope.gridResolution) {
+            backContext.moveTo(i, TOP_SPACE);
+            backContext.lineTo(i, y_res + TOP_SPACE);
+        }
+
+        for (let i:number = (y_res / 2) + (y_res / 10); i < y_res; i = i + (y_res / 10)) {
+            backContext.moveTo(TRIGGER_SPACE, i + TOP_SPACE);
+            backContext.lineTo(x_res, i + TOP_SPACE);
+            backContext.moveTo(TRIGGER_SPACE, y_res - i + TOP_SPACE);
+            backContext.lineTo(x_res, y_res - i + TOP_SPACE);
+        }
+
+        backContext.stroke();
+    }
+
+    drawTrigger() {
+        const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
+        const ytrgpos = Math.floor((scope.trigger_lvl * -1 + 1) * (y_res / 2.0)) + TOP_SPACE;
+        waveContext.clearRect(0, 0, 10, waveCanvas.height);
+        if (scope.trigger != -1) {
+            scope.trigger_block = true;
+            waveContext.beginPath();
+            waveContext.lineWidth = this.pixelRatio;
+            waveContext.strokeStyle = this.traces[scope.trigger].wavecolor;
+            waveContext.moveTo(0, ytrgpos);
+            waveContext.lineTo(10, ytrgpos);
+            waveContext.moveTo(10, ytrgpos);
+            if (scope.trigger_lvl > 0) {
+                waveContext.lineTo(5, ytrgpos - 2);
+            } else {
+                waveContext.lineTo(5, ytrgpos + 2);
+            }
+            waveContext.stroke();
+            waveContext.font = "12px Arial";
+            waveContext.textAlign = "center";
+            waveContext.fillStyle = this.traces[scope.trigger].wavecolor;
+            if (ytrgpos < 14) {
+                waveContext.fillText(scope.trigger.toString(), 4, ytrgpos + 12);
+            } else {
+                waveContext.fillText(scope.trigger.toString(), 4, ytrgpos - 4);
+            }
+        }
     }
 }
 

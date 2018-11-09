@@ -1,3 +1,6 @@
+import {TRIGGER_SPACE} from "./js/gui";
+import {scope} from "./js/oscilloscope";
+
 var connid;
 var connected = 0;
 var path;
@@ -16,7 +19,7 @@ hterm.defaultStorage = new lib.Storage.Memory();
 
 const terminal = new hterm.Terminal();
 
-var wavecanvas;
+var waveCanvas;
 var backcanvas;
 
 var TIMEOUT = 50;
@@ -449,13 +452,12 @@ function clear(){
 }
 
 
-var meas_position = 4;
 
 function redrawInfo(){
 
-  //var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height;
+  //var ctx = waveCanvas.getContext('2d');
+  var x_res = waveCanvas.width;
+  var y_res = waveCanvas.height;
   var line_height = 32;
   var trigger_symbol = "";
   ctx.clearRect(x_res - info_space, 0, x_res, y_res - meas_space);
@@ -475,43 +477,9 @@ function redrawInfo(){
   }
 }
 
-function redrawMeas(){
-
-  var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height;
-  ctx.clearRect(TRIGGER_SPACE, y_res - meas_space, x_res - info_space, y_res);
-
-  ctx.font = "12px Arial";
-  ctx.textAlign = "left";
-  ctx.fillStyle = "white";
-  if(scope.trigger!=-1){
-	ctx.fillText("Trg lvl: " + scope.trigger_lvl ,TRIGGER_SPACE, y_res - meas_position);
-	var state='';
-	if(scope.trigger_trgt){
-		state='Trg...'
-	}else{
-		state='Wait...'
-	}
-	ctx.fillText("Trg state: " +state ,TRIGGER_SPACE+100, y_res - meas_position);
-  }else{
-	ctx.fillText("Trg lvl: off" ,TRIGGER_SPACE, y_res - meas_position);
-  }
-  var text_pos = TRIGGER_SPACE+180;
-  for(i=0;i<NUM_GAUGES;i++){
-	if (scope[i].name){
-		ctx.fillStyle = wavecolor[i];
-		ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Max: " +meas[i].max ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Avg: "+meas[i].avg ,text_pos+=60, y_res - meas_position);
-	}
-  }
-  
-}
-
 function redrawTop(){
-	var x_res = wavecanvas.width;
-	var y_res = wavecanvas.height;
+	var x_res = waveCanvas.width;
+	var y_res = waveCanvas.height;
 	ctx.clearRect(TRIGGER_SPACE, 0, x_res - info_space, top_space);
 
 	ctx.font = "12px Arial";
@@ -523,46 +491,19 @@ function redrawTop(){
   
 }
 
+//Part of redrawMeas,
+function drawGaugeLabels() {
 
-
-function draw_grid(){
-	var x_res = wavecanvas.width-info_space;
-	var y_res = wavecanvas.height-meas_space-top_space;
-
-	var ctxb = waveback.getContext('2d');
-	ctxb.beginPath();
-	ctxb.strokeStyle= "yellow";
-	ctxb.lineWidth = pixel;
-
-	ctxb.moveTo(TRIGGER_SPACE, Math.floor(y_res/2)+top_space);
-	ctxb.lineTo(x_res, Math.floor(y_res/2)+top_space);
-
-	ctxb.stroke();
-
-	ctxb.beginPath();
-	ctxb.lineWidth = pixel;
-	ctxb.strokeStyle= "yellow";
-	ctxb.moveTo(TRIGGER_SPACE+1, top_space);
-	ctxb.lineTo(TRIGGER_SPACE+1, y_res+top_space);
-	ctxb.stroke();
-	ctxb.beginPath();
-	ctxb.lineWidth = pixel;
-	ctxb.strokeStyle= "grey";
-	for(var i = TRIGGER_SPACE+draw_grid.grid; i < x_res; i=i+draw_grid.grid){
-		ctxb.moveTo(i, top_space);
-		ctxb.lineTo(i, y_res+top_space);
+	var text_pos = TRIGGER_SPACE+180;
+	for(i=0;i<NUM_GAUGES;i++){
+		if (scope[i].name){
+			ctx.fillStyle = wavecolor[i];
+			ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - meas_position);
+			ctx.fillText("Max: " +meas[i].max ,text_pos+=60, y_res - meas_position);
+			ctx.fillText("Avg: "+meas[i].avg ,text_pos+=60, y_res - meas_position);
+		}
 	}
-
-	for(i = (y_res/2)+(y_res/10); i < y_res; i=i+(y_res/10)){
-		ctxb.moveTo(TRIGGER_SPACE, i+top_space);
-		ctxb.lineTo(x_res, i+top_space);
-		ctxb.moveTo(TRIGGER_SPACE, y_res -i+top_space);
-		ctxb.lineTo(x_res, y_res -i+top_space);
-	}
-
-   ctxb.stroke();	
 }
-draw_grid.grid=50;
 
 
 
@@ -754,8 +695,8 @@ function warn_eeprom_load() {
 
 function wave_mouse_down(e){
 	var pos_y = e.y - 51;
-	var y_res = wavecanvas.height-meas_space-top_space;
-	if((pos_y>=top_space && pos_y<=wavecanvas.height-meas_space) && scope.trigger!=-1){
+	var y_res = waveCanvas.height-meas_space-top_space;
+	if((pos_y>=top_space && pos_y<=waveCanvas.height-meas_space) && scope.trigger!=-1){
 		pos_y-=top_space;
 		scope.trigger_lvl=((2/y_res)*((y_res/2)-pos_y)).toFixed(2);
 		scope.trigger_lvl_real=scope.trigger_lvl*scope[scope.trigger].span;
@@ -883,37 +824,6 @@ function slider3(){
 function setBurstOfftime(time){
 	setSliderValue("slider3", time);
 	slider3();
-}
-
-function redrawTrigger(){
-  var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height-meas_space-top_space;
-  var ytrgpos = Math.floor((scope.trigger_lvl*-1+1)*(y_res/2.0))+top_space;
-  ctx.clearRect(0, 0, 10, wavecanvas.height);
-	if(scope.trigger!=-1){
-		scope.trigger_block=true;
-		ctx.beginPath();
-		ctx.lineWidth = pixel;
-		ctx.strokeStyle = wavecolor[scope.trigger];
-		ctx.moveTo(0, ytrgpos);
-		ctx.lineTo(10, ytrgpos);
-		ctx.moveTo(10, ytrgpos);
-		if(scope.trigger_lvl>0){
-			ctx.lineTo(5, ytrgpos-2);
-		}else{
-			ctx.lineTo(5, ytrgpos+2);
-		}
-		ctx.stroke();
-		ctx.font = "12px Arial";
-		ctx.textAlign = "center";
-		ctx.fillStyle = wavecolor[scope.trigger];
-    if(ytrgpos < 14){
-      ctx.fillText(scope.trigger,4,ytrgpos+12);
-    }else{
-      ctx.fillText(scope.trigger,4,ytrgpos-4);
-    }
-  }
 }
 
 var selectMidiIn = null;
@@ -1504,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				'<div class="scopeview">'+
 				'<article>'+
 				'<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>'+
-				'<canvas id="wavecanvas" style= "position: absolute; left: 0; top: 0;width: 75%; z-index: 1;"></canvas>'+
+				'<canvas id="waveCanvas" style= "position: absolute; left: 0; top: 0;width: 75%; z-index: 1;"></canvas>'+
 				'</article>'+
 				'<aside>'+
 				'<div id="ontime">Ontime<br><br>'+
@@ -1570,8 +1480,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	readini("config.ini");
 
 	
-	wavecanvas.onmousedown = wave_mouse_down;
-    ctx = wavecanvas.getContext('2d');
+	waveCanvas.onmousedown = wave_mouse_down;
+    ctx = waveCanvas.getContext('2d');
 	
 	coil_hot_led=1;
 

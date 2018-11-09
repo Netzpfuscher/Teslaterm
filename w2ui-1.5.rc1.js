@@ -1645,7 +1645,7 @@ var w2utils = (function ($) {
 
 /***********************************************************
 *  Formatters object
-*  --- Primariy used in grid
+*  --- Primariy used in gridResolution
 *
 *********************************************************/
 
@@ -1909,7 +1909,7 @@ w2utils.event = {
 
 /***********************************************************
 *  Commonly used plugins
-*  --- used primarily in grid and form
+*  --- used primarily in gridResolution and form
 *
 *********************************************************/
 
@@ -2543,7 +2543,7 @@ w2utils.event = {
                         });
                     }, 10);
                 }
-                // do not uncomment (or enum search type is not working in grid)
+                // do not uncomment (or enum search type is not working in gridResolution)
                 // setTimeout(function () { $(document).click(); }, 50);
                 // -- hide
                 var div = $('#w2ui-overlay'+ name);
@@ -2902,7 +2902,7 @@ w2utils.event = {
 /************************************************************************
 *   Library: Web 2.0 UI for jQuery (using prototypical inheritance)
 *   - Following objects defined
-*        - w2grid        - grid widget
+*        - w2grid        - gridResolution widget
 *        - $().w2grid    - jQuery wrapper
 *   - Dependencies: jQuery, w2utils, w2toolbar, w2fields
 *
@@ -2933,7 +2933,7 @@ w2utils.event = {
 *   - Shift-click/Ctrl-click/Ctrl-Shift-Click selection is not as robust as it should be
 *
 * == 1.5 changes
-*   - $('#grid').w2grid() - if called w/o argument then it returns grid object
+*   - $('#gridResolution').w2grid() - if called w/o argument then it returns gridResolution object
 *   - added statusRange     : true,
 *           statusBuffered  : false,
 *           statusRecordID  : true,
@@ -2943,7 +2943,7 @@ w2utils.event = {
 *           statusSearch    : true,
 *   - change selectAll() and selectNone() - return time it took
 *   - added vs_start and vs_extra
-*   - added update(cells) - updates only data in the grid (or cells)
+*   - added update(cells) - updates only data in the gridResolution (or cells)
 *   - add to docs onColumnDragStart, onColumnDragEnd
 *   - onSelect and onSelect should fire 1 time for selects with shift or selectAll(), selectNone()
 *   - record.w2ui.style[field_name]
@@ -3007,7 +3007,7 @@ w2utils.event = {
     }
 *   - added this.show.toolbarInput
 *   - disableCVS
-*   - grid.message
+*   - gridResolution.message
 *   - added noReset option to localSort()
 *   - onColumnSelect
 *   - need to update PHP example
@@ -3016,8 +3016,8 @@ w2utils.event = {
 *   - added refreshBody
 *   - added response.total = -1 (or not present) to indicate that number of records is unknown
 *   - message(.., callBack) - added callBack
-*   - grid.msgEmpty
-*   - field.render(..., data) -- added last argument which is what grid thinks should be there
+*   - gridResolution.msgEmpty
+*   - field.render(..., data) -- added last argument which is what gridResolution thinks should be there
 *   - onSearchOpen (onSearch will have mutli and reset flags)
 *   - added httpHeaders
 *   - col.editable can be a function which will be called with the same args as col.render()
@@ -3084,7 +3084,7 @@ w2utils.event = {
 
         this.hasFocus        = false;
         this.autoLoad        = true;     // for infinite scroll
-        this.fixedBody       = true;     // if false; then grid grows with data
+        this.fixedBody       = true;     // if false; then gridResolution grows with data
         this.recordHeight    = 24;       // should be in prototype
         this.lineNumberWidth = null;
         this.vs_start        = 150;
@@ -4291,7 +4291,7 @@ w2utils.event = {
                 };
                 $(document).off('mousemove', mouseMove).on('mousemove', mouseMove);
                 $(document).off('mouseup', mouseStop).on('mouseup', mouseStop);
-                // do not blur grid
+                // do not blur gridResolution
                 event.preventDefault();
             }
 
@@ -5236,7 +5236,7 @@ w2utils.event = {
                     var edata2 = obj.trigger({ phase: 'before', type: 'error', error: errorObj, xhr: xhr });
                     if (edata2.isCancelled === true) return;
                     // default behavior
-                    if (status != 'abort') { // it can be aborted by the grid itself
+                    if (status != 'abort') { // it can be aborted by the gridResolution itself
                         var data;
                         try { data = $.parseJSON(xhr.responseText); } catch (e) {}
                         console.log('ERROR: Server communication failed.',
@@ -5388,7 +5388,7 @@ w2utils.event = {
 
         error: function (msg) {
             var obj = this;
-            // let the management of the error outside of the grid
+            // let the management of the error outside of the gridResolution
             var edata = this.trigger({ target: this.name, type: 'error', message: msg , xhr: this.last.xhr });
             if (edata.isCancelled === true) {
                 if (typeof callBack == 'function') callBack({ status: 'error', message: 'Request aborted.' });
@@ -7356,7 +7356,7 @@ w2utils.event = {
             // event before
             var edata = this.trigger({ phase: 'before', target: this.name, type: 'render', box: box });
             if (edata.isCancelled === true) return;
-            // reset needed if grid existed
+            // reset needed if gridResolution existed
             this.reset(true);
             // --- default search field
             if (!this.last.field) {
@@ -7404,7 +7404,7 @@ w2utils.event = {
             // refresh
             if (!this.last.state) this.last.state = this.stateSave(true); // initial default state
             this.stateRestore();
-            if (url) this.refresh(); // show empty grid (need it) - should it be only for remote data source
+            if (url) this.refresh(); // show empty gridResolution (need it) - should it be only for remote data source
             // if hidden searches - apply it
             var hasHiddenSearches = false;
             for (var i = 0; i < this.searches.length; i++) {
@@ -7496,7 +7496,7 @@ w2utils.event = {
                         start  : true
                     };
                     if (obj.last.move.recid == null) obj.last.move.type = 'select-column';
-                    // set focus to grid
+                    // set focus to gridResolution
                     var target = event.target;
                     var $input = $(obj.box).find('#grid_'+ obj.name + '_focus');
                     // move input next to cursor so screen does not jump
@@ -7568,7 +7568,7 @@ w2utils.event = {
                 }
                 $(document).on('mousemove', mouseMove);
                 $(document).on('mouseup', mouseStop);
-                // needed when grid grids are nested, see issue #1275
+                // needed when gridResolution grids are nested, see issue #1275
                 event.stopPropagation();
             }
 
@@ -7852,7 +7852,7 @@ w2utils.event = {
 
         /**
          *
-         * @param box, grid object
+         * @param box, gridResolution object
          * @returns {{remove: Function}} contains a closure around all events to ensure they are removed from the dom
          */
         initColumnDrag: function ( box ) {
@@ -7925,7 +7925,7 @@ w2utils.event = {
                     //configure and style ghost image
                     _dragData.ghost = $( self ).clone( true );
 
-                    //hide other elements on ghost except the grid body
+                    //hide other elements on ghost except the gridResolution body
                     $( _dragData.ghost ).find( '[col]:not([col="' + _dragData.originalPos + '"]), .w2ui-toolbar, .w2ui-grid-header' ).remove();
                     $( _dragData.ghost ).find( preColumnsSelector ).remove();
                     $( _dragData.ghost ).find( '.w2ui-grid-body' ).css({ top: 0 });
@@ -9565,7 +9565,7 @@ w2utils.event = {
                     }
                 }
             }
-            // check for grid end
+            // check for gridResolution end
             if (buffered >= this.total - this.offset && this.total != -1) $('#grid_'+ this.name +'_rec_more, #grid_'+ this.name +'_frec_more').hide();
 
             function markSearch() {
@@ -10420,7 +10420,7 @@ w2utils.event = {
     };
 
     $.extend(w2grid.prototype, w2utils.event);
-    w2obj.grid = w2grid;
+    w2obj.gridResolution = w2grid;
 })(jQuery);
 
 /************************************************************************
@@ -14000,7 +14000,7 @@ var w2prompt = function (label, title, callBack) {
 *
 * == NICE TO HAVE ==
 *   - add find() method to find nodes by a specific criteria (I want all nodes for exampe)
-*   - dbl click should be like it is in grid (with timer not HTML dbl click event)
+*   - dbl click should be like it is in gridResolution (with timer not HTML dbl click event)
 *   - reorder with dgrag and drop
 *   - node.style is misleading - should be there to apply color for example
 *   - add multiselect
@@ -14737,7 +14737,7 @@ var w2prompt = function (label, title, callBack) {
                     }
                 });
             $(this.box).off('mousedown').on('mousedown', function (event) {
-                // set focus to grid
+                // set focus to gridResolution
                 setTimeout(function () {
                     // if input then do not focus
                     if (['INPUT', 'TEXTAREA', 'SELECT'].indexOf(event.target.tagName.toUpperCase()) == -1) {
@@ -14964,7 +14964,7 @@ var w2prompt = function (label, title, callBack) {
 *   - MultiSelect - Allow Copy/Paste for single and multi values
 *   - add routeData to list/enum
 *   - for type: list -> read value from attr('value')
-*   - ENUM, LIST: should have same as grid (limit, offset, search, sort)
+*   - ENUM, LIST: should have same as gridResolution (limit, offset, search, sort)
 *   - ENUM, LIST: should support wild chars
 *   - add selection of predefined times (used for appointments)
 *
@@ -16420,7 +16420,7 @@ var w2prompt = function (label, title, callBack) {
                             // remove all extra items if more then needed for cache
                             if (data.records.length > options.cacheMax) data.records.splice(options.cacheMax, 100000);
                             // map id and text
-                            if (options.recId == null && options.recid != null) options.recId = options.recid; // since lower-case recid is used in grid
+                            if (options.recId == null && options.recid != null) options.recId = options.recid; // since lower-case recid is used in gridResolution
                             if (options.recId || options.recText) {
                                 data.records.forEach(function (item) {
                                     if (typeof options.recId == 'string') item.id   = item[options.recId];
@@ -17917,7 +17917,7 @@ var w2prompt = function (label, title, callBack) {
 
         error: function (msg) {
             var obj = this;
-            // let the management of the error outside of the grid
+            // let the management of the error outside of the gridResolution
             var edata = this.trigger({ target: this.name, type: 'error', message: msg , xhr: this.last.xhr });
             if (edata.isCancelled === true) {
                 if (typeof callBack == 'function') callBack();

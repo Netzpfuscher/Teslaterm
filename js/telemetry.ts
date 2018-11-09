@@ -91,7 +91,7 @@ function compute(dat: number[]){
             break;
         case TT_CHART_CLEAR:
             chart_cls();
-            draw_mode=1;
+            scope.cleared = true;
             break;
         case TT_CHART_LINE:
             var x1 = bytes_to_signed(dat[2],dat[3]);
