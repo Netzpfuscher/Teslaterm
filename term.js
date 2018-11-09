@@ -16,9 +16,6 @@ hterm.defaultStorage = new lib.Storage.Memory();
 
 const terminal = new hterm.Terminal();
 
-var wavecanvas;
-var backcanvas;
-
 var TIMEOUT = 50;
 var response_timeout = 50;  // 50 * 20ms = 1s
 
@@ -49,6 +46,10 @@ var uitime = setInterval(refresh_UI, 20);
 const scripting = require('./term_scripting');
 let currentScript = null;
 var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
+
+var term_scope;
+
+
 
 
 var times = {'pw':0, 'pwd':0, 'bon':0, 'boff':0,'pw_old':0, 'pwd_old':0, 'bon_old':0, 'boff_old':0};
@@ -265,7 +266,7 @@ var Player = new MidiPlayer.Player(processMidiFromPlayer);
 function processMidiFromPlayer(event){
 	if(playMidiData(event.bytes_buf)){
 		midi_state.progress=Player.getSongPercentRemaining();
-		redrawTop();
+		term_scope.redrawTop();
 	} else if(!simulated && !connected) {
 		Player.stop();
 		midi_state.state = 'stopped';
@@ -427,8 +428,8 @@ function compute(dat){
 			}
 			dat.splice(0,10);
 			tterm[chart_num].name = helper.convertArrayBufferToString(dat);
-			redrawInfo();
-			redrawMeas();
+			term_scope.redrawInfo();
+			term_scope.redrawMeas();
 			
 		break;		
 		case TT_CHART:
@@ -441,29 +442,29 @@ function compute(dat){
 		break;
 		case TT_CHART_DRAW:
 			if(draw_mode==1){
-				chart_cls();
-				draw_grid();
-				redrawTrigger();
-				redrawMeas();
+				term_scope.chart_cls();
+				term_scope.draw_grid();
+				term_scope.redrawTrigger();
+				term_scope.redrawMeas();
 				
 				draw_mode=0;
 			}
 			if(tterm.trigger==-1){
-				plot();
+				term_scope.plot();
 			}else{
 				var triggered = math.sgn(tterm.trigger_lvl)==math.sgn(tterm[tterm.trigger].value - tterm.trigger_lvl);
 				switch(tterm.trigger_block){
 					case 0:
-						if(plot.xpos==11 && triggered){
+						if(term_scope.plot.xpos==11 && triggered){
 							tterm.trigger_block=1;
 						}
 					break;
 					case 1:
 						if(tterm.trigger_trgt || triggered){
 							tterm.trigger_trgt=1;
-							plot();
+							term_scope.plot();
 						}
-						if(tterm.trigger_trgt!=tterm.trigger_old) redrawMeas();
+						if(tterm.trigger_trgt!=tterm.trigger_old) term_scope.redrawMeas();
 						tterm.trigger_old = tterm.trigger_trgt;
 					
 					break;
@@ -472,7 +473,7 @@ function compute(dat){
 			}
 		break;
 		case TT_CHART_CLEAR:
-			chart_cls();
+			term_scope.chart_cls();
 			draw_mode=1;
 		break;
 		case TT_CHART_LINE:
@@ -524,7 +525,7 @@ function compute(dat){
 			dat.splice(0,2);
 			var str = helper.convertArrayBufferToString(dat, false);
 			if(str == "NULL;NULL"){
-				settings();
+				term_ui.ud_settings(udconfig);
 			}else{
 				var substrings = str.split(";")
 				udconfig.push(substrings);
@@ -576,12 +577,7 @@ function updateSliderAvailability() {
 	ontimeUI.slider.className = onDisable?"slider-gray":"slider";
 }
 
-function chart_cls(){
-	var ctxb = waveback.getContext('2d');
-	ctxb.clearRect(0, 0, waveback.width, waveback.height);
-	ctx.clearRect(0, 0, waveback.width, waveback.height);
-	
-}
+
 
 
 function receive(info){
@@ -755,219 +751,6 @@ function clear(){
 }
 
 
-const meas_space = 20;
-var meas_position = 4;
-const info_space = 150;
-const control_space = 15;
-const top_space = 20;
-const TRIGGER_SPACE = 10;
-
-function redrawInfo(){
-
-  //var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height;
-  var line_height = 32;
-  var trigger_symbol = "";
-  ctx.clearRect(x_res - info_space, 0, x_res, y_res - meas_space);
-  ctx.font = "12px Arial";
-  ctx.textAlign = "left";
-  var tterm_length = tterm.length;
-  for (var i = 0; i < tterm_length; i++){
-    if (tterm[i].name){
-      ctx.fillStyle = wavecolor[i];
-      if(i == tterm.trigger){
-        trigger_symbol = "->";
-      }
-      ctx.fillText(trigger_symbol + "w" + i + ": " + tterm[i].name,x_res - info_space + 4, line_height * (i+1));
-	  ctx.fillText(tterm[i].count_div +' '+ tterm[i].unit +'/div',x_res - info_space + 4, (line_height * (i+1))+16);
-      trigger_symbol = "";
-    }
-  }
-}
-
-function calc_meas(){
-	for(var i = 0;i<meas_backbuffer.length;i++){
-		meas[i].min = meas_backbuffer[i].min.toFixed(2);
-		meas[i].max = meas_backbuffer[i].max.toFixed(2);
-		meas[i].avg = Math.sqrt(meas_backbuffer[i].avg_sum / meas_backbuffer[i].avg_samp).toFixed(2);
-
-	}
-	
-	
-}
-
-
-
-function plot(){
-
-   var x_res = wavecanvas.width-info_space;
-   var y_res = wavecanvas.height-meas_space-top_space;
-
-	
-
-  	ctx.clearRect(plot.xpos, top_space, pixel, y_res);
-
-	for(var i = 0;i<tterm.length;i++){
-		//Meas
-		if(tterm[i].value_real < meas_backbuffer[i].min) meas_backbuffer[i].min = tterm[i].value_real;
-		if(tterm[i].value_real > meas_backbuffer[i].max) meas_backbuffer[i].max = tterm[i].value_real;
-		meas_backbuffer[i].avg_sum += (tterm[i].value_real*tterm[i].value_real);
-		meas_backbuffer[i].avg_samp++;
-		//Meas
-		
-		
-		var ypos = (tterm[i].value*-1+1)*(y_res/2.0);
-		if(plot.ypos[i] && (plot.ypos[i] != (y_res/2.0) || tterm[i].value)){
-			ctx.beginPath();
-			ctx.lineWidth = pixel;
-			ctx.strokeStyle = wavecolor[i];
-			ctx.moveTo(plot.xpos,plot.ypos[i]+top_space);
-			ctx.lineTo(plot.xpos+pixel,ypos+top_space);
-			ctx.stroke();
-		}
-		plot.ypos[i] = ypos;//save previous position
-	}
-
-	plot.xpos+=pixel;
-	if(plot.xpos>=x_res){
-		calc_meas();
-		tterm.trigger_trgt=0;
-		tterm.trigger_block=0;
-		redrawMeas();
-		plot.xpos = TRIGGER_SPACE+1;
-		
-	}
-}
-
-plot.xpos = TRIGGER_SPACE+1;
-plot.ypos = [];
-
-function redrawMeas(){
-
-  var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height;
-  ctx.clearRect(TRIGGER_SPACE, y_res - meas_space, x_res - info_space, y_res);
-
-  ctx.font = "12px Arial";
-  ctx.textAlign = "left";
-  ctx.fillStyle = "white";
-  if(tterm.trigger!=-1){
-	ctx.fillText("Trg lvl: " + tterm.trigger_lvl ,TRIGGER_SPACE, y_res - meas_position);
-	var state='';
-	if(tterm.trigger_trgt){
-		state='Trg...'
-	}else{
-		state='Wait...'
-	}
-	ctx.fillText("Trg state: " +state ,TRIGGER_SPACE+100, y_res - meas_position);
-  }else{
-	ctx.fillText("Trg lvl: off" ,TRIGGER_SPACE, y_res - meas_position);
-  }
-  var text_pos = TRIGGER_SPACE+180;
-  for(i=0;i<NUM_GAUGES;i++){
-	if (tterm[i].name){
-		ctx.fillStyle = wavecolor[i];
-		ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Max: " +meas[i].max ,text_pos+=60, y_res - meas_position);
-		ctx.fillText("Avg: "+meas[i].avg ,text_pos+=60, y_res - meas_position);
-	}
-  }
-  
-}
-
-function redrawTop(){
-	var x_res = wavecanvas.width;
-	var y_res = wavecanvas.height;
-	ctx.clearRect(TRIGGER_SPACE, 0, x_res - info_space, top_space);
-
-	ctx.font = "12px Arial";
-	ctx.textAlign = "left";
-	ctx.fillStyle = "white";
-
-	ctx.fillText("MIDI-File: " + midi_state.file + ' State: ' + midi_state.state + ' ' + midi_state.progress + '% / 100%'  ,TRIGGER_SPACE, 12);
- 
-  
-}
-
-
-
-function draw_grid(){
-	var x_res = wavecanvas.width-info_space;
-	var y_res = wavecanvas.height-meas_space-top_space;
-
-	var ctxb = waveback.getContext('2d');
-	ctxb.beginPath();
-	ctxb.strokeStyle= "yellow";
-	ctxb.lineWidth = pixel;
-
-	ctxb.moveTo(TRIGGER_SPACE, Math.floor(y_res/2)+top_space);
-	ctxb.lineTo(x_res, Math.floor(y_res/2)+top_space);
-
-	ctxb.stroke();
-
-	ctxb.beginPath();
-	ctxb.lineWidth = pixel;
-	ctxb.strokeStyle= "yellow";
-	ctxb.moveTo(TRIGGER_SPACE+1, top_space);
-	ctxb.lineTo(TRIGGER_SPACE+1, y_res+top_space);
-	ctxb.stroke();
-	ctxb.beginPath();
-	ctxb.lineWidth = pixel;
-	ctxb.strokeStyle= "grey";
-	for(var i = TRIGGER_SPACE+draw_grid.grid; i < x_res; i=i+draw_grid.grid){
-		ctxb.moveTo(i, top_space);
-		ctxb.lineTo(i, y_res+top_space);
-	}
-
-	for(i = (y_res/2)+(y_res/10); i < y_res; i=i+(y_res/10)){
-		ctxb.moveTo(TRIGGER_SPACE, i+top_space);
-		ctxb.lineTo(x_res, i+top_space);
-		ctxb.moveTo(TRIGGER_SPACE, y_res -i+top_space);
-		ctxb.lineTo(x_res, y_res -i+top_space);
-	}
-
-   ctxb.stroke();	
-}
-draw_grid.grid=50;
-
-
-
-
-function resize(){
-	
-	plot.xpos = TRIGGER_SPACE+1;
-	wavecanvas.style.width=(90-control_space)+'%';
-	wavecanvas.style.height='100%';
-	wavecanvas.width  = wavecanvas.offsetWidth;
-	wavecanvas.height = wavecanvas.offsetHeight;
-	waveback.style.width=(90-control_space)+'%';
-	waveback.style.height='100%';
-	waveback.width  = wavecanvas.offsetWidth;
-	waveback.height = wavecanvas.offsetHeight;
-	//HiDPI display support
-	if(window.devicePixelRatio){
-		pixel = window.devicePixelRatio;
-		var height = wavecanvas.getAttribute('height');
-		var width = wavecanvas.getAttribute('width');
-		// reset the canvas width and height with window.devicePixelRatio applied
-		wavecanvas.setAttribute('width', Math.round(width * window.devicePixelRatio));
-		wavecanvas.setAttribute('height', Math.round( height * window.devicePixelRatio));
-		waveback.setAttribute('width', Math.round(width * window.devicePixelRatio));
-		waveback.setAttribute('height', Math.round( height * window.devicePixelRatio));
-		// force the canvas back to the original size using css
-		wavecanvas.style.width = width+"px";
-		wavecanvas.style.height = height+"px";
-		waveback.style.width = width+"px";
-		waveback.style.height = height+"px";
-	}
-	if(draw_mode!=1){
-		draw_grid();
-		redrawTrigger();
-		redrawMeas();
-	}
-}
 
 function send_command(command){
 	if(connected==2){
@@ -1091,7 +874,7 @@ function startCurrentMidiFile() {
 	nano_led(simpleIni.nano.play,1);
 	nano_led(simpleIni.nano.stop,0);
 	midi_state.state = 'playing';
-	redrawTop();
+	term_scope.redrawTop();
 }
 
 function stopMidiFile() {
@@ -1099,7 +882,7 @@ function stopMidiFile() {
 	nano_led(simpleIni.nano.stop,1);
 	Player.stop();
 	midi_state.state = 'stopped';
-	redrawTop();
+	term_scope.redrawTop();
 	stopMidiOutput();
 	scripting.onMidiStopped();
 }
@@ -1153,18 +936,6 @@ function warn_eeprom_load() {
 	.yes(function () { send_command('eeprom load\r'); });
 }
 
-function wave_mouse_down(e){
-	var pos_y = e.y - 51;
-	var y_res = wavecanvas.height-meas_space-top_space;
-	if((pos_y>=top_space && pos_y<=wavecanvas.height-meas_space) && tterm.trigger!=-1){
-		pos_y-=top_space;
-		tterm.trigger_lvl=((2/y_res)*((y_res/2)-pos_y)).toFixed(2);
-		tterm.trigger_lvl_real=tterm.trigger_lvl*tterm[tterm.trigger].span;
-		console.log(tterm.trigger_lvl_real);
-		redrawMeas();
-		redrawTrigger();
-	}
-}
 
 function nano_led(num,val){
 	var uint8 = new Uint8Array(3);
@@ -1290,36 +1061,7 @@ function setBurstOfftime(time){
 	slider3();
 }
 
-function redrawTrigger(){
-  var ctx = wavecanvas.getContext('2d');
-  var x_res = wavecanvas.width;
-  var y_res = wavecanvas.height-meas_space-top_space;
-  var ytrgpos = Math.floor((tterm.trigger_lvl*-1+1)*(y_res/2.0))+top_space;
-  ctx.clearRect(0, 0, 10, wavecanvas.height);
-	if(tterm.trigger!=-1){
-		tterm.trigger_block=1;
-		ctx.beginPath();
-		ctx.lineWidth = pixel;
-		ctx.strokeStyle = wavecolor[tterm.trigger];
-		ctx.moveTo(0, ytrgpos);
-		ctx.lineTo(10, ytrgpos);
-		ctx.moveTo(10, ytrgpos);
-		if(tterm.trigger_lvl>0){
-			ctx.lineTo(5, ytrgpos-2);
-		}else{
-			ctx.lineTo(5, ytrgpos+2);
-		}
-		ctx.stroke();
-		ctx.font = "12px Arial";
-		ctx.textAlign = "center";
-		ctx.fillStyle = wavecolor[tterm.trigger];
-    if(ytrgpos < 14){
-      ctx.fillText(tterm.trigger,4,ytrgpos+12);
-    }else{
-      ctx.fillText(tterm.trigger,4,ytrgpos-4);
-    }
-  }
-}
+
 
 var selectMidiIn = null;
 var selectMidiOut = null;
@@ -1632,7 +1374,7 @@ function midiMessageReceived( ev ) {
 				nano_led(simpleIni.nano.stop,0);
 				Player.play();
 				midi_state.state = 'playing';
-				redrawTop();
+				term_scope.redrawTop();
 			break;
 			case simpleIni.nano.stop:
 				stopMidiFile();
@@ -1688,104 +1430,6 @@ function startTransient() {
 	send_command('tr start\r');
 }
 
-function settings () {
-	var tfields = [];
-	var trecords = [];
-	//console.log(udconfig);
-	for(var i=0;i<udconfig.length;i++){
-		var data = udconfig[i];
-
-		var inipage = simpleIni.get('config.'+data[0]);
-		if(!inipage) inipage=0;
-		switch (parseInt(data[2])){
-			case TYPE_CHAR:
-				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
-			break;
-			case TYPE_FLOAT:
-				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
-			break;
-			case TYPE_SIGNED:
-				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
-			break;
-			case TYPE_STRING:
-				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
-			break;
-			case TYPE_UNSIGNED:
-				tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
-			break;			
-		}
-	
-		trecords[data[0]] = data[1];
-	}	
-
-	if (w2ui.foo) {
-			w2ui.foo.original = [];
-			w2ui.foo.record = [];
-		for(copy in trecords){
-			w2ui.foo.original[copy] =  trecords[copy];
-			w2ui.foo.record[copy] =  trecords[copy];
-		}
-		w2ui.foo.refresh();
-	}
-	
-    if (!w2ui.foo) {
-        $().w2form({
-            name: 'foo',
-            style: 'border: 0px; background-color: transparent;',
-			tabs: [
-            { id: 'tab1', caption: 'General' },
-            { id: 'tab2', caption: 'Timing'},
-            { id: 'tab3', caption: 'Feedback'},
-			{ id: 'tab4', caption: 'IP'},
-			{ id: 'tab5', caption: 'Serial'},
-			{ id: 'tab6', caption: 'Current'},
-			],
-            fields: tfields,
-            record: trecords,
-            actions: {
-                "save": function () { 
-					for (changes in this.getChanges()){
-						this.record[changes] = this.record[changes].replace(',','.');
-						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
-						this.original[changes] = this.record[changes];
-					}
-					w2popup.close();
-				},
-                "save EEPROM": function () { 
-					for (changes in this.getChanges()){
-						this.record[changes] = this.record[changes].replace(',','.');
-						send_command('set ' + changes + ' ' + this.record[changes] + '\r');
-						this.original[changes] = this.record[changes];
-					}
-					send_command('eeprom save\r');
-				}	
-            }
-        });
-    }
-
-    $().w2popup('open', {
-        title   : 'UD3 Settings',
-        body    : '<div id="form" style="width: 100%; height: 100%;"></div>',
-        style   : 'padding: 15px 0px 0px 0px',
-        width   : 650,
-        height  : 650, 
-        showMax : true,
-        onToggle: function (event) {
-            $(w2ui.foo.box).hide();
-            event.onComplete = function () {
-                $(w2ui.foo.box).show();
-                w2ui.foo.resize();
-            }
-        },
-        onOpen: function (event) {
-            event.onComplete = function () {
-                // specifying an onOpen handler instead is equivalent to specifying an onBeforeOpen handler, which would make this code execute too early and hence not deliver.
-                $('#w2ui-popup #form').w2render('foo');
-            }
-        }
-    });
-}
-
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1829,9 +1473,9 @@ document.addEventListener('DOMContentLoaded', function () {
 							tterm.trigger=5;
 						break;
 					}
-					redrawMeas();
-					redrawTrigger();
-					redrawInfo();
+					term_scope.redrawMeas();
+					term_scope.redrawTrigger();
+					term_scope.redrawInfo();
                     return 'Trigger: ' + el.text;
                 },
                 selected: 'waveoff',
@@ -2052,7 +1696,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 
 	w2ui['layout'].on({ type : 'resize', execute : 'after'}, function (target, eventData) {
-		resize();
+		term_scope.resize();
 	});
 	terminal.decorate(document.querySelector('#terminal'));
 	terminal.installKeyboard();
@@ -2086,11 +1730,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	readini("config.ini");
 	
-	wavecanvas = document.getElementById("wavecanvas");
-	backcanvas = document.getElementById("backcanvas");
-	
-	wavecanvas.onmousedown = wave_mouse_down;
-    ctx = wavecanvas.getContext('2d');
+		
+    ctx = document.getElementById("wavecanvas").getContext('2d');
 	
 	coil_hot_led=1;
 
@@ -2124,6 +1765,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	tterm.trigger_old=0;
 	tterm.trigger_block=0;
 	
+	
+	term_scope = new scope(	tterm,
+							'wavecanvas',
+							'waveback');
 	
 	
 	midi_start();

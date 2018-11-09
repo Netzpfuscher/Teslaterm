@@ -154,9 +154,106 @@ class term_ui {
 			reject = rej;
 		});
 	}
+	
+	static ud_settings(uconfig) {
+		var tfields = [];
+		var trecords = [];
+		//console.log(udconfig);
+		for(var i=0;i<uconfig.length;i++){
+			var data = uconfig[i];
 
+			var inipage = simpleIni.get('config.'+data[0]);
+			if(!inipage) inipage=0;
+			switch (parseInt(data[2])){
+				case TYPE_CHAR:
+					tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
+				break;
+				case TYPE_FLOAT:
+					tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+				break;
+				case TYPE_SIGNED:
+					tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+				break;
+				case TYPE_STRING:
+					tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6]+'</i>' ,page: inipage, column: 0 } });
+				break;
+				case TYPE_UNSIGNED:
+					tfields.push({ field: data[0], type: 'text', html: { caption: data[0],text: '<i>'+data[6] + '</i><br>       <b>MIN:</b> ' + data[4] + '   <b>MAX:</b> ' + data[5] ,page: inipage, column: 0 } });
+				break;			
+			}
+		
+			trecords[data[0]] = data[1];
+		}	
 
+		if (w2ui.foo) {
+				w2ui.foo.original = [];
+				w2ui.foo.record = [];
+			for(var copy in trecords){
+				w2ui.foo.original[copy] =  trecords[copy];
+				w2ui.foo.record[copy] =  trecords[copy];
+			}
+			w2ui.foo.refresh();
+		}
+		
+		if (!w2ui.foo) {
+			$().w2form({
+				name: 'foo',
+				style: 'border: 0px; background-color: transparent;',
+				tabs: [
+				{ id: 'tab1', caption: 'General' },
+				{ id: 'tab2', caption: 'Timing'},
+				{ id: 'tab3', caption: 'Feedback'},
+				{ id: 'tab4', caption: 'IP'},
+				{ id: 'tab5', caption: 'Serial'},
+				{ id: 'tab6', caption: 'Current'},
+				],
+				fields: tfields,
+				record: trecords,
+				actions: {
+					"save": function () { 
+						for (var changes in this.getChanges()){
+							this.record[changes] = this.record[changes].replace(',','.');
+							send_command('set ' + changes + ' ' + this.record[changes] + '\r');
+							this.original[changes] = this.record[changes];
+						}
+						w2popup.close();
+					},
+					"save EEPROM": function () { 
+						for (var changes in this.getChanges()){
+							this.record[changes] = this.record[changes].replace(',','.');
+							send_command('set ' + changes + ' ' + this.record[changes] + '\r');
+							this.original[changes] = this.record[changes];
+						}
+						send_command('eeprom save\r');
+						w2popup.close();
+					}	
+				}
+			});
+		}
 
+		$().w2popup('open', {
+			title   : 'UD3 Settings',
+			body    : '<div id="form" style="width: 100%; height: 100%;"></div>',
+			style   : 'padding: 15px 0px 0px 0px',
+			width   : 650,
+			height  : 650, 
+			showMax : true,
+			onToggle: function (event) {
+				$(w2ui.foo.box).hide();
+				event.onComplete = function () {
+					$(w2ui.foo.box).show();
+					w2ui.foo.resize();
+				}
+			},
+			onOpen: function (event) {
+				event.onComplete = function () {
+					// specifying an onOpen handler instead is equivalent to specifying an onBeforeOpen handler, which would make this code execute too early and hence not deliver.
+					$('#w2ui-popup #form').w2render('foo');
+				}
+			}
+		});
+	}
+	
 	//INTERNAL USE ONLY
 	static keyDownListener(event) {
 		// if there are no messages
