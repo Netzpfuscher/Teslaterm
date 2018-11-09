@@ -1,5 +1,5 @@
 import {meters, redrawMeas, redrawInfo} from './gui';
-import {scope} from './oscilloscope'
+import * as scope from './oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from './helper';
 
 const TT_GAUGE = 1;
@@ -13,13 +13,7 @@ const TT_CHART_TEXT = 8;
 const TT_CHART_TEXT_CENTER = 9;
 const TT_STATE_SYNC = 10;
 
-
-const TT_UNIT_NONE = 0;
-const TT_UNIT_V = 1;
-const TT_UNIT_A = 2;
-const TT_UNIT_W = 3;
-const TT_UNIT_Hz = 4;
-const TT_UNIT_C = 5;
+const UNITS: string[] = ['', 'V', 'A', 'W', 'Hz', '°C'];
 
 
 const TT_STATE_IDLE = 0;
@@ -48,33 +42,13 @@ function compute(dat: number[]){
             meters.range(gauge_num, gauge_min, gauge_max);
             break;
         case TT_CHART_CONF:
-
             var chart_num = dat[2].valueOf();
-            scope[chart_num].min = bytes_to_signed(dat[3],dat[4]);
-            scope[chart_num].max = bytes_to_signed(dat[5],dat[6]);
-            scope[chart_num].span=(scope[chart_num].max-scope[chart_num].min);
-            scope[chart_num].count_div=scope[chart_num].span/5;
-            scope[chart_num].offset = bytes_to_signed(dat[7],dat[8]);
-            switch(dat[9]){
-                case TT_UNIT_NONE:
-                    scope[chart_num].unit = '';
-                    break;
-                case TT_UNIT_V:
-                    scope[chart_num].unit = 'V';
-                    break;
-                case TT_UNIT_A:
-                    scope[chart_num].unit = 'A';
-                    break;
-                case TT_UNIT_W:
-                    scope[chart_num].unit = 'W';
-                    break;
-                case TT_UNIT_Hz:
-                    scope[chart_num].unit = 'Hz';
-                    break;
-                case TT_UNIT_C:
-                    scope[chart_num].unit = '°C';
-                    break;
-            }
+            const min = bytes_to_signed(dat[3],dat[4]);
+            const max = bytes_to_signed(dat[5],dat[6]);
+            scope.traces[chart_num].span= max-min;
+            scope.traces[chart_num].perDiv=scope.traces[chart_num].span/5;
+            scope.traces[chart_num].offset = bytes_to_signed(dat[7],dat[8]);
+            scope.traces[chart_num].unit = UNITS[dat[9]];
             dat.splice(0,10);
             scope.traces[chart_num].name = convertArrayBufferToString(dat);
             redrawInfo();
@@ -90,8 +64,7 @@ function compute(dat: number[]){
             scope.plot();
             break;
         case TT_CHART_CLEAR:
-            chart_cls();
-            scope.cleared = true;
+            scope.clear();
             break;
         case TT_CHART_LINE:
             var x1 = bytes_to_signed(dat[2],dat[3]);
@@ -99,39 +72,14 @@ function compute(dat: number[]){
             var x2 = bytes_to_signed(dat[6],dat[7]);
             var y2 = bytes_to_signed(dat[8],dat[9]);
             var color = dat[10].valueOf();
-            ctx.beginPath();
-            ctx.lineWidth = pixel;
-            ctx.strokeStyle = wavecolor[color];
-            ctx.moveTo(x1,y1);
-            ctx.lineTo(x2,y2);
-            ctx.stroke();
+            scope.drawLine(x1, x2, y1, y2, color);
 
             break;
         case TT_CHART_TEXT:
-            var x = bytes_to_signed(dat[2],dat[3]);
-            var y = bytes_to_signed(dat[4],dat[5]);
-            var color = dat[6].valueOf();
-            var size = dat[7].valueOf();
-            if(size<6) size=6;
-            dat.splice(0,8);
-            var str = convertArrayBufferToString(dat);
-            ctx.font = size + "px Arial";
-            ctx.textAlign = "left";
-            ctx.fillStyle = wavecolor[color];
-            ctx.fillText(str,x, y);
+            drawString(dat, false);
             break;
         case TT_CHART_TEXT_CENTER:
-            var x = bytes_to_signed(dat[2],dat[3]);
-            var y = bytes_to_signed(dat[4],dat[5]);
-            var color = dat[6].valueOf();
-            var size = dat[7].valueOf();
-            if(size<6) size=6;
-            dat.splice(0,8);
-            var str = convertArrayBufferToString(dat);
-            ctx.font = size + "px Arial";
-            ctx.textAlign = "center";
-            ctx.fillStyle = wavecolor[color];
-            ctx.fillText(str,x, y);
+            drawString(dat, true);
             break;
         case TT_STATE_SYNC:
             setBusActive((dat[2]&1)!=0);
@@ -139,6 +87,17 @@ function compute(dat: number[]){
             setBusControllable((dat[2]&4)!=0);
             break;
     }
+}
+
+function drawString(dat: number[], center: boolean) {
+    var x = bytes_to_signed(dat[2],dat[3]);
+    var y = bytes_to_signed(dat[4],dat[5]);
+    var color = dat[6].valueOf();
+    var size = dat[7].valueOf();
+    if(size<6) size=6;
+    dat.splice(0,8);
+    var str = convertArrayBufferToString(dat);
+    scope.drawString(x, y, color, size, str, center);
 }
 
 function receive(info){
