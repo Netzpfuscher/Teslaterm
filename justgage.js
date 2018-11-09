@@ -1220,3 +1220,6 @@ function extend(out) {
 
   return out;
 };
+
+//TODO modified, can this be done without modifications?
+module.exports = {JustGage};

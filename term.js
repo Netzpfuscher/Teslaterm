@@ -39,7 +39,6 @@ var draw_mode=0;
 
 var midiServer;
 
-var meters;
 
 let busActive = false;
 let busControllable = false;
@@ -126,14 +125,6 @@ function telnet_socket_ckeck(info){
 	if(info.connected==false){
 		reconnect_tel();
 	}
-}
-
-function mergeTypedArraysUnsafe(a, b) {
-    var c = new a.constructor(a.length + b.length);
-    c.set(a);
-    c.set(b, a.length);
-
-    return c;
 }
 
 const byt = 29*2;
@@ -304,191 +295,6 @@ terminal.onTerminalReady = function() {
   // previous io object.
 };
 
-const TT_GAUGE = 1;
-const TT_GAUGE_CONF = 2;
-const TT_CHART = 3;
-const TT_CHART_DRAW = 4;
-const TT_CHART_CONF = 5;
-const TT_CHART_CLEAR = 6;
-const TT_CHART_LINE = 7;
-const TT_CHART_TEXT = 8;
-const TT_CHART_TEXT_CENTER = 9;
-const TT_STATE_SYNC = 10;
-
-
-const TT_UNIT_NONE = 0;
-const TT_UNIT_V = 1;
-const TT_UNIT_A = 2;
-const TT_UNIT_W = 3;
-const TT_UNIT_Hz = 4;
-const TT_UNIT_C = 5;
-
-
-const TT_STATE_IDLE = 0;
-const TT_STATE_FRAME = 1;
-const TT_STATE_COLLECT = 3;
-
-const TT_STATE_GAUGE = 10;
-
-var term_state=0;
-
-var chart_cnt = 0;
-var chart_scale_cnt =1;
-
-var tterm = [];
-
-var meas_backbuffer = [];
-var meas = [];
-
-const DATA_TYPE = 0;
-const DATA_LEN = 1;
-const DATA_NUM = 2;
-
-
-function compute(dat){
-	switch(dat[DATA_TYPE]){
-		case TT_GAUGE:
-			meters.value(dat[DATA_NUM], helper.bytes_to_signed(dat[3],dat[4]));
-		break;
-		case TT_GAUGE_CONF:
-			var gauge_num = dat[2].valueOf();
-			var gauge_min = helper.bytes_to_signed(dat[3],dat[4]);
-			var gauge_max = helper.bytes_to_signed(dat[5],dat[6]);
-			dat.splice(0,7);
-			var str = helper.convertArrayBufferToString(dat);
-			meters.text(gauge_num, str);
-			meters.range(gauge_num, gauge_min, gauge_max);
-		break;
-		case TT_CHART_CONF:
-		
-			var chart_num = dat[2].valueOf();
-			tterm[chart_num].min = helper.bytes_to_signed(dat[3],dat[4]);
-			tterm[chart_num].max = helper.bytes_to_signed(dat[5],dat[6]);
-			if(tterm[chart_num].min<0){
-				tterm[chart_num].span=((tterm[chart_num].min*-1)+tterm[chart_num].max);
-			}else{
-				tterm[chart_num].span=(tterm[chart_num].max-tterm[chart_num].min);
-			}
-			tterm[chart_num].count_div=tterm[chart_num].span/5
-			tterm[chart_num].offset = helper.bytes_to_signed(dat[7],dat[8]);
-			switch(dat[9]){
-				case TT_UNIT_NONE:
-					tterm[chart_num].unit = '';
-				break;
-				case TT_UNIT_V:
-					tterm[chart_num].unit = 'V';
-				break;
-				case TT_UNIT_A:
-					tterm[chart_num].unit = 'A';
-				break;
-				case TT_UNIT_W:
-					tterm[chart_num].unit = 'W';
-				break;
-				case TT_UNIT_Hz:
-					tterm[chart_num].unit = 'Hz';
-				break;
-				case TT_UNIT_C:
-					tterm[chart_num].unit = '°C';
-				break;
-			}
-			dat.splice(0,10);
-			tterm[chart_num].name = helper.convertArrayBufferToString(dat);
-			redrawInfo();
-			redrawMeas();
-			
-		break;		
-		case TT_CHART:
-			var val=helper.bytes_to_signed(dat[3],dat[4]);
-			var chart_num= dat[DATA_NUM].valueOf();
-			tterm[chart_num].value_real = val;
-			tterm[chart_num].value=(1/tterm[chart_num].span) *(val-tterm[chart_num].offset);
-			if(tterm[chart_num].value > 1) tterm[chart_num].value = 1;
-			if(tterm[chart_num].value < -1) tterm[chart_num].value = -1;
-		break;
-		case TT_CHART_DRAW:
-			if(draw_mode==1){
-				chart_cls();
-				draw_grid();
-				redrawTrigger();
-				redrawMeas();
-				
-				draw_mode=0;
-			}
-			if(tterm.trigger==-1){
-				plot();
-			}else{
-				var triggered = math.sgn(tterm.trigger_lvl)==math.sgn(tterm[tterm.trigger].value - tterm.trigger_lvl);
-				switch(tterm.trigger_block){
-					case 0:
-						if(plot.xpos==11 && triggered){
-							tterm.trigger_block=1;
-						}
-					break;
-					case 1:
-						if(tterm.trigger_trgt || triggered){
-							tterm.trigger_trgt=1;
-							plot();
-						}
-						if(tterm.trigger_trgt!=tterm.trigger_old) redrawMeas();
-						tterm.trigger_old = tterm.trigger_trgt;
-					
-					break;
-				}
-
-			}
-		break;
-		case TT_CHART_CLEAR:
-			chart_cls();
-			draw_mode=1;
-		break;
-		case TT_CHART_LINE:
-			var x1 = helper.bytes_to_signed(dat[2],dat[3]);
-			var y1 = helper.bytes_to_signed(dat[4],dat[5]);
-			var x2 = helper.bytes_to_signed(dat[6],dat[7]);
-			var y2 = helper.bytes_to_signed(dat[8],dat[9]);
-			var color = dat[10].valueOf();
-			ctx.beginPath();
-			ctx.lineWidth = pixel;
-			ctx.strokeStyle = wavecolor[color];
-			ctx.moveTo(x1,y1);
-			ctx.lineTo(x2,y2);
-			ctx.stroke();
-		
-		break;
-		case TT_CHART_TEXT:
-			var x = helper.bytes_to_signed(dat[2],dat[3]);
-			var y = helper.bytes_to_signed(dat[4],dat[5]);
-			var color = dat[6].valueOf();
-			var size = dat[7].valueOf();
-			if(size<6) size=6;
-			dat.splice(0,8);
-			var str = helper.convertArrayBufferToString(dat);
-			ctx.font = size + "px Arial";
-			ctx.textAlign = "left";
-			ctx.fillStyle = wavecolor[color];
-			ctx.fillText(str,x, y);
-		break;
-		case TT_CHART_TEXT_CENTER:
-			var x = helper.bytes_to_signed(dat[2],dat[3]);
-			var y = helper.bytes_to_signed(dat[4],dat[5]);
-			var color = dat[6].valueOf();
-			var size = dat[7].valueOf();
-			if(size<6) size=6;
-			dat.splice(0,8);
-			var str = helper.convertArrayBufferToString(dat);
-			ctx.font = size + "px Arial";
-			ctx.textAlign = "center";
-			ctx.fillStyle = wavecolor[color];
-			ctx.fillText(str,x, y);
-		break;
-		case TT_STATE_SYNC:
-			setBusActive((dat[2]&1)!=0);
-			setTransientActive((dat[2]&2)!=0);
-			setBusControllable((dat[2]&4)!=0);
-			break;
-	}
-}
-
 function setBusActive(active) {
 	if (active!=busActive) {
 		busActive = active;
@@ -540,75 +346,7 @@ function chart_cls(){
 }
 
 
-function receive(info){
-	
-	if(info.socketId==socket_midi){
-		var buf = new Uint8Array(info.data);
-		if(buf[0]==0x78){
-			flow_ctl=0;
-		}
-		if(buf[0]==0x6f){
-			flow_ctl=1;
-		}
-	}
-	
-	if (info.socketId!=socket) {
-		return;
-	}
 
-	var buf = new Uint8Array(info.data);
-	var txt = '';
-	
-	response_timeout = TIMEOUT;
-	check_cnt=0;
-	
-	for (var i = 0; i < buf.length; i++) {
-		
-			
-		switch(term_state){
-			case TT_STATE_IDLE:
-				if(buf[i]== 0xff){
-					term_state = TT_STATE_FRAME;
-				}else{
-					var str = String.fromCharCode.apply(null, [buf[i]]);
-					terminal.io.print(str);
-				}
-			break;
-				
-			case TT_STATE_FRAME:
-				receive.buffer[DATA_LEN]=buf[i];
-				receive.bytes_done=0;
-				term_state=TT_STATE_COLLECT;
-			break;
-			
-			case TT_STATE_COLLECT:
-				
-				if(receive.bytes_done==0){
-					receive.buffer[0] = buf[i];
-					receive.bytes_done++;
-					break;
-				}else{
-					
-					if(receive.bytes_done<receive.buffer[DATA_LEN]-1){
-						receive.buffer[receive.bytes_done+1]=buf[i]
-						receive.bytes_done++;
-					}else{
-						receive.buffer[receive.bytes_done+1]=buf[i];
-						receive.bytes_done=0;
-						term_state=TT_STATE_IDLE;
-						compute(receive.buffer);
-						receive.buffer=[];
-					}
-				}
-				
-			break;
-	
-
-		}
-	}
-}
-receive.buffer = [];
-receive.bytes_done = 0;
 
 function connected_cb(connectionInfo){
 	if(connectionInfo.connectionId){
@@ -711,12 +449,7 @@ function clear(){
 }
 
 
-const meas_space = 20;
 var meas_position = 4;
-const info_space = 150;
-const control_space = 15;
-const top_space = 20;
-const TRIGGER_SPACE = 10;
 
 function redrawInfo(){
 
@@ -728,76 +461,19 @@ function redrawInfo(){
   ctx.clearRect(x_res - info_space, 0, x_res, y_res - meas_space);
   ctx.font = "12px Arial";
   ctx.textAlign = "left";
-  var tterm_length = tterm.length;
+  var tterm_length = scope.length;
   for (var i = 0; i < tterm_length; i++){
-    if (tterm[i].name){
+    if (scope[i].name){
       ctx.fillStyle = wavecolor[i];
-      if(i == tterm.trigger){
+      if(i == scope.trigger){
         trigger_symbol = "->";
       }
-      ctx.fillText(trigger_symbol + "w" + i + ": " + tterm[i].name,x_res - info_space + 4, line_height * (i+1));
-	  ctx.fillText(tterm[i].count_div +' '+ tterm[i].unit +'/div',x_res - info_space + 4, (line_height * (i+1))+16);
+      ctx.fillText(trigger_symbol + "w" + i + ": " + scope[i].name,x_res - info_space + 4, line_height * (i+1));
+	  ctx.fillText(scope[i].count_div +' '+ scope[i].unit +'/div',x_res - info_space + 4, (line_height * (i+1))+16);
       trigger_symbol = "";
     }
   }
 }
-
-function calc_meas(){
-	for(var i = 0;i<meas_backbuffer.length;i++){
-		meas[i].min = meas_backbuffer[i].min.toFixed(2);
-		meas[i].max = meas_backbuffer[i].max.toFixed(2);
-		meas[i].avg = Math.sqrt(meas_backbuffer[i].avg_sum / meas_backbuffer[i].avg_samp).toFixed(2);
-
-	}
-	
-	
-}
-
-
-
-function plot(){
-
-   var x_res = wavecanvas.width-info_space;
-   var y_res = wavecanvas.height-meas_space-top_space;
-
-	
-
-  	ctx.clearRect(plot.xpos, top_space, pixel, y_res);
-
-	for(var i = 0;i<tterm.length;i++){
-		//Meas
-		if(tterm[i].value_real < meas_backbuffer[i].min) meas_backbuffer[i].min = tterm[i].value_real;
-		if(tterm[i].value_real > meas_backbuffer[i].max) meas_backbuffer[i].max = tterm[i].value_real;
-		meas_backbuffer[i].avg_sum += (tterm[i].value_real*tterm[i].value_real);
-		meas_backbuffer[i].avg_samp++;
-		//Meas
-		
-		
-		var ypos = (tterm[i].value*-1+1)*(y_res/2.0);
-		if(plot.ypos[i] && (plot.ypos[i] != (y_res/2.0) || tterm[i].value)){
-			ctx.beginPath();
-			ctx.lineWidth = pixel;
-			ctx.strokeStyle = wavecolor[i];
-			ctx.moveTo(plot.xpos,plot.ypos[i]+top_space);
-			ctx.lineTo(plot.xpos+pixel,ypos+top_space);
-			ctx.stroke();
-		}
-		plot.ypos[i] = ypos;//save previous position
-	}
-
-	plot.xpos+=pixel;
-	if(plot.xpos>=x_res){
-		calc_meas();
-		tterm.trigger_trgt=0;
-		tterm.trigger_block=0;
-		redrawMeas();
-		plot.xpos = TRIGGER_SPACE+1;
-		
-	}
-}
-
-plot.xpos = TRIGGER_SPACE+1;
-plot.ypos = [];
 
 function redrawMeas(){
 
@@ -809,10 +485,10 @@ function redrawMeas(){
   ctx.font = "12px Arial";
   ctx.textAlign = "left";
   ctx.fillStyle = "white";
-  if(tterm.trigger!=-1){
-	ctx.fillText("Trg lvl: " + tterm.trigger_lvl ,TRIGGER_SPACE, y_res - meas_position);
+  if(scope.trigger!=-1){
+	ctx.fillText("Trg lvl: " + scope.trigger_lvl ,TRIGGER_SPACE, y_res - meas_position);
 	var state='';
-	if(tterm.trigger_trgt){
+	if(scope.trigger_trgt){
 		state='Trg...'
 	}else{
 		state='Wait...'
@@ -823,7 +499,7 @@ function redrawMeas(){
   }
   var text_pos = TRIGGER_SPACE+180;
   for(i=0;i<NUM_GAUGES;i++){
-	if (tterm[i].name){
+	if (scope[i].name){
 		ctx.fillStyle = wavecolor[i];
 		ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - meas_position);
 		ctx.fillText("Max: " +meas[i].max ,text_pos+=60, y_res - meas_position);
@@ -891,39 +567,6 @@ draw_grid.grid=50;
 
 
 
-function resize(){
-	
-	plot.xpos = TRIGGER_SPACE+1;
-	wavecanvas.style.width=(90-control_space)+'%';
-	wavecanvas.style.height='100%';
-	wavecanvas.width  = wavecanvas.offsetWidth;
-	wavecanvas.height = wavecanvas.offsetHeight;
-	waveback.style.width=(90-control_space)+'%';
-	waveback.style.height='100%';
-	waveback.width  = wavecanvas.offsetWidth;
-	waveback.height = wavecanvas.offsetHeight;
-	//HiDPI display support
-	if(window.devicePixelRatio){
-		pixel = window.devicePixelRatio;
-		var height = wavecanvas.getAttribute('height');
-		var width = wavecanvas.getAttribute('width');
-		// reset the canvas width and height with window.devicePixelRatio applied
-		wavecanvas.setAttribute('width', Math.round(width * window.devicePixelRatio));
-		wavecanvas.setAttribute('height', Math.round( height * window.devicePixelRatio));
-		waveback.setAttribute('width', Math.round(width * window.devicePixelRatio));
-		waveback.setAttribute('height', Math.round( height * window.devicePixelRatio));
-		// force the canvas back to the original size using css
-		wavecanvas.style.width = width+"px";
-		wavecanvas.style.height = height+"px";
-		waveback.style.width = width+"px";
-		waveback.style.height = height+"px";
-	}
-	if(draw_mode!=1){
-		draw_grid();
-		redrawTrigger();
-		redrawMeas();
-	}
-}
 
 function send_command(command){
 	if(connected==2){
@@ -1112,11 +755,11 @@ function warn_eeprom_load() {
 function wave_mouse_down(e){
 	var pos_y = e.y - 51;
 	var y_res = wavecanvas.height-meas_space-top_space;
-	if((pos_y>=top_space && pos_y<=wavecanvas.height-meas_space) && tterm.trigger!=-1){
+	if((pos_y>=top_space && pos_y<=wavecanvas.height-meas_space) && scope.trigger!=-1){
 		pos_y-=top_space;
-		tterm.trigger_lvl=((2/y_res)*((y_res/2)-pos_y)).toFixed(2);
-		tterm.trigger_lvl_real=tterm.trigger_lvl*tterm[tterm.trigger].span;
-		console.log(tterm.trigger_lvl_real);
+		scope.trigger_lvl=((2/y_res)*((y_res/2)-pos_y)).toFixed(2);
+		scope.trigger_lvl_real=scope.trigger_lvl*scope[scope.trigger].span;
+		console.log(scope.trigger_lvl_real);
 		redrawMeas();
 		redrawTrigger();
 	}
@@ -1246,17 +889,17 @@ function redrawTrigger(){
   var ctx = wavecanvas.getContext('2d');
   var x_res = wavecanvas.width;
   var y_res = wavecanvas.height-meas_space-top_space;
-  var ytrgpos = Math.floor((tterm.trigger_lvl*-1+1)*(y_res/2.0))+top_space;
+  var ytrgpos = Math.floor((scope.trigger_lvl*-1+1)*(y_res/2.0))+top_space;
   ctx.clearRect(0, 0, 10, wavecanvas.height);
-	if(tterm.trigger!=-1){
-		tterm.trigger_block=1;
+	if(scope.trigger!=-1){
+		scope.trigger_block=true;
 		ctx.beginPath();
 		ctx.lineWidth = pixel;
-		ctx.strokeStyle = wavecolor[tterm.trigger];
+		ctx.strokeStyle = wavecolor[scope.trigger];
 		ctx.moveTo(0, ytrgpos);
 		ctx.lineTo(10, ytrgpos);
 		ctx.moveTo(10, ytrgpos);
-		if(tterm.trigger_lvl>0){
+		if(scope.trigger_lvl>0){
 			ctx.lineTo(5, ytrgpos-2);
 		}else{
 			ctx.lineTo(5, ytrgpos+2);
@@ -1264,11 +907,11 @@ function redrawTrigger(){
 		ctx.stroke();
 		ctx.font = "12px Arial";
 		ctx.textAlign = "center";
-		ctx.fillStyle = wavecolor[tterm.trigger];
+		ctx.fillStyle = wavecolor[scope.trigger];
     if(ytrgpos < 14){
-      ctx.fillText(tterm.trigger,4,ytrgpos+12);
+      ctx.fillText(scope.trigger,4,ytrgpos+12);
     }else{
-      ctx.fillText(tterm.trigger,4,ytrgpos-4);
+      ctx.fillText(scope.trigger,4,ytrgpos-4);
     }
   }
 }
@@ -1659,25 +1302,25 @@ document.addEventListener('DOMContentLoaded', function () {
                     var el   = this.get('trigger_radio:' + item.selected);
 					switch(item.selected){
 						case 'waveoff':
-							tterm.trigger=-1;
+							scope.trigger=-1;
 						break;
 						case 'waveoid0':
-							tterm.trigger=0;
+							scope.trigger=0;
 						break;
 						case 'waveoid1':
-							tterm.trigger=1;
+							scope.trigger=1;
 						break;
 						case 'waveoid2':
-							tterm.trigger=2;
+							scope.trigger=2;
 						break;
 						case 'waveoid3':
-							tterm.trigger=3;
+							scope.trigger=3;
 						break;
 						case 'waveoid4':
-							tterm.trigger=4;
+							scope.trigger=4;
 						break;
 						case 'waveoid5':
-							tterm.trigger=5;
+							scope.trigger=5;
 						break;
 					}
 					redrawMeas();
@@ -1703,10 +1346,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     var el   = this.get('trigger_opt:' + item.selected);
 					switch(item.selected){
 						case 'trg_pos':
-							tterm.trigger_opt=0;
+							scope.trigger_opt=0;
 						break;
 						case 'trg_neg':
-							tterm.trigger_opt=1;
+							scope.trigger_opt=1;
 						break;
 					}
                     return 'Trigger: ' + el.text;
@@ -1925,9 +1568,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('slider3').addEventListener("input", slider3);
 	
 	readini("config.ini");
-	
-	wavecanvas = document.getElementById("wavecanvas");
-	backcanvas = document.getElementById("backcanvas");
+
 	
 	wavecanvas.onmousedown = wave_mouse_down;
     ctx = wavecanvas.getContext('2d');
@@ -1937,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	meters = new cls_meter(NUM_GAUGES);
 	
 	for(var i=0;i<NUM_GAUGES;i++){
-		tterm.push({min: 0, max: 1024.0, offset: 1024.0,span: 2048,unit: '', value: 0, value_real: 0, count_div:0, name: ''});
+		scope.push({min: 0, max: 1024.0, offset: 1024.0,span: 2048,unit: '', value: 0, value_real: 0, count_div:0, name: ''});
 		meas_backbuffer.push({min: 0, max: 0, avg_sum: 0, avg_samp: 0});
 		meas.push({min: 0, max: 0, avg: 0});
 		
@@ -1956,13 +1597,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			terminal.io.println("Client instance \"" + client.name + "\" connected");
 		});
 	chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
-	tterm.trigger=-1;
-	tterm.trigger_lvl= 0;
-	tterm.value_old= 0;
-	tterm.trigger_lvl_real=0;
-	tterm.trigger_trgt=0;
-	tterm.trigger_old=0;
-	tterm.trigger_block=0;
+	scope.trigger=-1;
+	scope.trigger_lvl= 0;
+	scope.value_old= 0;
+	scope.trigger_lvl_real=0;
+	scope.trigger_trgt=0;
+	scope.trigger_old=0;
+	scope.trigger_block=0;
 	
 	
 	
