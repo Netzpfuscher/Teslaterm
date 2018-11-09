@@ -11,7 +11,8 @@ class scope {
 		this.plot.ypos = [];
 		this.tt = tt;
 		this.wavecanvas = document.getElementById(wavecan);
-		this.wavecanvas.onmousedown = this.wave_mouse_down;
+		this.wavecanvas.onmousedown = this.wave_mouse_down.bind(this);
+		
 		this.backcanvas = document.getElementById(backcan);
 		this.ctx = this.wavecanvas.getContext('2d');
 		this.ctxb = this.backcanvas.getContext('2d');

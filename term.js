@@ -452,7 +452,7 @@ function compute(dat){
 			if(tterm.trigger==-1){
 				term_scope.plot();
 			}else{
-				var triggered = math.sgn(tterm.trigger_lvl)==math.sgn(tterm[tterm.trigger].value - tterm.trigger_lvl);
+				var triggered = Math.sign(tterm.trigger_lvl)==Math.sign(tterm[tterm.trigger].value - tterm.trigger_lvl);
 				switch(tterm.trigger_block){
 					case 0:
 						if(term_scope.plot.xpos==11 && triggered){
