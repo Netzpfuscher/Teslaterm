@@ -1,7 +1,7 @@
 import {checkTransientDisabled, isSID, MediaFileType, PlayerActivity} from "../media/media_player";
 import * as connection from "../network/connection";
 import {ConnectionState} from "../network/telemetry";
-import {socket_midi} from "../network/connection";
+import {mediaSocket} from "../network/connection";
 import * as scope from "../gui/oscilloscope";
 import {media_state, setMediaType} from "../midi/midi";
 import {DumpSidSource} from "./sid_dump";
@@ -52,18 +52,18 @@ export function update() {
         && sending_sid){
         if(simulated||connection.connState==ConnectionState.CONNECTED_IP){
             checkTransientDisabled();
-            if(socket_midi){
-                for (let i = 0;i<2;++i) {
+            if (mediaSocket) {
+                for (let i = 0; i < 2; ++i) {
                     const real_frame = current_sid_source.next_frame();
-                    console.assert(real_frame.length==FRAME_LENGTH);
-                    const data = new Uint8Array(FRAME_LENGTH+4);
-                    for (let j = 0;j<FRAME_LENGTH;++j) {
+                    console.assert(real_frame.length == FRAME_LENGTH);
+                    const data = new Uint8Array(FRAME_LENGTH + 4);
+                    for (let j = 0; j < FRAME_LENGTH; ++j) {
                         data[j] = real_frame[j];
                     }
-                    for (let j = FRAME_LENGTH;j<data.length;++j) {
+                    for (let j = FRAME_LENGTH; j < data.length; ++j) {
                         data[j] = 0xFF;
                     }
-                    chrome.sockets.tcp.send(socket_midi, data, () => {
+                    chrome.sockets.tcp.send(mediaSocket, data, () => {
                         if (chrome.runtime.lastError) {
                             console.log("Failed to send SID data: " + chrome.runtime.lastError.message);
                         }

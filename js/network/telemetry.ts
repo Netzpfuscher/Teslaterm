@@ -3,8 +3,8 @@ import {meters} from '../gui/gauges';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import * as sid from "../sid/sid";
-import {mainSocket, socket_midi, resetTimeout} from "./connection";
-import * as menu from '../gui/menu'
+import {mainSocket, mediaSocket, resetTimeout} from "./connection";
+import * as menu from '../gui/menu';
 import {config} from '../init';
 import * as commands from '../network/commands';
 import * as $ from 'jquery'
@@ -162,19 +162,19 @@ const TIMEOUT = 50;
 
 let buffer: number[] = [];
 let bytes_done:number = 0;
-function receive(info){
 
-    if(info.socketId==socket_midi){
+export function receive(info) {
+    if (info.socketId == mediaSocket) {
         const buf = new Uint8Array(info.data);
-        if(buf[0]==0x78){
+        if (buf[0] == 0x78) {
             sid.setSendingSID(false);
         }
-        if(buf[0]==0x6f){
+        if (buf[0] == 0x6f) {
             sid.setSendingSID(true);
         }
     }
 
-    if (info.socketId!=mainSocket) {
+    if (info.socketId != mainSocket) {
         return;
     }
 

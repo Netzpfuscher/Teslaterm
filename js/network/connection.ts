@@ -1,31 +1,47 @@
 import * as gui from '../gui/gui';
 import {terminal} from '../gui/gui';
 import * as menu from '../gui/menu';
-import {ConnectionState} from "./telemetry";
+import * as telemetry from "./telemetry";
 import * as commands from './commands';
 import {reconnect} from './commands';
 import {populateMIDISelects} from "../midi/midi_ui";
-export let socket_midi: number|undefined;
+import * as net from "net";
 
 
 const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
 let wd_reset = 5;
-const wd_reset_msg=new Uint8Array([0xFF, 0xF1]);
+const wd_reset_msg = new Uint8Array([0xFF, 0xF1]);
 
-export let mainSocket: number|undefined;
-export let connid: number|undefined;
-let ipaddr:string = '0.0.0.0';
+export let mainSocket: net.Socket | undefined;
+export let mediaSocket: net.Socket | undefined;
+//TODO what is this?
+export let connid: number | undefined;
+let ipaddr: string = '0.0.0.0';
 //previously int connected. 0->Unconnected, 2->Serial, 1->IP
-export let connState: ConnectionState = ConnectionState.UNCONNECTED;
-function connect_ip(){
-    chrome.sockets.tcp.create({}, createInfo);
-    chrome.sockets.tcp.create({}, createInfo_midi);
+export let connState: telemetry.ConnectionState = telemetry.ConnectionState.UNCONNECTED;
+
+function connectSocket(port: number, desc: string, dataCallback: (data) => void) {
+    const ret = net.createConnection({port: port, host: ipaddr}, () => {
+        terminal.io.println("Connected socket " + desc);
+    });
+    ret.on('end', () => {
+        terminal.io.println("Socket " + desc + " disconnected");
+    });
+    ret.on('data', (data) => {
+        dataCallback(data);
+    });
+    return ret;
 }
 
-function reconnect_tel(){
-    chrome.sockets.tcp.disconnect(mainSocket,callback_dsk);
+function connect_ip() {
+    mainSocket = connectSocket(2323, "Main", telemetry.receive);
+    mediaSocket = net.createConnection({port: 2324, host: ipaddr});
+}
+
+function reconnect_tel() {
+    chrome.sockets.tcp.disconnect(mainSocket, callback_dsk);
 }
 
 function callback_dsk() {
@@ -36,11 +52,11 @@ function callback_dsk() {
 }
 
 function reconnect_midi() {
-    chrome.sockets.tcp.disconnect(socket_midi, callback_dsk_midi);
+    chrome.sockets.tcp.disconnect(mediaSocket, callback_dsk_midi);
 }
 
 function callback_dsk_midi() {
-    chrome.sockets.tcp.close(socket_midi, function clb() {
+    chrome.sockets.tcp.close(mediaSocket, function clb() {
         chrome.sockets.tcp.create({}, createInfo_midi);
     });
 }
@@ -55,9 +71,9 @@ function createInfo(info){
 
 }
 
-function createInfo_midi(info){
-    socket_midi = info.socketId;
-    chrome.sockets.tcp.connect(socket_midi,ipaddr,2324, callback_sck_midi);
+function createInfo_midi(info) {
+    mediaSocket = info.socketId;
+    chrome.sockets.tcp.connect(mediaSocket, ipaddr, 2324, callback_sck_midi);
 
 }
 function callback_sck(result){
@@ -110,8 +126,8 @@ export function disconnect() {
                 chrome.sockets.tcp.close(mainSocket);
                 gui.terminal.io.println('\r\nDisconnected');
             });
-            chrome.sockets.tcp.disconnect(socket_midi, () =>
-                chrome.sockets.tcp.close(socket_midi));
+            chrome.sockets.tcp.disconnect(mediaSocket, () =>
+                chrome.sockets.tcp.close(mediaSocket));
         }
         menu.onDisconnect();
         connState = ConnectionState.UNCONNECTED;
@@ -177,7 +193,7 @@ export function update() {
             terminal.io.println('Connection lost, reconnecting...');
 
             reconnect();
-            chrome.sockets.tcp.getInfo(socket_midi, midi_socket_ckeck);
+            chrome.sockets.tcp.getInfo(mediaSocket, midi_socket_ckeck);
             chrome.sockets.tcp.getInfo(mainSocket, telnet_socket_ckeck);
         }
 

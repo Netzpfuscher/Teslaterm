@@ -8,7 +8,7 @@ import {ontime, setBPS, setBurstOfftime, setBurstOntime} from '../gui/sliders';
 import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scope from '../gui/oscilloscope';
 import * as connection from '../network/connection';
-import {connState, socket_midi} from '../network/connection';
+import {connState, mediaSocket} from '../network/connection';
 import * as nano from '../nano';
 import * as midi_ui from "./midi_ui";
 import {populateMIDISelects} from "./midi_ui";
@@ -213,7 +213,7 @@ export function init(){
     if (navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
         media_state.progress = 0;
-        chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
+        //chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
     } else {
         alert("No MIDI support in your browser.");
     }
@@ -232,7 +232,6 @@ function midiConnectionStateChange( e ) {
 export function midiInit(midi: WebMidi.MIDIAccess) {
     midiAccess = midi;
 
-    //document.getElementById("synthbox").className = "loaded";
     midi_ui.init();
     midi.onstatechange = midiConnectionStateChange;
     midi_ui.populateMIDISelects();

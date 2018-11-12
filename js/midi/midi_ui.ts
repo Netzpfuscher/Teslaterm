@@ -2,7 +2,7 @@ import {terminal} from "../gui/gui";
 import * as helper from '../helper';
 import * as ui_helper from '../gui/ui_helper';
 import {onMidiNetworkConnect} from "./midi_client";
-import {socket_midi} from "../network/connection";
+import {mediaSocket} from "../network/connection";
 import {
     midiAccess,
     midiIn,
@@ -106,7 +106,7 @@ function onSelectMidiOut() {
         stopMidiOutput();
         if (id == "<Network>") {
             setMidiOut({
-                send: (data) => chrome.sockets.tcp.send(socket_midi, data, () => {
+                send: (data) => chrome.sockets.tcp.send(mediaSocket, data, () => {
                     if (chrome.runtime.lastError) {
                         console.log("Failed to send MIDI network data: " + chrome.runtime.lastError.message);
                     }

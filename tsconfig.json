@@ -2,11 +2,20 @@
   "exclude": ["node_modules"],
   "include": ["js/**/*"],
   "compilerOptions": {
-    "typeRoots": ["node_modules/@types", "js/types"],
+    "typeRoots": [
+      "node_modules/@types",
+      "js/types"
+    ],
     "downlevelIteration": true,
     "module": "commonjs",
     "target": "es5",
+    "outDir": "dist/compiled",
     "sourceMap": true,
-    "lib": ["es5", "es2015", "dom", "scripthost"]
+    "lib": [
+      "es5",
+      "es2015",
+      "dom",
+      "scripthost"
+    ]
   }
 }

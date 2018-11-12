@@ -14,6 +14,9 @@ import * as telemetry from './network/telemetry';
 import * as gauges from "./gui/gauges";
 import {NUM_GAUGES} from "./gui/gauges";
 import * as nano from "./nano";
+import * as fs from "fs";
+import ErrnoException = NodeJS.ErrnoException;
+import {convertArrayBufferToString} from "./helper";
 
 export let config: SimpleIni;
 export const simulated = true;
@@ -87,7 +90,7 @@ export function init() {
                 onClick: menu.onCtrlMenuClick
             });
             console.log("Done toolbar");
-            menu.init();
+            //menu.init();
         });
 
         let html_gauges = '';
@@ -144,49 +147,40 @@ export function init() {
         });
         terminal.decorate(document.querySelector('#terminal'));
         terminal.installKeyboard();
-        telemetry.init();
+        //telemetry.init();
 
-        chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
+        //chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
 
         gui.init();
         sliders.init();
 
         scope.init();
         midi.init();
-        midi_server.init();
-        setInterval(update, 20);
+        //midi_server.init();
+        //setInterval(update, 20);
     });
 }
-
 
 function readini(file: string) {
-	chrome.runtime.getPackageDirectoryEntry(function (root) {
-		root.getFile(file, {}, function (fileEntry) {
-			fileEntry.file(function (file) {
-				let reader = new FileReader();
-				reader.onloadend = event_read_ini;
-				reader.readAsText(file);
-			}, () => {
-			});
-		}, () => {
-		});
-	});
-}
+    fs.readFile(file, (err: ErrnoException | null, data: Buffer) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        const data_string = convertArrayBufferToString(data);
+        console.log(data_string);
+        config = new SimpleIni(function () {
+            return data_string;
+        });
 
-function event_read_ini(){
-    let inicontent=this.result;
-    config = new SimpleIni(function() {
-       return inicontent;
+        if (config.general.port) {
+            w2ui['toolbar'].get('port').value = config.general.port;
+            w2ui['toolbar'].refresh();
+        }
+        if (config.general.autoconnect == "true") {
+            connect(config.general.port);
+        }
     });
-
-    if(config.general.port) {
-        w2ui['toolbar'].get('port').value = config.general.port;
-        w2ui['toolbar'].refresh();
-    }
-    if(config.general.autoconnect=="true"){
-        connect(config.general.port);
-    }
-
 }
 
 //Called every 20 ms

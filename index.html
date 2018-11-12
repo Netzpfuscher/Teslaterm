@@ -3,6 +3,10 @@
 <head>
     <meta charset="utf-8">
     <title>Teslaterm</title>
+    <script>if (typeof module === 'object') {
+		window.module = module;
+		module = undefined;
+	}</script>
     <link href="styles/main.css" rel="stylesheet">
     <link href="libs/w2ui-1.5.rc1.css" rel="stylesheet">
     <script type="text/javascript">
@@ -14,8 +18,9 @@
     <script src="node_modules/justgage/justgage.js"></script>
     <script src="libs/simple-ini.js"></script>
     <script src="libs/hterm_all.js"></script>
+    <script>if (window.module) module = window.module;</script>
     <script type="text/javascript">
-        let init = require('./js/init');
+		let init = require('./dist/compiled/init');
 		init.init();
     </script>
 </head>
