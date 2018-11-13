@@ -6,9 +6,26 @@
     "width": 1024,
     "height": 768
   },
-  "permissions": ["serial", {"fileSystem": ["write"]}],
+  "permissions": [
+    "serial",
+    {
+      "fileSystem": [
+        "write"
+      ]
+    }
+  ],
   "sockets": {
-    "tcp": {"connect": "*"},
-    "tcpServer": { "listen" : ":56789" }
+    "tcp": {
+      "connect": "*"
+    },
+    "tcpServer": {
+      "listen": ":56789"
+    }
+  },
+  "dependencies": {
+    "@types/chrome": "~0.0.72",
+    "@types/jquery": "~3.3.1",
+    "jquery": "^3.3.1",
+    "npm": "^6.4.1"
   }
 }

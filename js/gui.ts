@@ -1,20 +1,6 @@
 //TODO why is this broken?
 import {JustGage} from '../justgage';
-import {scope} from "./oscilloscope";
-
-export class Chart {
-    min: number;
-    max: number;
-    span:number;
-    count_div: number;
-    offset: number;
-    unit: string;
-    name: string;
-    value_real: number;
-    value: number;
-}
-
-
+import * as telemetry from './telemetry';
 
 export class Meter {
     num_meters: number;
@@ -82,16 +68,106 @@ export class Meter {
     }
 }
 
+export function onCtrlMenuClick(event) {
+    switch (event.target) {
+
+        case 'connect':
+            //TODO address parameter
+            telemetry.connect();
+
+            break;
+        case 'cls':
+            clear();
+            break;
+        case 'mnu_command:bus':
+            if (busActive) {
+                send_command('bus off\r');
+            } else {
+                warn_energ();
+            }
+            break;
+        case 'mnu_command:transient':
+            if (transientActive) {
+                stopTransient();
+            } else {
+                startTransient();
+            }
+            break;
+        case 'mnu_command:startStopMidi':
+            if (midiServer.active) {
+                midiServer.close();
+            } else {
+                midiServer.requestName()
+                    .then(() =>
+                        term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server",
+                            false, true, null, midiServer.port)
+                    ).then(port=> {
+                    midiServer.setPort(port);
+                    midiServer.start();
+                });
+            }
+            break;
+        case 'mnu_command:Load EEPROM-Config':
+            warn_eeprom_load();
+            break;
+        case 'mnu_command:Save EEPROM-Config':
+            warn_eeprom_save();
+            break;
+        case 'mnu_midi:Play':
+            if (midi_state.file==null){
+                terminal.io.println("Please select a MIDI file using drag&drop");
+                break;
+            }
+            startCurrentMidiFile();
+            if(sid_state==1){
+                sid_state=2;
+            }
+            break;
+        case 'mnu_midi:Stop':
+            midiOut.send(kill_msg);
+            if (midi_state.file==null || midi_state.state!='playing'){
+                terminal.io.println("No MIDI file is currently playing");
+                break;
+            }
+            stopMidiFile();
+            if(sid_state==2){
+                sid_state=1;
+                frame_cnt=byt;
+                frame_cnt_old=0;
+            }
+            break;
+        case 'mnu_script:Start':
+            if (currentScript==null) {
+                terminal.io.println("Please select a script file using drag&drop first");
+                break;
+            }
+            scripting.startScript(currentScript);
+            break;
+        case 'mnu_script:Stop':
+            if (currentScript==null) {
+                terminal.io.println("Please select a script file using drag&drop first");
+                break;
+            }
+            if (!scripting.isRunning()) {
+                terminal.io.println("The script can not be stopped since it isn't running");
+                break;
+            }
+            scripting.cancel();
+            break;
+        case 'kill_set':
+            send_command('kill set\r');
+            break;
+        case 'kill_reset':
+            send_command('kill reset\r');
+            break;
+    }
+}
+
 export const NUM_GAUGES = 7;
 
 
 export let meters:Meter = new Meter(NUM_GAUGES);
-export function redrawInfo(): void {
-    //TODO
-}
-export function redrawMeas(): void {
-    //TODO
-}
+export let terminal: any = new hterm.Terminal();//TODO proper type
 
 export const MEAS_SPACE = 20;
 export const INFO_SPACE = 150;
@@ -99,34 +175,3 @@ export const TOP_SPACE = 20;
 export const TRIGGER_SPACE = 10;
 export const CONTROL_SPACE = 15;
 export const MEAS_POSITION = 4;
-
-
-export function drawChart(): void {
-    if(draw_mode==1){
-        chart_cls();
-        draw_grid();
-        redrawTrigger();
-        redrawMeas();
-
-        draw_mode=0;
-    }
-    if(scope.trigger==-1){
-        plot();
-    }else{
-        var triggered = (scope.trigger_lvl>0)==(scope[scope.trigger].value > scope.trigger_lvl);
-        if (scope.trigger_block === false) {
-            if (plot.xpos == 11 && triggered) {
-                scope.trigger_block = true;
-            }
-        } else {
-            if (scope.trigger_trgt || triggered) {
-                scope.trigger_trgt = true;
-                plot();
-            }
-            if (scope.trigger_trgt != scope.trigger_old) redrawMeas();
-            scope.trigger_old = scope.trigger_trgt;
-
-        }
-
-    }
-}

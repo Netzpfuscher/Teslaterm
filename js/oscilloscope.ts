@@ -1,7 +1,4 @@
-import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, redrawMeas, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
-
-
-
+import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 
 const waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
 const backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
@@ -64,7 +61,7 @@ export class Trace {
     }
 }
 
-let trigger: number;
+let trigger_id: number;
 let trigger_lvl: number;
 let trigger_block: boolean;
 let trigger_trgt: boolean;
@@ -127,7 +124,7 @@ export function onResize(): void {
     }
     if (!this.cleared) {
         this.draw_grid();
-        this.drawTrigger();
+        this.redrawTrigger();
         this.drawLabels();
     }
 }
@@ -145,7 +142,7 @@ export function drawLabels() {
     waveContext.font = "12px Arial";
     waveContext.textAlign = "left";
     waveContext.fillStyle = "white";
-    if (this.trigger != -1) {
+    if (this.trigger_id != -1) {
         waveContext.fillText("Trg lvl: " + this.trigger_lvl, TRIGGER_SPACE, y_res - MEAS_POSITION);
         let state: string;
         if (this.trigger_trgt) {
@@ -197,15 +194,15 @@ export function draw_grid() {
     backContext.stroke();
 }
 
-export function drawTrigger() {
+export function redrawTrigger() {
     const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
     const ytrgpos = Math.floor((trigger_lvl * -1 + 1) * (y_res / 2.0)) + TOP_SPACE;
     waveContext.clearRect(0, 0, 10, waveCanvas.height);
-    if (trigger != -1) {
+    if (trigger_id != -1) {
         trigger_block = true;
         waveContext.beginPath();
         waveContext.lineWidth = this.pixelRatio;
-        waveContext.strokeStyle = this.traces[trigger].wavecolor;
+        waveContext.strokeStyle = this.traces[trigger_id].wavecolor;
         waveContext.moveTo(0, ytrgpos);
         waveContext.lineTo(10, ytrgpos);
         waveContext.moveTo(10, ytrgpos);
@@ -217,11 +214,11 @@ export function drawTrigger() {
         waveContext.stroke();
         waveContext.font = "12px Arial";
         waveContext.textAlign = "center";
-        waveContext.fillStyle = this.traces[trigger].wavecolor;
+        waveContext.fillStyle = this.traces[trigger_id].wavecolor;
         if (ytrgpos < 14) {
-            waveContext.fillText(trigger.toString(), 4, ytrgpos + 12);
+            waveContext.fillText(trigger_id.toString(), 4, ytrgpos + 12);
         } else {
-            waveContext.fillText(trigger.toString(), 4, ytrgpos - 4);
+            waveContext.fillText(trigger_id.toString(), 4, ytrgpos - 4);
         }
     }
 }
@@ -251,4 +248,80 @@ export function drawString(x: number, y: number, color: number, size: number, st
     } else {
         waveContext.fillText(str, x, y);
     }
+}
+
+export function drawChart(): void {
+    if(cleared){
+        clear();
+        draw_grid();
+        redrawTrigger();
+        redrawMeas();
+
+        cleared = false;
+    }
+    if(trigger_id==-1){
+        plot();
+    }else{
+        const triggered = (trigger_lvl>0)==(traces[trigger_id].value > trigger_lvl);
+        if (trigger_block === false) {
+            if (xPos == 11 && triggered) {
+                trigger_block = true;
+            }
+        } else {
+            if (trigger_trgt || triggered) {
+                trigger_trgt = true;
+                plot();
+            }
+            if (trigger_trgt != trigger_old) redrawMeas();
+            trigger_old = trigger_trgt;
+
+        }
+
+    }
+}
+
+export function redrawInfo(){
+    const x_res = this.wavecanvas.width;
+    const y_res = this.wavecanvas.height;
+    const line_height = 32;
+    let trigger_symbol = "";
+    waveContext.clearRect(x_res - this.info_space, 0, x_res, y_res - this.meas_space);
+    waveContext.font = "12px Arial";
+    waveContext.textAlign = "left";
+    const tterm_length = this.tt.length;
+    for (let i = 0; i < tterm_length; i++){
+        if (traces[i].name){
+            waveContext.fillStyle = wavecolor[i];
+            if(i == this.tt.trigger){
+                trigger_symbol = "->";
+            }
+            waveContext.fillText(trigger_symbol + "w" + i + ": " + traces[i].name,x_res - this.info_space + 4, line_height * (i+1));
+            waveContext.fillText(traces[i].perDiv +' '+ traces[i].unit +'/div',x_res - this.info_space + 4, (line_height * (i+1))+16);
+            trigger_symbol = "";
+        }
+    }
+    redrawMeas();
+}
+
+function redrawMeas(){
+    const x_res = this.wavecanvas.width;
+    const y_res = this.wavecanvas.height;
+    waveContext.clearRect(this.trigger_space, y_res - this.meas_space, x_res - this.info_space, y_res);
+
+    let text_pos = this.trigger_space+180;
+    for(let i=0;i<traces.length;i++){
+        if (traces[i].name){
+            waveContext.fillStyle = wavecolor[i];
+            waveContext.fillText("Min: " +traces[i].stats.min ,text_pos+=60, y_res - this.meas_position);
+            waveContext.fillText("Max: " +traces[i].stats.max ,text_pos+=60, y_res - this.meas_position);
+            waveContext.fillText("Avg: "+traces[i].stats.avgDisplay ,text_pos+=60, y_res - this.meas_position);
+        }
+    }
+}
+
+
+export function setTrigger(triggerId: number) {
+    trigger_id = triggerId;
+    redrawInfo();
+    redrawTrigger();
 }
