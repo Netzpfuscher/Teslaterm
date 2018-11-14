@@ -1,2 +1,9 @@
-export let socket_midi: number|undefined;
 export let flow_ctl: boolean = true;
+
+export function setFlowCtl(newVal: boolean) {
+    flow_ctl = newVal;
+}
+
+export function populateMIDISelects() {
+
+}

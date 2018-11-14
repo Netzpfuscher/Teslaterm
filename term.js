@@ -52,83 +52,7 @@ const scripting = require('./term_scripting');
 let currentScript = null;
 var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 
-function connect_ip(){
-	chrome.sockets.tcp.create({}, createInfo);
-	chrome.sockets.tcp.create({}, createInfo_midi);
-}
 
-function reconnect_tel(){
-	chrome.sockets.tcp.disconnect(socket,callback_dsk);	
-}
-function callback_dsk(info){
-	chrome.sockets.tcp.close(socket, function clb(){chrome.sockets.tcp.create({}, createInfo);});
-
-}
-
-function reconnect_midi(){
-	chrome.sockets.tcp.disconnect(socket_midi,callback_dsk_midi);	
-}
-
-function callback_dsk_midi(info){
-	chrome.sockets.tcp.close(socket_midi, function clb(){chrome.sockets.tcp.create({}, createInfo_midi);});
-}
-
-function createInfo(info){
-	socket = info.socketId;
-	
-	console.log(ipaddr);
-
-	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
-	
-	
-}
-function createInfo_midi(info){
-	socket_midi = info.socketId;
-	chrome.sockets.tcp.connect(socket_midi,ipaddr,123, callback_sck_midi);
-	
-}
-
-
-
-function callback_sck(result){
-	if(!result){
-		terminal.io.println("connected");
-   		connected = 1;
-		w2ui['toolbar'].get('connect').text = 'Disconnect';
-		w2ui['toolbar'].refresh();
-		setTimeout(start_conf, 200);	
-		populateMIDISelects();
-	}
-
-}
-
-function callback_sck_midi(info){
-	
-}
-
-var onReceive = function(info) {
-  if (info.socketId !== socket)
-    return;
-  console.log(info.data);
-};
-
-function reconnect(){
-	send_command('tterm start\r');
-}
-
-
-var check_cnt=0;
-function midi_socket_ckeck(info){
-	if(info.connected==false){
-		reconnect_midi();
-	}
-}
-
-function telnet_socket_ckeck(info){
-	if(info.connected==false){
-		reconnect_tel();
-	}
-}
 
 const byt = 29*2;
 var sid_marker = new Uint8Array([0xFF,0xFF,0xFF,0xFF]);
@@ -344,26 +268,7 @@ function updateSliderAvailability() {
 
 
 
-function connected_cb(connectionInfo){
-	if(connectionInfo.connectionId){
-		terminal.io.println("connected");
-		connid = connectionInfo.connectionId;
-		connected = 2;
-		w2ui['toolbar'].get('connect').text = 'Disconnect';
-		w2ui['toolbar'].refresh();
-		start_conf();	
-	} else {
-		terminal.io.println("failed!");
-	}
-}
 
-function start_conf(){
-	send_command('\r');
-	send_command('set pw 0\r');
-	send_command('set pwd 50000\r');
-	send_command('kill reset\rtterm start\rcls\r');
-	
-}
 
 function getdevs(devices){
    for (var i = 0; i < devices.length; i++) {
@@ -392,36 +297,6 @@ function getdevs(devices){
 function disconnected_cb(){
 	terminal.io.println('\r\nDisconnected');
 }
-
-function connect(){
-	var port = w2ui['toolbar'].get('port');
-	if(connected){
-		send_command('tterm stop\rcls\r');
-		setTimeout(()=>{
-			if(connected==2) chrome.serial.disconnect(connid,disconnected_cb);
-			if(connected==1){
-				chrome.sockets.tcp.disconnect(socket, disconnected_cb_tel);
-				chrome.sockets.tcp.disconnect(socket_midi, disconnected_cb_midi);
-			}
-			w2ui['toolbar'].get('connect').text = 'Connect';
-			w2ui['toolbar'].refresh();
-			connected= 0;
-		}, 200);
-	}else{
-		
-		if(String(port.value).includes(".")){
-			ipaddr=String(port.value);
-			terminal.io.println("\r\nConnect: "+ ipaddr);
-			connect_ip();
-			
-		}else{
-			terminal.io.println("\r\nConnect: Serial");
-			chrome.serial.getDevices(getdevs);
-		}
-	}
-}
-
-
 
 function disconnected_cb_tel(){
 	chrome.sockets.tcp.close(socket,function clb(){});

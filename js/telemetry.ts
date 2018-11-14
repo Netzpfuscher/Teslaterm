@@ -1,7 +1,8 @@
 import {meters, terminal} from './gui';
 import * as scope from './oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from './helper';
-import {flow_ctl, socket_midi} from "./midi";
+import * as midi from "./midi";
+import {mainSocket, socket_midi} from "./connection";
 
 export enum ConnectionState {
     UNCONNECTED,
@@ -32,8 +33,6 @@ const DATA_LEN = 1;
 const DATA_NUM = 2;
 
 let term_state:number=0;
-//previously int connected. 0->Unconnected, 2->Serial, 1->IP
-export let connState: ConnectionState = ConnectionState.UNCONNECTED;
 
 function compute(dat: number[]){
     switch(dat[DATA_TYPE]){
@@ -41,16 +40,16 @@ function compute(dat: number[]){
             meters.value(dat[DATA_NUM], bytes_to_signed(dat[3],dat[4]));
             break;
         case TT_GAUGE_CONF:
-            var gauge_num = dat[2].valueOf();
-            var gauge_min = bytes_to_signed(dat[3],dat[4]);
-            var gauge_max = bytes_to_signed(dat[5],dat[6]);
+            const gauge_num = dat[2].valueOf();
+            const gauge_min = bytes_to_signed(dat[3],dat[4]);
+            const gauge_max = bytes_to_signed(dat[5],dat[6]);
             dat.splice(0,7);
-            var str = convertArrayBufferToString(dat);
+            const str = convertArrayBufferToString(dat);
             meters.text(gauge_num, str);
             meters.range(gauge_num, gauge_min, gauge_max);
             break;
         case TT_CHART_CONF:
-            var chart_num = dat[2].valueOf();
+            let chart_num = dat[2].valueOf();
             const min = bytes_to_signed(dat[3],dat[4]);
             const max = bytes_to_signed(dat[5],dat[6]);
             scope.traces[chart_num].span= max-min;
@@ -62,8 +61,8 @@ function compute(dat: number[]){
             scope.redrawInfo();
             break;
         case TT_CHART:
-            var val=bytes_to_signed(dat[3],dat[4]);
-            var chart_num= dat[DATA_NUM].valueOf();
+            const val=bytes_to_signed(dat[3],dat[4]);
+            chart_num= dat[DATA_NUM].valueOf();
             scope.addValue(chart_num, val);
             break;
         case TT_CHART_DRAW:
@@ -73,11 +72,11 @@ function compute(dat: number[]){
             scope.clear();
             break;
         case TT_CHART_LINE:
-            var x1 = bytes_to_signed(dat[2],dat[3]);
-            var y1 = bytes_to_signed(dat[4],dat[5]);
-            var x2 = bytes_to_signed(dat[6],dat[7]);
-            var y2 = bytes_to_signed(dat[8],dat[9]);
-            var color = dat[10].valueOf();
+            const x1 = bytes_to_signed(dat[2],dat[3]);
+            const y1 = bytes_to_signed(dat[4],dat[5]);
+            const x2 = bytes_to_signed(dat[6],dat[7]);
+            const y2 = bytes_to_signed(dat[8],dat[9]);
+            const color = dat[10].valueOf();
             scope.drawLine(x1, x2, y1, y2, color);
 
             break;
@@ -96,19 +95,17 @@ function compute(dat: number[]){
 }
 
 function drawString(dat: number[], center: boolean) {
-    var x = bytes_to_signed(dat[2],dat[3]);
-    var y = bytes_to_signed(dat[4],dat[5]);
-    var color = dat[6].valueOf();
-    var size = dat[7].valueOf();
+    const x = bytes_to_signed(dat[2],dat[3]);
+    const y = bytes_to_signed(dat[4],dat[5]);
+    const color = dat[6].valueOf();
+    let size = dat[7].valueOf();
     if(size<6) size=6;
     dat.splice(0,8);
-    var str = convertArrayBufferToString(dat);
+    const str = convertArrayBufferToString(dat);
     scope.drawString(x, y, color, size, str, center);
 }
 
 const TIMEOUT = 50;
-export let socket: number|undefined;
-export let connid: number|undefined;
 let buffer: number[] = [];
 let bytes_done:number = 0;
 let response_timeout: number = TIMEOUT;
@@ -116,26 +113,25 @@ let response_timeout: number = TIMEOUT;
 function receive(info){
 
     if(info.socketId==socket_midi){
-        var buf = new Uint8Array(info.data);
+        const buf = new Uint8Array(info.data);
         if(buf[0]==0x78){
             //TODO why doesn't this work
-            flow_ctl= false;
+            midi.setFlowCtl(false);
         }
         if(buf[0]==0x6f){
-            flow_ctl=true;
+            midi.setFlowCtl(true);
         }
     }
 
-    if (info.socketId!=socket) {
+    if (info.socketId!=mainSocket) {
         return;
     }
 
-    var buf = new Uint8Array(info.data);
-    var txt = '';
+    const buf = new Uint8Array(info.data);
 
     response_timeout = TIMEOUT;
 
-    for (var i = 0; i < buf.length; i++) {
+    for (let i = 0; i < buf.length; i++) {
 
 
         switch(term_state){
@@ -143,7 +139,7 @@ function receive(info){
                 if(buf[i]== 0xff){
                     term_state = TT_STATE_FRAME;
                 }else{
-                    var str = String.fromCharCode.apply(null, [buf[i]]);
+                    const str = String.fromCharCode.apply(null, [buf[i]]);
                     terminal.io.print(str);
                 }
                 break;

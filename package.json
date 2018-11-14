@@ -1,6 +1,6 @@
 {
-  "name": "Teslaterm",
-  "version": "0.1",
+  "name": "teslaterm",
+  "version": "0.1.0",
   "main": "index.html",
   "window": {
     "width": 1024,
@@ -25,7 +25,8 @@
   "dependencies": {
     "@types/chrome": "~0.0.72",
     "@types/jquery": "~3.3.1",
+    "@types/w2ui": "^1.4.32",
     "jquery": "^3.3.1",
-    "npm": "^6.4.1"
+    "w2ui": "^1.4.3"
   }
 }

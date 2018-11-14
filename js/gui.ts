@@ -2,6 +2,18 @@
 import {JustGage} from '../justgage';
 import * as telemetry from './telemetry';
 
+export function onConnected() {
+    terminal.io.println("connected");
+    w2ui['toolbar'].get('connect').text = 'Disconnect';
+    w2ui['toolbar'].refresh();
+}
+
+
+export function onDisconnect() {
+    w2ui['toolbar'].get('connect').text = 'Connect';
+    w2ui['toolbar'].refresh();
+}
+
 export class Meter {
     num_meters: number;
     meter_buf_old: number[];
@@ -160,6 +172,27 @@ export function onCtrlMenuClick(event) {
         case 'kill_reset':
             send_command('kill reset\r');
             break;
+    }
+}
+
+function connect(){
+    var port = w2ui['toolbar'].get('port');
+    if(connected){
+        send_command('tterm stop\rcls\r');
+        setTimeout(()=>{
+            connection.disconnect();
+        }, 200);
+    }else{
+
+        if(String(port.value).includes(".")){
+            ipaddr=String(port.value);
+            terminal.io.println("\r\nConnect: "+ ipaddr);
+            connect_ip();
+
+        }else{
+            terminal.io.println("\r\nConnect: Serial");
+            chrome.serial.getDevices(getdevs);
+        }
     }
 }
 
