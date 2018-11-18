@@ -1,23 +1,10 @@
-const vm = require('vm');
-const fs = require('fs');
+import * as vm from 'vm';
+import * as fs from 'fs';
+
 let running = false;
 let interrupt = null;
 let queue = null;
 let timeoutDate = null;
-//local copies of variables
-let terminal = null;
-let player = null;
-let startCurrentMidiFile = null;
-let stopMidiFile = null;
-let arrayBufferToString = null;
-let setOntime = null;
-let setBPS = null;
-let setBurstOntime = null;
-let setBurstOfftime = null;
-let startTransient = null;
-let stopTransient = null;
-let showConfirmDialog = null;
-let setRelOntimeAllowed = null;
 
 const maxQueueLength = 1000;
 const timeout = 1000;
@@ -36,7 +23,8 @@ function wrapForSandbox(func) {
 		if (queue.length>=maxQueueLength) {
 			throw "Maximum queue length reached! "+queue.length;
 		}
-		queue.push(()=>wrapped.apply(this, arguments));
+		const args = arguments;
+		queue.push(()=>wrapped.apply(this, args));
 	}
 }
 

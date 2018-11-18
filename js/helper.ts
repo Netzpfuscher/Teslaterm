@@ -1,4 +1,6 @@
 import * as $ from 'jquery'
+// @ts-ignore TODO remove
+import {w2confirm} from 'w2ui';
 
 export function bytes_to_signed(lsb: number, msb: number): number {
     var sign = msb & (1 << 7);
@@ -91,4 +93,10 @@ export function removeMenuEntry(menu: string, id: string): void {
         }
     }
     console.log("Didn't find name to remove!");
+}
+
+export function warn(message: string, onConfirmed: Function) {
+    w2confirm(message)
+        .no(()=>{ })
+        .yes(onConfirmed);
 }

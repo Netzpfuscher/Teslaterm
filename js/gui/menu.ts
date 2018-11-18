@@ -1,6 +1,11 @@
-//TODO why is this broken?
-import {JustGage} from '../justgage';
-import * as telemetry from './telemetry';
+import {terminal} from "./gui";
+import {busActive, busControllable, ConnectionState, transientActive} from "../network/telemetry";
+import * as cmd from '../network/commands';
+import * as connection from '../network/connection';
+import {w2confirm} from 'w2ui';
+import * as helper from '../helper';
+import * as sliders from './sliders';
+import * as scripting from '../scripting'
 
 export function onConnected() {
     terminal.io.println("connected");
@@ -14,88 +19,21 @@ export function onDisconnect() {
     w2ui['toolbar'].refresh();
 }
 
-export class Meter {
-    num_meters: number;
-    meter_buf_old: number[];
-    meter_buf: number[];
-    gauges: any;//TODO proper type definition
-
-    constructor(meters){
-        this.num_meters=meters;
-        this.meter_buf_old = [];
-        this.meter_buf = [];
-        this.gauges = [];
-
-        for(var i=0;i<this.num_meters;i++){
-            this.meter_buf_old[i]=255;
-            this.meter_buf[i]=0;
-            this.gauges[i]= new JustGage({
-                id: ("gauge"+i),
-                value: 255,
-                min: 0,
-                max: 255,
-                title: ("Gauge"+i)
-            });
-        }
-
-    }
-
-    refresh_all(){
-        for(var i=0;i<this.num_meters;i++){
-            this.gauges[i].refresh(this.meter_buf[i]);
-        }
-    }
-
-    refresh(){
-        for(var i=0;i<this.num_meters;i++){
-            if(this.meter_buf[i]!=this.meter_buf_old[i]){
-                this.gauges[i].refresh(this.meter_buf[i]);
-                this.meter_buf_old[i]=this.meter_buf[i];
-            }
-        }
-    }
-
-    value(num, value){
-        if(num<this.num_meters){
-            this.meter_buf[num] = value;
-        }else{
-            console.log('Meter: '+num+'not found');
-        }
-    }
-
-    text(num,text){
-        if(num<this.num_meters){
-            this.gauges[num].refreshTitle(text);
-        }else{
-            console.log('Meter: '+num+'not found');
-        }
-    }
-
-    range(num, min, max){
-        if(num<this.num_meters){
-            this.gauges[num].refresh(min,max);
-        }else{
-            console.log('Meter: '+num+'not found');
-        }
-    }
-}
 
 export function onCtrlMenuClick(event) {
     switch (event.target) {
 
         case 'connect':
-            //TODO address parameter
-            telemetry.connect();
-
+            connect();
             break;
         case 'cls':
-            clear();
+            cmd.clear();
             break;
         case 'mnu_command:bus':
             if (busActive) {
-                send_command('bus off\r');
+                cmd.busOff();
             } else {
-                warn_energ();
+                helper.warn('WARNING!<br>The coil will be energized.', cmd.busOn);
             }
             break;
         case 'mnu_command:transient':
@@ -120,10 +58,12 @@ export function onCtrlMenuClick(event) {
             }
             break;
         case 'mnu_command:Load EEPROM-Config':
-            warn_eeprom_load();
+            helper.warn('WARNING!<br>Are you sure to load the configuration from EEPROM?',
+                cmd.eepromSave);
             break;
         case 'mnu_command:Save EEPROM-Config':
-            warn_eeprom_save();
+            helper.warn('WARNING!<br>Are you sure to save the configuration to EEPROM?',
+                cmd.eepromSave);
             break;
         case 'mnu_midi:Play':
             if (midi_state.file==null){
@@ -167,44 +107,42 @@ export function onCtrlMenuClick(event) {
             scripting.cancel();
             break;
         case 'kill_set':
-            send_command('kill set\r');
+            cmd.resetKill();
             break;
         case 'kill_reset':
-            send_command('kill reset\r');
+            cmd.setKill();
             break;
     }
 }
 
+
 function connect(){
-    var port = w2ui['toolbar'].get('port');
-    if(connected){
-        send_command('tterm stop\rcls\r');
-        setTimeout(()=>{
-            connection.disconnect();
-        }, 200);
+    if(connection.connState!=ConnectionState.UNCONNECTED){
+        connection.disconnect();
     }else{
-
-        if(String(port.value).includes(".")){
-            ipaddr=String(port.value);
-            terminal.io.println("\r\nConnect: "+ ipaddr);
-            connect_ip();
-
-        }else{
-            terminal.io.println("\r\nConnect: Serial");
-            chrome.serial.getDevices(getdevs);
-        }
+        const port = w2ui['toolbar'].get('port');
+        connection.connect(port.value);
     }
 }
 
-export const NUM_GAUGES = 7;
+export function updateBusActive() {
+    if (busControllable) {
+        helper.changeMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"));
+    }
+    sliders.updateSliderAvailability();
+}
 
+export function updateTransientActive() {
+    helper.changeMenuEntry("mnu_command", "transient", "TR "+(transientActive?"Stop":"Start"));
+    sliders.updateSliderAvailability();
+}
 
-export let meters:Meter = new Meter(NUM_GAUGES);
-export let terminal: any = new hterm.Terminal();//TODO proper type
+export function updateBusControllable() {
+    if (busControllable) {
+        helper.addFirstMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"), 'fa fa-bolt');
+    } else {
+        helper.removeMenuEntry("mnu_command", "bus");
+    }
 
-export const MEAS_SPACE = 20;
-export const INFO_SPACE = 150;
-export const TOP_SPACE = 20;
-export const TRIGGER_SPACE = 10;
-export const CONTROL_SPACE = 15;
-export const MEAS_POSITION = 4;
+    sliders.updateSliderAvailability();
+}

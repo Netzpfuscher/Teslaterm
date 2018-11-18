@@ -1,5 +1,5 @@
-import {TRIGGER_SPACE} from "./js/gui";
-import {scope} from "./js/oscilloscope";
+import {TRIGGER_SPACE} from "./js/gui/gui";
+import {scope} from "./js/gui/oscilloscope";
 
 var connid;
 var connected = 0;
@@ -43,12 +43,8 @@ var draw_mode=0;
 var midiServer;
 
 
-let busActive = false;
-let busControllable = false;
-let transientActive = false;
-
 var uitime = setInterval(refresh_UI, 20);
-const scripting = require('./term_scripting');
+const scripting = require('./js/scripting');
 let currentScript = null;
 var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 
@@ -222,77 +218,14 @@ terminal.onTerminalReady = function() {
   // previous io object.
 };
 
-function setBusActive(active) {
-	if (active!=busActive) {
-		busActive = active;
-		if (busControllable) {
-			helper.changeMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"));
-		}
-		updateSliderAvailability();
-	}
-}
-
-function setTransientActive(active) {
-	if (active!=transientActive) {
-		transientActive = active;
-		helper.changeMenuEntry("mnu_command", "transient", "TR "+(transientActive?"Stop":"Start"));
-		updateSliderAvailability();
-	}
-}
-
-function setBusControllable(controllable) {
-	if (controllable!=busControllable) {
-		busControllable = controllable;
-		//{ text: 'BUS ON', icon: 'fa fa-bolt', id: 'bus'}
-		if (busControllable) {
-			helper.addFirstMenuEntry("mnu_command", "bus", "Bus "+(busActive?"OFF":"ON"), 'fa fa-bolt');
-		} else {
-			helper.removeMenuEntry("mnu_command", "bus");
-		}
-
-		updateSliderAvailability();
-	}
-}
-
-function updateSliderAvailability() {
-	const busMaybeActive = busActive || !busControllable;
-	const offDisable = !(transientActive && busMaybeActive);
-	for (let i = 1; i <= 3; ++i) {
-		const slider = $(".w2ui-panel-content .scopeview #slider" + i)[0];
-		slider.className = offDisable?"slider-gray":"slider";
-	}
-	const onDisable = !busMaybeActive;
-	ontimeUI.slider.className = onDisable?"slider-gray":"slider";
-}
 
 
 
 
 
 
-function getdevs(devices){
-   for (var i = 0; i < devices.length; i++) {
-	   if((devices[i].displayName && devices[i].displayName.indexOf("STMBL") > -1) || (devices[i].vendorId && devices[i].vendorId == 1204 && devices[i].productId && devices[i].productId == 62002)){
-		path = devices[i].path;
-        terminal.io.println("Connecting to " + devices[i].path);
-        chrome.serial.connect(devices[i].path, connected_cb);
-        return;
-      }
-      terminal.io.println(devices[i].path + ' ' + devices[i].displayName + ' ' + devices[i].vendorId + ' ' + devices[i].productId );
-   }
-   
-   var test = w2ui['toolbar'].get('port');
-   
-   if(test.value){
-		terminal.io.println('UD3 not found connect to: '+ test.value);
-		chrome.serial.connect(test.value, connected_cb);
-   }else{
-	   terminal.io.println('No COM specified trying COM12');
-	   chrome.serial.connect('COM12', connected_cb);
-   }
-   
 
-}
+
 
 function disconnected_cb(){
 	terminal.io.println('\r\nDisconnected');
@@ -529,22 +462,7 @@ function ondragover(e){
    e.dataTransfer.dropEffect = 'copy';
 }
 
-function warn_energ() {
-    w2confirm('WARNING!<br>The coil will be energized.')
-    .no(function () { })
-	.yes(function () { send_command('bus on\r'); });
-}
 
-function warn_eeprom_save() {
-    w2confirm('WARNING!<br>Are you sure to save the configuration to EEPROM?')
-    .no(function () { })
-	.yes(function () { send_command('eeprom save\r'); });
-}
-function warn_eeprom_load() {
-    w2confirm('WARNING!<br>Are you sure to load the configuration from EEPROM?')
-    .no(function () { })
-	.yes(function () { send_command('eeprom load\r'); });
-}
 
 function wave_mouse_down(e){
 	var pos_y = e.y - 51;

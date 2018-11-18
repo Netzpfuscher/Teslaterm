@@ -1,7 +1,8 @@
-import {terminal} from "./gui";
-import {ConnectionState, connState} from "./telemetry";
-import * as helper from './helper';
-import {connid, mainSocket} from "./connection";
+import {terminal} from "../gui/gui";
+import {ConnectionState} from "./telemetry";
+import * as helper from '../helper';
+import {connid, connState, mainSocket} from "./connection";
+// @ts-ignore TODO remove
 import * as chrome from 'chrome';
 
 function send_command(command){
@@ -13,11 +14,18 @@ function send_command(command){
     }
 }
 
+
 export function clear(){
     // \033=\u1B
     terminal.io.print('\u001B[2J\u001B[0;0H');
     send_command('cls\r');
 }
+
+
+export function stop() {
+    send_command('tterm stop\rcls\r');
+}
+
 
 export function reconnect(){
     send_command('tterm start\r');
@@ -29,4 +37,25 @@ export function startConf(){
     send_command('set pwd 50000\r');
     send_command('kill reset\rtterm start\rcls\r');
 
+}
+
+export function busOff() {
+    send_command('bus off\r');
+}
+
+export function busOn() {
+    send_command('bus on\r');
+}
+
+export function eepromSave() {
+    send_command('eeprom save\r');
+}
+export function eepromLoad() {
+    send_command('eeprom load\r');
+}
+export function setKill() {
+    send_command('kill set\r');
+}
+export function resetKill() {
+    send_command('kill reset\r');
 }

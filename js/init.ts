@@ -1,7 +1,7 @@
 import * as $ from 'jquery';
-import * as scope from './oscilloscope';
-import * as gui from './gui';
-import {NUM_GAUGES} from "./gui";
+import * as scope from './gui/oscilloscope';
+import * as gui from './gui/gui';
+import {NUM_GAUGES} from "./gui/gui";
 import {} from 'w2ui';
 
 document.addEventListener('DOMContentLoaded', function () {

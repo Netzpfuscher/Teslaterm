@@ -25,8 +25,11 @@
   "dependencies": {
     "@types/chrome": "~0.0.72",
     "@types/jquery": "~3.3.1",
+    "@types/node": "^10.12.9",
     "@types/w2ui": "^1.4.32",
+    "fs": "0.0.1-security",
     "jquery": "^3.3.1",
+    "vm": "^0.1.0",
     "w2ui": "^1.4.3"
   }
 }

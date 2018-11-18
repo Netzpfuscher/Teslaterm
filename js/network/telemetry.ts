@@ -1,8 +1,9 @@
-import {meters, terminal} from './gui';
-import * as scope from './oscilloscope'
-import {bytes_to_signed, convertArrayBufferToString} from './helper';
-import * as midi from "./midi";
+import {meters, terminal} from '../gui/gui';
+import * as scope from '../gui/oscilloscope'
+import {bytes_to_signed, convertArrayBufferToString} from '../helper';
+import * as midi from "../midi";
 import {mainSocket, socket_midi} from "./connection";
+import * as menu from '../gui/menu'
 
 export enum ConnectionState {
     UNCONNECTED,
@@ -10,7 +11,14 @@ export enum ConnectionState {
     CONNECTED_IP
 }
 
+
+export let busActive: boolean = false;
+export let busControllable: boolean = false;
+export let transientActive: boolean = false;
+
+
 const TT_GAUGE = 1;
+
 const TT_GAUGE_CONF = 2;
 const TT_CHART = 3;
 const TT_CHART_DRAW = 4;
@@ -20,18 +28,17 @@ const TT_CHART_LINE = 7;
 const TT_CHART_TEXT = 8;
 const TT_CHART_TEXT_CENTER = 9;
 const TT_STATE_SYNC = 10;
-
 const UNITS: string[] = ['', 'V', 'A', 'W', 'Hz', '°C'];
 
-
 const TT_STATE_IDLE = 0;
+
+
 const TT_STATE_FRAME = 1;
 const TT_STATE_COLLECT = 3;
-
 const DATA_TYPE = 0;
+
 const DATA_LEN = 1;
 const DATA_NUM = 2;
-
 let term_state:number=0;
 
 function compute(dat: number[]){
@@ -94,6 +101,27 @@ function compute(dat: number[]){
     }
 }
 
+function setBusActive(active) {
+    if (active!=busActive) {
+        busActive = active;
+        menu.updateBusActive();
+    }
+}
+
+function setTransientActive(active) {
+    if (active!=transientActive) {
+        transientActive = active;
+        menu.updateTransientActive();
+    }
+}
+
+function setBusControllable(controllable) {
+    if (controllable!=busControllable) {
+        busControllable = controllable;
+        menu.updateBusControllable();
+    }
+}
+
 function drawString(dat: number[], center: boolean) {
     const x = bytes_to_signed(dat[2],dat[3]);
     const y = bytes_to_signed(dat[4],dat[5]);
@@ -106,10 +134,10 @@ function drawString(dat: number[], center: boolean) {
 }
 
 const TIMEOUT = 50;
+
 let buffer: number[] = [];
 let bytes_done:number = 0;
 let response_timeout: number = TIMEOUT;
-
 function receive(info){
 
     if(info.socketId==socket_midi){
