@@ -1,13 +1,13 @@
-//TODO why is this broken?
-import {JustGage} from '../../justgage';
 import * as telemetry from '../network/telemetry';
+import {JustGage} from "justgage";
+import 'hterm';
 
 //TODO move to a separate file?
 export class Meter {
     num_meters: number;
     meter_buf_old: number[];
     meter_buf: number[];
-    gauges: any;//TODO proper type definition
+    gauges: JustGage[];
 
     constructor(meters){
         this.num_meters=meters;
@@ -73,7 +73,7 @@ export const NUM_GAUGES = 7;
 
 
 export let meters:Meter = new Meter(NUM_GAUGES);
-export let terminal: any = new hterm.Terminal();//TODO proper type
+export let terminal: any = new Terminal();
 
 export const MEAS_SPACE = 20;
 export const INFO_SPACE = 150;

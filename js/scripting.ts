@@ -1,5 +1,9 @@
 import * as vm from 'vm';
 import * as fs from 'fs';
+import * as sliders from './gui/sliders';
+import * as helper from './helper';
+import * as commands from './network/commands';
+import {terminal} from "./gui/gui";
 
 let running = false;
 let interrupt = null;
@@ -25,12 +29,12 @@ function wrapForSandbox(func) {
 		}
 		const args = arguments;
 		queue.push(()=>wrapped.apply(this, args));
-	}
+	};
 }
 
 function timeoutSafe(delay) {
-	let resolve = ()=>{}, reject = ()=>{};
-	const ret = new Promise((res, rej)=>{
+	let resolve = ()=>{}, reject = (msg:string)=>{};
+	const ret = new Promise<void>((res, rej)=>{
 		resolve = res;
 		reject = rej;
 	});
@@ -46,7 +50,7 @@ function timeoutSafe(delay) {
 }
 
 function playMidiBlocking() {
-	let resolve = ()=>{}, reject = ()=>{};
+	let resolve = ()=>{}, reject = (err)=>{};
 	const ret = new Promise((res, rej)=>{
 		resolve = res;
 		reject = rej;
@@ -58,25 +62,17 @@ function playMidiBlocking() {
 		resolve();
 	};
 	interrupt = () => {
-		player.stop();
+		midi.player.stop();
 		reject("Canceled");
 	};
 	startCurrentMidiFile();
 	return ret;
 }
 
-function setTransientMode(enable) {
-	if (enable) {
-		startTransient();
-	} else {
-		stopTransient();
-	}
-}
-
 function waitForConfirmation(text, title) {
 	let resolve;
 	const ret = new Promise(res=>resolve = res);
-	showConfirmDialog(text, title)
+	w2ui.showConfirmDialog(text, title)
 		.yes(resolve)
 		.no(()=>{
 			throw "User did not confirm";
@@ -84,27 +80,10 @@ function waitForConfirmation(text, title) {
 	return ret;
 }
 
-exports.init = (...args)=> {
-	[terminal,
-		player,
-		startCurrentMidiFile,
-		stopMidiFile,
-		arrayBufferToString,
-		setOntime,
-		setBPS,
-		setBurstOntime,
-		setBurstOfftime,
-		startTransient,
-		stopTransient,
-		showConfirmDialog,
-		setRelOntimeAllowed
-	] = args;
-};
-
-exports.loadScript = (file)=> {
-	let resolve = () => {
+export function loadScript(file) {
+	let resolve = (queue) => {
 	};
-	let reject = () => {
+	let reject = (err) => {
 	};
 	const ret = new Promise((res, rej) => {
 		resolve = res;
@@ -116,7 +95,7 @@ exports.loadScript = (file)=> {
 				reject(error);
 				return;
 			}
-			const code = arrayBufferToString(content, false);
+			const code = helper.convertArrayBufferToString(content, false);
 			timeoutDate = new Date().getTime()+timeout;
 			queue = [];
 			const sandbox = vm.createContext({
@@ -128,11 +107,11 @@ exports.loadScript = (file)=> {
 				playMidiBlocking: wrapForSandbox(playMidiBlocking),
 				playMidiAsync: wrapForSandbox(startCurrentMidiFile),
 				stopMidi: wrapForSandbox(stopMidiFile),
-				setOntime: wrapForSandbox(setOntime),
-				setBPS: wrapForSandbox(setBPS),
-				setBurstOntime: wrapForSandbox(setBurstOntime),
-				setBurstOfftime: wrapForSandbox(setBurstOfftime),
-				setTransientMode: wrapForSandbox(setTransientMode),
+				setOntime: wrapForSandbox(sliders.ontime.setRelativeOntime),
+				setBPS: wrapForSandbox(sliders.setBPS),
+				setBurstOntime: wrapForSandbox(sliders.setBurstOntime),
+				setBurstOfftime: wrapForSandbox(sliders.setBurstOfftime),
+				setTransientMode: wrapForSandbox(commands.setTransientEnabled),
 				waitForConfirmation: wrapForSandbox(waitForConfirmation)
 			});
 			vm.runInContext(code, sandbox);
@@ -144,16 +123,15 @@ exports.loadScript = (file)=> {
 		}
 	});
 	return ret;
-};
-
-exports.startScript = (queue)=> {
+}
+export function startScript (queue) {
 	if (running) {
 		terminal.io.println("The script is already running.");
 		return;
 	}
 	let script = Promise.resolve();
 	running = true;
-	setRelOntimeAllowed(false);
+	sliders.ontime.setRelativeAllowed(false);
 	for (let i = 0;i<queue.length;i++) {
 		script = script.then(queue[i]);
 	}
@@ -164,17 +142,18 @@ exports.startScript = (queue)=> {
 		running = false;
 		terminal.io.println("Script finished with error: "+e);
 		console.error(e);
-	}).then(()=>setRelOntimeAllowed(true));
-};
-
-exports.cancel = ()=> {
+	}).then(()=>sliders.ontime.setRelativeAllowed(true));
+}
+export function cancel () {
 	running = false;
 	if (interrupt) {
 		interrupt();
 		interrupt = null;
 	}
-};
+}
+export function isRunning ()  {
+	return running;
+}
 
-exports.isRunning = ()=> running;
-
-exports.onMidiStopped = ()=>{};
+export function onMidiStopped() {
+}

@@ -1,7 +1,7 @@
 import * as gui from '../gui/gui';
 import * as menu from '../gui/menu';
 import {ConnectionState} from "./telemetry";
-import * as midi from '../midi';
+import * as midi from '../midi/midi';
 // @ts-ignore TODO remove
 import * as chrome from 'chrome';
 import * as commands from './commands';

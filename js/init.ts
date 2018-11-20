@@ -1,6 +1,7 @@
 import * as $ from 'jquery';
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
+import * as sliders from './gui/sliders';
 import {NUM_GAUGES} from "./gui/gui";
 import {} from 'w2ui';
 
@@ -127,22 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
-    ontimeUI.slider = $(".w2ui-panel-content .scopeview #ontime #slider")[0];
-    ontimeUI.relativeSelect = $(".w2ui-panel-content .scopeview #ontime #relativeSelect")[0];
-    ontimeUI.total = $(".w2ui-panel-content .scopeview #ontime #total")[0];
-    ontimeUI.relative = $(".w2ui-panel-content .scopeview #ontime #relative")[0];
-    ontimeUI.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
-    ontimeUI.slider.addEventListener("input", ontimeSliderMoved);
-    ontimeUI.relativeSelect.onclick = onRelativeOntimeSelect;
-    ontimeUI.setRelativeAllowed = function(allow) {
-        if (allow) {
-            ontimeUI.relativeSelect.disabled = false;
-        } else {
-            ontimeUI.relativeSelect.checked = false;
-            ontimeUI.relativeSelect.onclick();
-            ontimeUI.relativeSelect.disabled = true;
-        }
-    };
+    sliders.init();
     document.getElementById('slider1').addEventListener("input", slider1);
     document.getElementById('slider2').addEventListener("input", slider2);
     document.getElementById('slider3').addEventListener("input", slider3);

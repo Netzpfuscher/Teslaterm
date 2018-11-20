@@ -145,21 +145,7 @@ function sendmidi(info){
    //println("error: " + info.error);
 }
 
- 
-// Initialize player and register event handler
-var Player = new MidiPlayer.Player(processMidiFromPlayer);
 
-
-function processMidiFromPlayer(event){
-	if(playMidiData(event.bytes_buf)){
-		midi_state.progress=Player.getSongPercentRemaining();
-		redrawTop();
-	} else if(!simulated && !connected) {
-		Player.stop();
-		midi_state.state = 'stopped';
-		scripting.onMidiStopped();
-	}
-}
 var expectedByteCounts = {
 	0x80: 3,
 	0x90: 3,
@@ -217,15 +203,6 @@ terminal.onTerminalReady = function() {
   // thing is complete, should call io.pop() to restore control to the
   // previous io object.
 };
-
-
-
-
-
-
-
-
-
 
 function disconnected_cb(){
 	terminal.io.println('\r\nDisconnected');
@@ -494,108 +471,7 @@ function nano_led(num,val){
 	}
 }
 
-function setSliderValue(name, value, slider = undefined) {
-	if (!slider) {
-		slider = document.getElementById(name);
-	}
-	if (value<slider.min||value>slider.max) {
-		terminal.io.println("Tried to set slider \""+slider.id+"\" out of range (To "+value+")!");
-		value = Math.min(slider.max, Math.max(slider.min, value));
-	}
-	slider.value = value;
-}
 
-function ontimeSliderMoved(){
-	if (ontimeUI.relativeSelect.checked) {
-		setRelativeOntime(parseInt(ontimeUI.slider.value));
-	} else {
-		setAbsoluteOntime(parseInt(ontimeUI.slider.value));
-	}
-}
-
-function ontimeChanged() {
-	ontimeUI.totalVal = Math.round(ontimeUI.absoluteVal*ontimeUI.relativeVal/100.);
-	send_command('set pw ' + ontimeUI.totalVal + '\r');
-	updateOntimeLabels();
-}
-
-function setAbsoluteOntime(time) {
-	if (!ontimeUI.relativeSelect.checked) {
-		setSliderValue(null, time, ontimeUI.slider);
-	}
-	time = Math.min(maxOntime, Math.max(0, time));
-	ontimeUI.absolute.textContent = ontimeUI.absoluteVal = time;
-	ontimeChanged();
-}
-
-function setRelativeOntime(percentage) {
-	if (ontimeUI.relativeSelect.checked) {
-		setSliderValue(null, percentage, ontimeUI.slider);
-	}
-	percentage = Math.min(100, Math.max(0, percentage));
-	ontimeUI.relative.textContent = ontimeUI.relativeVal = percentage;
-	midiServer.sendRelativeOntime(ontimeUI.relativeVal);
-	ontimeChanged();
-}
-
-function updateOntimeLabels() {
-	if (ontimeUI.relativeSelect.checked) {
-		ontimeUI.relative.innerHTML = "<b>"+ontimeUI.relativeVal+"</b>";
-		ontimeUI.absolute.innerHTML = ontimeUI.absoluteVal;
-	} else {
-		ontimeUI.absolute.innerHTML = "<b>"+ontimeUI.absoluteVal+"</b>";
-		ontimeUI.relative.innerHTML = ontimeUI.relativeVal;
-	}
-	ontimeUI.total.innerHTML = ontimeUI.totalVal;
-}
-
-function onRelativeOntimeSelect() {
-	if (ontimeUI.relativeSelect.checked) {
-		ontimeUI.slider.max = 100;
-		ontimeUI.slider.value = ontimeUI.relativeVal;
-	} else {
-		ontimeUI.slider.max = maxOntime;
-		ontimeUI.slider.value = ontimeUI.absoluteVal;
-	}
-	updateOntimeLabels();
-}
-
-function slider1(){
-	var slider = document.getElementById('slider1');
-	var slider_disp = document.getElementById('slider1_disp');
-	var pwd = Math.floor(1/slider.value*1000000);
-	slider_disp.innerHTML = slider.value + ' Hz';
-	send_command('set pwd ' + pwd + '\r');
-}
-
-function setBPS(bps){
-	setSliderValue("slider1", bps);
-	slider1();
-}
-
-function slider2(){
-	var slider = document.getElementById('slider2');
-	var slider_disp = document.getElementById('slider2_disp');
-	slider_disp.innerHTML = slider.value + ' ms';
-	send_command('set bon ' + slider.value + '\r');
-}
-
-function setBurstOntime(time){
-	setSliderValue("slider2", time);
-	slider2();
-}
-
-function slider3(){
-	var slider = document.getElementById('slider3');
-	var slider_disp = document.getElementById('slider3_disp');
-	slider_disp.innerHTML = slider.value + ' ms';
-	send_command('set boff ' + slider.value + '\r');
-}
-
-function setBurstOfftime(time){
-	setSliderValue("slider3", time);
-	slider3();
-}
 
 var selectMidiIn = null;
 var selectMidiOut = null;
@@ -876,10 +752,7 @@ function nano_startup(){
 	
 }
 
-const maxOntime = 400;
-const maxBPS = 1000;
-const maxBurstOntime = 1000;
-const maxBurstOfftime = 1000;
+
 
 function midiMessageReceived( ev ) {
 	if(!ev.currentTarget.name.includes("nano")){

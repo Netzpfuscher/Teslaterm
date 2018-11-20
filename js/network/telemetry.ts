@@ -1,7 +1,7 @@
 import {meters, terminal} from '../gui/gui';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
-import * as midi from "../midi";
+import * as midi from "../midi/midi";
 import {mainSocket, socket_midi} from "./connection";
 import * as menu from '../gui/menu'
 
