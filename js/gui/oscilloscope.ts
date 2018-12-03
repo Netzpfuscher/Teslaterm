@@ -1,4 +1,5 @@
 import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
+import {NUM_GAUGES} from "./gauges";
 
 const waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
 
@@ -7,13 +8,14 @@ const backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
 const waveContext: CanvasRenderingContext2D = waveCanvas.getContext('2d');
 const backContext: CanvasRenderingContext2D = backCanvas.getContext('2d');
 export class TraceStats {
-    min: number;
-    max: number;
-    minDisplay: string;
-    maxDisplay: string;
-    avgDisplay: string;
+    min: number = 0;
+    max: number = 1024;
+    minDisplay: string = '';
+    maxDisplay: string = '';
+    avgDisplay: string = '';
     squareSum: number = 0;
     samples: number = 0;
+
 
     update(value_real: number): void {
         if (value_real < this.min) this.min = value_real;
@@ -27,17 +29,17 @@ export class TraceStats {
 }
 
 export class Trace {
-    stats: TraceStats;
-    value_real: number;
-    wavecolor: string;
-    value: number;
-    yPos: number;
-    name: string;
+    stats: TraceStats = new TraceStats();
+    value_real: number = 0;
+    wavecolor: string = 'red';
+    value: number = 0;
+    yPos: number = 0;
+    name: string = '';
     //TODO is this a good place? is there a cleaner way to do this?
-    span: number;
-    offset: number;
-    unit: string;
-    perDiv: number;
+    span: number = 2048;
+    offset: number = 1024;
+    unit: string = '';
+    perDiv: number = 1;
 
     plot(): void {
         const y_res: number = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
@@ -137,6 +139,10 @@ export function addValue(chart_num: number, val: number): void {
 
 export function init() {
     waveCanvas.onmousedown = onMouseDown;
+
+    for(let i=0;i<NUM_GAUGES;i++){
+        traces.push(new Trace());
+    }
 }
 
 export function drawLabels() {

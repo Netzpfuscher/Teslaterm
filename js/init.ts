@@ -2,16 +2,17 @@ import * as $ from 'jquery';
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
 import * as sliders from './gui/sliders';
-import {meters, NUM_GAUGES, terminal} from "./gui/gui";
+import {terminal} from "./gui/gui";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
 import {connect} from "./network/connection";
 import 'simple-ini';
 import './simple_ini_types';
 import {midi_state} from "./midi/midi";
-import 'chrome';
-import {chrome} from './network/chrome_types';
+import * as chrome from './network/chrome_types';
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';
+import {onMIDIoverIP} from "./midi/midi_client";
+import {NUM_GAUGES} from "./gui/gauges";
 
 
 export let config: SimpleIni;
@@ -144,14 +145,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     coil_hot_led=1;
 
-    meters = new cls_meter(NUM_GAUGES);
-
-    for(var i=0;i<NUM_GAUGES;i++){
-        scope.push({min: 0, max: 1024.0, offset: 1024.0,span: 2048,unit: '', value: 0, value_real: 0, count_div:0, name: ''});
-        meas_backbuffer.push({min: 0, max: 0, avg_sum: 0, avg_samp: 0});
-        meas.push({min: 0, max: 0, avg: 0});
-
-    }
     chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
     scope.init();
 
