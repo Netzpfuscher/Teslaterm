@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as sliders from './gui/sliders';
 import * as helper from './helper';
 import * as commands from './network/commands';
+import * as midi from './midi/midi';
 import {terminal} from "./gui/gui";
 
 let running = false;
@@ -13,7 +14,7 @@ let timeoutDate = null;
 const maxQueueLength = 1000;
 const timeout = 1000;
 
-function wrapForSandbox(func) {
+function wrapForSandbox(func: Function): Function {
 	const wrapped = function() {
 		if (running) {
 			return func.apply(this, arguments);
@@ -55,17 +56,17 @@ function playMidiBlocking() {
 		resolve = res;
 		reject = rej;
 	});
-	exports.onMidiStopped = () => {
-		exports.onMidiStopped = () => {
+	onMidiStopped = () => {
+		onMidiStopped = () => {
 		};
 		interrupt = null;
 		resolve();
 	};
 	interrupt = () => {
-		midi.player.stop();
+		midi.stop();
 		reject("Canceled");
 	};
-	startCurrentMidiFile();
+	midi.startCurrentMidiFile();
 	return ret;
 }
 
@@ -80,12 +81,12 @@ function waitForConfirmation(text, title) {
 	return ret;
 }
 
-export function loadScript(file) {
+export function loadScript(file):Promise<Promise<any>[]> {
 	let resolve = (queue) => {
 	};
 	let reject = (err) => {
 	};
-	const ret = new Promise((res, rej) => {
+	const ret = new Promise<Promise<any>[]>((res, rej) => {
 		resolve = res;
 		reject = rej;
 	});
@@ -105,8 +106,8 @@ export function loadScript(file) {
 				delay: wrapForSandbox(timeoutSafe),
 				println: wrapForSandbox(s => terminal.io.println(s)),
 				playMidiBlocking: wrapForSandbox(playMidiBlocking),
-				playMidiAsync: wrapForSandbox(startCurrentMidiFile),
-				stopMidi: wrapForSandbox(stopMidiFile),
+				playMidiAsync: wrapForSandbox(midi.startCurrentMidiFile),
+				stopMidi: wrapForSandbox(midi.stopMidiFile),
 				setOntime: wrapForSandbox(sliders.ontime.setRelativeOntime),
 				setBPS: wrapForSandbox(sliders.setBPS),
 				setBurstOntime: wrapForSandbox(sliders.setBurstOntime),
@@ -151,9 +152,8 @@ export function cancel () {
 		interrupt = null;
 	}
 }
-export function isRunning ()  {
+export function isRunning ():boolean {
 	return running;
 }
 
-export function onMidiStopped() {
-}
+export let onMidiStopped: Function = ()=>{};

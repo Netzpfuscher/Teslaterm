@@ -1,5 +1,9 @@
 import 'chrome';
+import {chrome} from '../network/chrome_types';
 import * as helper from '../helper';
+import {inputStrings} from "../gui/ui_helper";
+import {terminal} from "../gui/gui";
+import {ontime} from "../gui/sliders";
 /**
  * Protocol:
  * When connecting, the server sends its name, afterwards the client sends its name.
@@ -10,9 +14,22 @@ import * as helper from '../helper';
  * 'O': Set relative ontime
  */
 
-let clients = {};
+class MidiClient {
+    socketId: number;
+    name: string;
+    filter: {
+        channel: number[][];
+        note: number[][];
+    };
+}
+
+let clients: {[s: string]: MidiClient} = {};
 let clientsBySocket = {};
-let active = false;
+let serverSocketId: number;
+let port: number;
+let ttNameAsBuffer: ArrayBuffer;
+export let ttName: string;
+export let active = false;
 
 /**
  * Sends `data` to all connected sockets that accept the data.
@@ -21,29 +38,29 @@ export function sendToAll(data) {
     if (typeof(data)==="string") {
         data = helper.convertStringToArrayBuffer(data);
     }
-    for (let key in this.clients) {
-        if (!this.clients.hasOwnProperty(key)) continue;
-        this.sendToClient(this.clients[key], data)
+    for (let key in clients) {
+        if (!clients.hasOwnProperty(key)) continue;
+        sendToClient(clients[key], data)
     }
 }
 
 export function sendMidiData(data) {
-    if (!this.active) {
+    if (!active) {
         return false;
     }
     const buf=new ArrayBuffer(1+data.length);
     const bufView=new Uint8Array(buf);
     bufView[0] = "M".charCodeAt(0);
-    for (var i=0; i<data.length; i++) {
+    for (let i=0; i<data.length; i++) {
         bufView[i+1]=data[i];
     }
     let accepted = false;
-    for (let key in this.clients) {
-        if (!this.clients.hasOwnProperty(key)) continue;
-        const client = this.clients[key];
+    for (let key in clients) {
+        if (!clients.hasOwnProperty(key)) continue;
+        const client = clients[key];
         const result = matchesFilter(data, client.filter);
         if (result!=0) {
-            this.sendToClient(client, bufView);
+            sendToClient(client, bufView);
             if (result>0) {
                 accepted = true;
             }
@@ -52,51 +69,51 @@ export function sendMidiData(data) {
     return accepted;
 }
 
-export function sendToClient(client, data) {
+export function sendToClient(client, data: number[]|Uint8Array|ArrayBuffer) {
     chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
         if (sendInfo.resultCode < 0) {
-            this.deleteClient(client);
+            deleteClient(client);
         }
     });
 }
 
 export function close() {
-    chrome.sockets.tcpServer.disconnect(this.serverSocketId, ()=>this.onClosed());
-    var data = helper.convertStringToArrayBuffer("C");
-    for (let key in this.clients) {
-        if (!this.clients.hasOwnProperty(key)) continue;
-        const client = this.clients[key];
+    chrome.sockets.tcpServer.disconnect(serverSocketId, ()=>onClosed());
+    const data = helper.convertStringToArrayBuffer("C");
+    for (let key in clients) {
+        if (!clients.hasOwnProperty(key)) continue;
+        const client = clients[key];
         chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
             if (sendInfo.resultCode>=0) {
-                chrome.sockets.tcp.close(client.socketId, function (state){});
+                chrome.sockets.tcp.close(client.socketId, (state)=>{});
             }
         });
     }
-    this.clients = {};
-    this.clientsBySocket = {};
-    this.active = false;
+    clients = {};
+    clientsBySocket = {};
+    active = false;
 }
 
 export function setPort(newPort) {
-    var wasActive = this.active;
+    const wasActive = active;
     if (wasActive) {
         close();
     }
-    this.port = newPort;
+    port = newPort;
     if (wasActive) {
-        this.start();
+        start();
     }
 }
 
 export function setName(newName) {
-    this.ttName = newName;
-    this.ttNameAsBuffer = helper.convertStringToArrayBuffer(this.ttName);
+    ttName = newName;
+    ttNameAsBuffer = helper.convertStringToArrayBuffer(ttName);
     document.title = "Teslaterm: "+name;
 }
 
 export function requestName() {
-    if (!this.ttName) {
-        return term_ui.inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
+    if (!ttName) {
+        return inputStrings("Please enter a name for this TeslaTerm instance", "Enter name", (name) => {
             if ($.trim(name)=='') {
                 return 0;
             }
@@ -107,7 +124,7 @@ export function requestName() {
             }
             return -1;
         }, ["Name"]).then((name)=>{
-            this.setName(name);
+            setName(name);
             return Promise.resolve();
         });
     } else {
@@ -116,7 +133,7 @@ export function requestName() {
 }
 
 export function start() {
-    chrome.sockets.tcpServer.create({}, info=>this.createCallback(info));
+    chrome.sockets.tcpServer.create({}, info=>createCallback(info));
 }
 
 /**
@@ -124,38 +141,38 @@ export function start() {
  * <first instance name>;<second instance name>;...
  * Names are assumed to be unique
  */
-export function loopTest(currentLoopString) {
+export function loopTest(currentLoopString: string) {
     const previous = currentLoopString.split(';');
     let newLoopString;
     if (currentLoopString) {
-        newLoopString = currentLoopString+";"+this.ttName;
+        newLoopString = currentLoopString+";"+ttName;
     } else {
-        newLoopString = this.ttName;
+        newLoopString = ttName;
     }
-    if (previous.length>0 && previous[0]==this.ttName) {
+    if (previous.length>0 && previous[0]==ttName) {
         let loopingName;
         if (previous.length==1) {// This instance is connected to itself
-            loopingName = this.ttName;
+            loopingName = ttName;
         } else {// A "real" loop (non-leaf)
             loopingName = previous[1];
         }
-        this.removeClient(loopingName, "The connection formed a loop ("+newLoopString+")");
+        removeClient(loopingName, "The connection formed a loop ("+newLoopString+")");
     } else {
-        this.sendToAll("L"+newLoopString);
+        sendToAll("L"+newLoopString);
     }
 }
 
 export function removeClient(name, reason) {
-    const client = this.clients[name];
+    const client = clients[name];
     const data = helper.convertStringToArrayBuffer("C"+reason);
     chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
-        chrome.sockets.tcp.close(client.socketId, function (state){});
-        this.deleteClient(client, reason);
+        chrome.sockets.tcp.close(client.socketId, (state)=>{});
+        deleteClient(client, reason);
     });
 }
 
 export function sendRelativeOntime(percentage, client = undefined) {
-    if (!this.active) {
+    if (!active) {
         return;
     }
     let data = new ArrayBuffer(2);
@@ -163,15 +180,15 @@ export function sendRelativeOntime(percentage, client = undefined) {
     dataView[0] = 'O'.charCodeAt(0);
     dataView[1] = percentage;//Always between 0 and 100
     if (client) {
-        this.sendToClient(client, data);
+        sendToClient(client, data);
     } else {
-        this.sendToAll(data);
+        sendToAll(data);
     }
 }
 
 export function matchesFilter(data, filter): number {
-    var channel = undefined;
-    var note = undefined;
+    let channel = undefined;
+    let note = undefined;
     switch (data[0] & 0xF0) {
         case 0x80:
         case 0x90:
@@ -191,75 +208,89 @@ export function matchesFilter(data, filter): number {
     return matchesFilterExtracted(filter, channel, note);
 }
 
-//INTERNAL USE ONLY!
 function createCallback(createInfo) {
-    var socketId = createInfo.socketId;
+    const socketId = createInfo.socketId;
     chrome.sockets.tcpServer.listen(socketId,
-        "127.0.0.1", this.port, resultCode => this.onListenCallback(socketId, resultCode)
+        "127.0.0.1", port, resultCode => onListenCallback(socketId, resultCode)
     );
 }
 
 function onListenCallback(socketId, resultCode) {
     if (resultCode < 0) {
-        this.println("Failed to start MIDI server at " + this.port + ": " + chrome.runtime.lastError.message);
+        terminal.io.println("Failed to start MIDI server at " + port + ": " + chrome.runtime.lastError.message);
     } else {
-        this.onStarted();
-        this.active = true;
-        this.serverSocketId = socketId;
+        onStarted();
+        active = true;
+        serverSocketId = socketId;
     }
 }
 
+function onStarted() {
+    terminal.io.println("MIDI server at " + port + " started!");
+    helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Stop MIDI server');
+}
+
+function onClosed() {
+    terminal.io.println("MIDI server at " + port + " closed!");
+    helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
+}
+
+function onConnected(client: MidiClient) {
+    sendRelativeOntime(ontime.relativeVal, client);
+    terminal.io.println("Client instance \"" + client.name + "\" connected");
+}
+
 function onAccept(info) {
-    if (info.socketId != this.serverSocketId)
+    if (info.socketId != serverSocketId)
         return;
 
     // A new TCP connection has been established.
-    chrome.sockets.tcp.send(info.clientSocketId, this.ttNameAsBuffer, result => this.waitForClientName(result, info));
+    chrome.sockets.tcp.send(info.clientSocketId, ttNameAsBuffer, result => waitForClientName(result, info));
 }
 
 function waitForClientName(resultCode, info) {
-    var receiveListener = (recvInfo) => {
+    const receiveListener = (recvInfo) => {
         if (recvInfo.socketId != info.clientSocketId)
             return;
         console.log(recvInfo.data);
-        var data = helper.convertArrayBufferToString(recvInfo.data);
+        const data = helper.convertArrayBufferToString(recvInfo.data);
         const remoteName = data.substring(0, data.indexOf(';'));
         const filterString = data.substring(data.indexOf(';') + 1);
         const filter = JSON.parse(filterString);
         chrome.sockets.tcp.setPaused(info.clientSocketId, true);
         chrome.sockets.tcp.onReceive.removeListener(receiveListener);
         const client = {socketId: info.clientSocketId, name: remoteName, filter: filter};
-        this.addClient(client);//Object to make adding filter data later easier
-        this.loopTest("");
-        this.onConnected(client);
+        addClient(client);//Object to make adding filter data later easier
+        loopTest("");
+        onConnected(client);
     };
     chrome.sockets.tcp.onReceive.addListener(receiveListener);
     chrome.sockets.tcp.setPaused(info.clientSocketId, false);
 }
 
 function onMessage(socketId, data) {
-    const client = this.clientsBySocket[socketId];
+    const client = clientsBySocket[socketId];
     if (client) {
         const firstByte = new Uint8Array(data)[0];
         if (firstByte == 'C'.charCodeAt(0)) {
-            this.deleteClient(client);
+            deleteClient(client);
         }
     }
 }
 
 function deleteClient(client, reason = null) {
     if (reason) {
-        this.println("Removed TCP MIDI client \"" + client.name + "\". Reason: " + reason);
+        terminal.io.println("Removed TCP MIDI client \"" + client.name + "\". Reason: " + reason);
     } else {
-        this.println("TCP MIDI client \"" + client.name + "\" disconnected!");
+        terminal.io.println("TCP MIDI client \"" + client.name + "\" disconnected!");
     }
-    delete this.clients[client.name];
-    delete this.clientsBySocket[client.socketId];
+    delete clients[client.name];
+    delete clientsBySocket[client.socketId];
 }
 
 function addClient(client) {
-    this.clients[client.name] = client;
-    this.clientsBySocket[client.socketId] = client;
+    clients[client.name] = client;
+    clientsBySocket[client.socketId] = client;
 }
 
 function matchesFilterExtracted(filter, channel, note) {
@@ -280,5 +311,5 @@ function matchesFilterExtracted(filter, channel, note) {
 
 
 setPort(5678);
-chrome.sockets.tcpServer.onAccept.addListener(info=>this.onAccept(info));
-chrome.sockets.tcp.onReceive.addListener(args=>this.onMessage(args.socketId, args.data));
+chrome.sockets.tcpServer.onAccept.addListener(info=>onAccept(info));
+chrome.sockets.tcp.onReceive.addListener(args=>onMessage(args.socketId, args.data));

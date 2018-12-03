@@ -2,9 +2,19 @@ import * as $ from 'jquery';
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
 import * as sliders from './gui/sliders';
-import {NUM_GAUGES} from "./gui/gui";
-import {} from 'w2ui';
+import {meters, NUM_GAUGES, terminal} from "./gui/gui";
+import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
+import {connect} from "./network/connection";
+import 'simple-ini';
+import './simple_ini_types';
+import {midi_state} from "./midi/midi";
+import 'chrome';
+import {chrome} from './network/chrome_types';
+import * as menu from './gui/menu';
+import * as telemetry from './network/telemetry';
 
+
+export let config: SimpleIni;
 document.addEventListener('DOMContentLoaded', function () {
 
     $(function () {
@@ -62,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 { type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug' },
                 { type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal' }
             ],
-            onClick: gui.onCtrlMenuClick
+            onClick: menu.onCtrlMenuClick
         });
     });
 
@@ -116,28 +126,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     w2ui['layout'].on({ type : 'resize', execute : 'after'}, function (target, eventData) {
-        resize();
+        scope.onResize();
     });
     terminal.decorate(document.querySelector('#terminal'));
     terminal.installKeyboard();
-    chrome.serial.onReceive.addListener(receive);
+    telemetry.init();
 
-    chrome.sockets.tcp.onReceive.addListener(receive);
-
-    chrome.serial.onReceiveError.addListener(error);
+    chrome.serial.onReceiveError.addListener((info)=>gui.terminal.io.println(info.error));
 
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
     sliders.init();
-    document.getElementById('slider1').addEventListener("input", slider1);
-    document.getElementById('slider2').addEventListener("input", slider2);
-    document.getElementById('slider3').addEventListener("input", slider3);
 
     readini("config.ini");
 
 
-    waveCanvas.onmousedown = wave_mouse_down;
-    ctx = waveCanvas.getContext('2d');
 
     coil_hot_led=1;
 
@@ -149,43 +152,44 @@ document.addEventListener('DOMContentLoaded', function () {
         meas.push({min: 0, max: 0, avg: 0});
 
     }
-    midiServer = new MidiIpServer(s=>terminal.io.println(s),
-        ()=> {
-            terminal.io.println("MIDI server at " + midiServer.port + " started!");
-            helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Stop MIDI server');
-        },
-        ()=> {
-            terminal.io.println("MIDI server at " + midiServer.port + " closed!");
-            helper.changeMenuEntry('mnu_command', 'startStopMidi', 'Start MIDI server');
-        },
-        client=> {
-            midiServer.sendRelativeOntime(ontimeUI.relativeVal, client);
-            terminal.io.println("Client instance \"" + client.name + "\" connected");
-        });
     chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
-    scope.trigger=-1;
-    scope.trigger_lvl= 0;
-    scope.value_old= 0;
-    scope.trigger_lvl_real=0;
-    scope.trigger_trgt=0;
-    scope.trigger_old=0;
-    scope.trigger_block=0;
+    scope.init();
 
 
 
     midi_start();
     midi_state.progress = 0;
-    scripting.init(terminal,
-        Player,
-        startCurrentMidiFile,
-        stopMidiFile,
-        helper.convertArrayBufferToString,
-        setRelativeOntime,
-        setBPS,
-        setBurstOntime,
-        setBurstOfftime,
-        startTransient,
-        stopTransient,
-        w2confirm,
-        ontimeUI.setRelativeAllowed);
 });
+
+
+function readini(file: string) {
+	chrome.runtime.getPackageDirectoryEntry(function (root) {
+		root.getFile(file, {}, function (fileEntry) {
+			fileEntry.file(function (file) {
+				var reader = new FileReader();
+				reader.onloadend = event_read_ini;
+				reader.readAsText(file);
+			}, (e) => {
+			});
+		}, (e) => {
+		});
+	});
+}
+
+function event_read_ini(ev){
+    var inicontent=this.result;
+    config = new SimpleIni(function() {
+        return inicontent;
+    });
+
+    if(config.general.port){
+
+        w2ui['toolbar'].get('port').value = config.general.port;
+
+        w2ui['toolbar'].refresh();
+    }
+    if(config.general.autoconnect=="true"){
+        connect(config.general.port);
+    }
+
+}

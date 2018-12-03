@@ -103,6 +103,9 @@ export function init() {
     ontime.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
     ontime.slider.addEventListener("input", ontime.onSliderMoved);
     ontime.relativeSelect.onclick = ontime.onRelativeOntimeSelect;
+    document.getElementById('slider1').addEventListener("input", slider1);
+    document.getElementById('slider2').addEventListener("input", slider2);
+    document.getElementById('slider3').addEventListener("input", slider3);
 }
 
 function setSliderValue(name, value, slider = undefined) {

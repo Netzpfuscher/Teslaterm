@@ -1,10 +1,10 @@
 import * as $ from 'jquery'
-// @ts-ignore TODO remove
-import {w2confirm} from 'w2ui';
+import 'w2ui';
+import {W2Menu} from "./gui/w2ui_types";
 
 export function bytes_to_signed(lsb: number, msb: number): number {
-    var sign = msb & (1 << 7);
-    var x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
+    const sign = msb & (1 << 7);
+    const x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
     if (sign) {
         return  (0xFFFF0000 | x);  // fill in most significant bits with 1's
     }else{
@@ -12,9 +12,9 @@ export function bytes_to_signed(lsb: number, msb: number): number {
     }
 }
 
-export function convertArrayBufferToString(buf: number[]|ArrayBuffer, uri: boolean = true): string {
-    var bufView = new Uint8Array(buf);
-    var encodedString = String.fromCharCode.apply(null, bufView);
+export function convertArrayBufferToString(buf: number[]|Buffer, uri: boolean = true): string {
+    const bufView = new Uint8Array(buf);
+    const encodedString = String.fromCharCode.apply(null, bufView);
     if (uri) {
         return decodeURIComponent(encodedString);
     } else {
@@ -23,20 +23,20 @@ export function convertArrayBufferToString(buf: number[]|ArrayBuffer, uri: boole
 }
 
 export function convertStringToArrayBuffer(str: string): ArrayBuffer {
-    var buf=new ArrayBuffer(str.length);
-    var bufView=new Uint8Array(buf);
-    for (var i=0; i<str.length; i++) {
+    const buf=new ArrayBuffer(str.length);
+    const bufView=new Uint8Array(buf);
+    for (let i=0; i<str.length; i++) {
         bufView[i]=str.charCodeAt(i);
     }
     return buf;
 }
 
 export function changeMenuEntry(menu: string, id: string, newName: string): void {
-    var items = $('#toolbar').w2toolbar().get(menu, false).items;
-    for (var i = 0;i<items.length;i++) {
+    const items = (<W2Menu>$('#toolbar').w2toolbar({}).get(menu, false)).items;
+    for (let i = 0;i<items.length;i++) {
         if (items[i].id==id) {
             items[i].text = newName;
-            $('#toolbar').w2toolbar().set(menu, items);
+            $('#toolbar').w2toolbar({}).set(menu, items);
             return;
         }
     }
@@ -79,14 +79,14 @@ export function matchesFilter(filter: number[][], num: number): boolean {
 }
 
 export function addFirstMenuEntry(menu: string, id: string, text: string, icon: string): void {
-    const mnu = $('#toolbar').w2toolbar().get(menu, false);
+    const mnu = <W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
     mnu.items = [{text: text, icon: icon, id: id}].concat(mnu.items);
 }
 
 export function removeMenuEntry(menu: string, id: string): void {
-    const mnu = $('#toolbar').w2toolbar().get(menu, false);
-    var items = mnu.items;
-    for (var i = 0;i<items.length;i++) {
+    const mnu = <W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
+    const items = mnu.items;
+    for (let i = 0;i<items.length;i++) {
         if (items[i].id==id) {
             mnu.items.splice(i, 1);
             return;
@@ -96,7 +96,7 @@ export function removeMenuEntry(menu: string, id: string): void {
 }
 
 export function warn(message: string, onConfirmed: Function) {
-    w2confirm(message)
+    w2ui.w2confirm(message)
         .no(()=>{ })
         .yes(onConfirmed);
 }

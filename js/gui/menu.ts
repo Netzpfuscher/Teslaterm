@@ -1,11 +1,14 @@
 import {terminal} from "./gui";
 import {busActive, busControllable, ConnectionState, transientActive} from "../network/telemetry";
-import * as cmd from '../network/commands';
+import * as commands from '../network/commands';
 import * as connection from '../network/connection';
-import {w2confirm} from 'w2ui';
+import 'w2ui';
 import * as helper from '../helper';
 import * as sliders from './sliders';
 import * as scripting from '../scripting'
+import * as midiServer from '../midi/midi_server';
+import * as ui_helper from './ui_helper';
+import {startCurrentMidiFile, stopMidiFile} from "../midi/midi";
 
 export function onConnected() {
     terminal.io.println("connected");
@@ -19,7 +22,7 @@ export function onDisconnect() {
     w2ui['toolbar'].refresh();
 }
 
-
+let currentScript: Promise<any>[] = null;
 export function onCtrlMenuClick(event) {
     switch (event.target) {
 
@@ -27,21 +30,17 @@ export function onCtrlMenuClick(event) {
             connect();
             break;
         case 'cls':
-            cmd.clear();
+            commands.clear();
             break;
         case 'mnu_command:bus':
             if (busActive) {
-                cmd.busOff();
+                commands.busOff();
             } else {
-                helper.warn('WARNING!<br>The coil will be energized.', cmd.busOn);
+                helper.warn('WARNING!<br>The coil will be energized.', commands.busOn);
             }
             break;
         case 'mnu_command:transient':
-            if (transientActive) {
-                stopTransient();
-            } else {
-                startTransient();
-            }
+            commands.setTransientEnabled(!transientActive);
             break;
         case 'mnu_command:startStopMidi':
             if (midiServer.active) {
@@ -49,7 +48,7 @@ export function onCtrlMenuClick(event) {
             } else {
                 midiServer.requestName()
                     .then(() =>
-                        term_ui.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server",
+                        ui_helper.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server",
                             false, true, null, midiServer.port)
                     ).then(port=> {
                     midiServer.setPort(port);
@@ -59,11 +58,11 @@ export function onCtrlMenuClick(event) {
             break;
         case 'mnu_command:Load EEPROM-Config':
             helper.warn('WARNING!<br>Are you sure to load the configuration from EEPROM?',
-                cmd.eepromSave);
+                commands.eepromSave);
             break;
         case 'mnu_command:Save EEPROM-Config':
             helper.warn('WARNING!<br>Are you sure to save the configuration to EEPROM?',
-                cmd.eepromSave);
+                commands.eepromSave);
             break;
         case 'mnu_midi:Play':
             if (midi_state.file==null){
@@ -107,10 +106,10 @@ export function onCtrlMenuClick(event) {
             scripting.cancel();
             break;
         case 'kill_set':
-            cmd.resetKill();
+            commands.resetKill();
             break;
         case 'kill_reset':
-            cmd.setKill();
+            commands.setKill();
             break;
     }
 }
