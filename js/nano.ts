@@ -1,7 +1,22 @@
-var nano=null;
-var nano_out=null;
+import {config} from "./init";
 
-function nano_led(num,val){
+var nano=null;
+let nano_out=null;
+let coilHot: boolean = false;
+
+export function setNanoOut(newOut) {
+    nano_out = newOut;
+}
+
+export function setNano(newNano) {
+    nano = newNano;
+}
+
+export function setCoilHot(hot: boolean) {
+    coilHot = hot;
+}
+
+export function setLedState(num,val){
     var uint8 = new Uint8Array(3);
     if(nano_out != null){
         if(val>0){
@@ -18,11 +33,11 @@ function nano_led(num,val){
     }
 }
 
-function nano_startup(){
-    nano_led(simpleIni.nano.killset,1);
-    nano_led(simpleIni.nano.killreset,0);
+export function init(){
+    setLedState(config.nano.killset,1);
+    setLedState(config.nano.killreset,0);
 
-    nano_led(simpleIni.nano.play,0);
-    nano_led(simpleIni.nano.stop,1);
+    setLedState(config.nano.play,0);
+    setLedState(config.nano.stop,1);
 
 }

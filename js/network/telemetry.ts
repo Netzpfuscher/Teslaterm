@@ -1,10 +1,12 @@
-import {meters, terminal} from '../gui/gui';
+import {terminal} from '../gui/gui';
+import {meters} from '../gui/gauges';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import * as midi from "../midi/midi";
 import {mainSocket, socket_midi} from "./connection";
 import * as menu from '../gui/menu'
-import {chrome} from "./chrome_types";
+import 'chrome';
+import * as chrome from "./chrome_types";
 
 export enum ConnectionState {
     UNCONNECTED,
@@ -45,16 +47,15 @@ let term_state:number=0;
 function compute(dat: number[]){
     switch(dat[DATA_TYPE]){
         case TT_GAUGE:
-            meters.value(dat[DATA_NUM], bytes_to_signed(dat[3],dat[4]));
+            meters[dat[DATA_NUM]].value(bytes_to_signed(dat[3],dat[4]));
             break;
         case TT_GAUGE_CONF:
-            const gauge_num = dat[2].valueOf();
             const gauge_min = bytes_to_signed(dat[3],dat[4]);
             const gauge_max = bytes_to_signed(dat[5],dat[6]);
             dat.splice(0,7);
             const str = convertArrayBufferToString(dat);
-            meters.text(gauge_num, str);
-            meters.range(gauge_num, gauge_min, gauge_max);
+            meters[dat[DATA_NUM]].text(str);
+            meters[dat[DATA_NUM]].range(gauge_min, gauge_max);
             break;
         case TT_CHART_CONF:
             let chart_num = dat[2].valueOf();
@@ -144,7 +145,6 @@ function receive(info){
     if(info.socketId==socket_midi){
         const buf = new Uint8Array(info.data);
         if(buf[0]==0x78){
-            //TODO why doesn't this work
             midi.setFlowCtl(false);
         }
         if(buf[0]==0x6f){

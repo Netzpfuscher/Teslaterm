@@ -4,12 +4,12 @@ import {terminal} from "./gui";
 export class Meter {
     meter_buf_old: number;
     meter_buf: number;
-    gauges: JustGage;
+    gauge: JustGage;
 
     constructor(id:number){
             this.meter_buf_old=255;
             this.meter_buf=0;
-            this.gauges= new JustGage({
+            this.gauge= new JustGage({
                 id: ("gauge"+id),
                 value: 255,
                 min: 0,
@@ -20,28 +20,28 @@ export class Meter {
 
     refresh(){
         if(this.meter_buf!=this.meter_buf_old){
-            this.gauges.refresh(this.meter_buf);
+            this.gauge.refresh(this.meter_buf);
             this.meter_buf_old=this.meter_buf;
         }
     }
 
-    value(num, value){
-        this.meter_buf[num] = value;
+    value(value){
+        this.meter_buf = value;
     }
 
-    text(num,text){
-        this.gauges[num].refreshTitle(text);
+    text(text){
+        this.gauge.refreshTitle(text);
     }
 
-    range(num, min, max){
-        this.gauges[num].refresh(min,max);
+    range(min, max){
+        this.gauge.refresh(min,max);
     }
 }
 
 export const NUM_GAUGES = 7;
 
 
-let meters:Meter[] = [];
+export let meters:Meter[] = [];
 for (let i = 0;i<NUM_GAUGES;++i) {
     meters[i] = new Meter(i);
 }

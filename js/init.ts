@@ -16,6 +16,8 @@ import {NUM_GAUGES} from "./gui/gauges";
 
 
 export let config: SimpleIni;
+export const simulated = true;
+
 document.addEventListener('DOMContentLoaded', function () {
 
     $(function () {

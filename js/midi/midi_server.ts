@@ -1,5 +1,5 @@
 import 'chrome';
-import {chrome} from '../network/chrome_types';
+import * as chrome from '../network/chrome_types';
 import * as helper from '../helper';
 import {inputStrings} from "../gui/ui_helper";
 import {terminal} from "../gui/gui";
@@ -26,7 +26,7 @@ class MidiClient {
 let clients: {[s: string]: MidiClient} = {};
 let clientsBySocket = {};
 let serverSocketId: number;
-let port: number;
+export let port: number;
 let ttNameAsBuffer: ArrayBuffer;
 export let ttName: string;
 export let active = false;

@@ -5,10 +5,20 @@ import * as connection from '../network/connection';
 import 'w2ui';
 import * as helper from '../helper';
 import * as sliders from './sliders';
-import * as scripting from '../scripting'
+import * as scripting from '../scripting';
 import * as midiServer from '../midi/midi_server';
 import * as ui_helper from './ui_helper';
-import {startCurrentMidiFile, stopMidiFile} from "../midi/midi";
+import {
+    byt,
+    kill_msg,
+    midi_state,
+    midiOut, setFrameCount,
+    setSidState,
+    sid_state,
+    SidState,
+    startCurrentMidiFile,
+    stopMidiFile
+} from "../midi/midi";
 
 export function onConnected() {
     terminal.io.println("connected");
@@ -65,26 +75,25 @@ export function onCtrlMenuClick(event) {
                 commands.eepromSave);
             break;
         case 'mnu_midi:Play':
-            if (midi_state.file==null){
+            if (midi_state.currentFile==null){
                 terminal.io.println("Please select a MIDI file using drag&drop");
                 break;
             }
             startCurrentMidiFile();
-            if(sid_state==1){
-                sid_state=2;
+            if(sid_state==SidState.state1){
+                setSidState(SidState.state2);
             }
             break;
         case 'mnu_midi:Stop':
             midiOut.send(kill_msg);
-            if (midi_state.file==null || midi_state.state!='playing'){
+            if (midi_state.currentFile==null || midi_state.state!='playing'){
                 terminal.io.println("No MIDI file is currently playing");
                 break;
             }
             stopMidiFile();
-            if(sid_state==2){
-                sid_state=1;
-                frame_cnt=byt;
-                frame_cnt_old=0;
+            if(sid_state==SidState.state2){
+                setSidState(SidState.state1);
+                setFrameCount(byt);
             }
             break;
         case 'mnu_script:Start':

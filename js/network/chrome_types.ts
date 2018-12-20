@@ -9,11 +9,15 @@ interface EventHandler {
 export declare namespace sockets.tcp {
     export var onReceive: EventHandler;
 
-    export function send(id: number, data: number[] | Buffer | ArrayBuffer | Uint8Array, callback: Function);
+    export function send(id: number, data: number[] | Buffer | ArrayBuffer | Uint8Array, callback?: Function);
 
     export function close(id: number, callback: Function);
 
     export function setPaused(id: number, paused: boolean);
+
+    export function create(options: Object, callback: Function);
+
+    export function connect(socketId: number, ip: string, port: number, callback: Function);
 }
 
 export declare namespace sockets.tcpServer {
@@ -29,6 +33,8 @@ export declare namespace sockets.tcpServer {
 export declare namespace serial {
     export var onReceive: EventHandler;
     export var onReceiveError: EventHandler;
+
+    export function send(id: number, data: number[] | Buffer | ArrayBuffer | Uint8Array, callback?: Function);
 }
 
 export const runtime = chrome.runtime;
