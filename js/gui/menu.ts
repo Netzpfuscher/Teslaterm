@@ -33,6 +33,11 @@ export function onDisconnect() {
 }
 
 let currentScript: Promise<any>[] = null;
+
+export function setScript(script: Promise<any>[]) {
+    currentScript = script;
+}
+
 export function onCtrlMenuClick(event) {
     switch (event.target) {
 

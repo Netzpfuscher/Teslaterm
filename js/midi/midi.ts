@@ -3,6 +3,7 @@ import * as midiServer from './midi_server';
 import * as scripting from '../scripting';
 import {config, simulated} from '../init';
 import * as commands from '../network/commands';
+import * as sliders from '../gui/sliders';
 import {ontime, setBPS, setBurstOfftime, setBurstOntime} from '../gui/sliders';
 import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scope from '../gui/oscilloscope';
@@ -11,9 +12,12 @@ import {connState, socket_midi} from '../network/connection';
 import 'webmidi';
 import * as nano from '../nano';
 import * as chrome from '../network/chrome_types';
-import * as ui_helper from '../gui/ui_helper';
 import * as midi_ui from "./midi_ui";
-import MIDIInput = WebMidi.MIDIInput;
+import {populateMIDISelects} from "./midi_ui";
+import {terminal} from "../gui/gui";
+import * as helper from "../helper";
+import {onMIDIoverIP} from "./midi_client";
+import {sid_file_marked} from "./midi_file";
 
 //TODO split into smaller parts
 
@@ -66,7 +70,7 @@ export function startCurrentMidiFile() {
     nano.setLedState(config.nano.play,1);
     nano.setLedState(config.nano.stop,0);
     midi_state.state = 'playing';
-    scope.drawChart();//TODO is this redrawTop?
+    scope.redrawTop();
 }
 
 export function stopMidiFile() {
@@ -90,7 +94,7 @@ export function setMidiOut(newOut: MidiOutput) {
 }
 
 // Initialize player and register event handler
-const player = new MidiPlayer.Player(processMidiFromPlayer);
+export const player = new MidiPlayer.Player(processMidiFromPlayer);
 
 
 function processMidiFromPlayer(event){
@@ -195,7 +199,7 @@ const expectedByteCounts = {
 let lastTimeoutReset:number = 0;
 export let midiOut: MidiOutput = undefined;
 
-function playMidiData(data) {
+export function playMidiData(data) {
     var firstByte = data[0];
     if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
         var expectedByteCount = expectedByteCounts[firstByte & 0xF0];
@@ -219,9 +223,11 @@ function playMidiData(data) {
     }
 }
 
-function midi_start(){
+export function init(){
     if (navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
+        midi_state.progress = 0;
+        chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
     } else {
         alert("No MIDI support in your browser.");
     }
@@ -278,4 +284,50 @@ export function setMidiInToPort(source) {
         data: null
     };
     midi_ui.populateMIDISelects();
+}
+
+export function setMidiInToSocket(name: string, socketId: number, ip: string, port: number) {
+    var canceled = false;
+    midiIn = {
+        cancel: (reason) => {
+            canceled = true;
+            setMidiInAsNone();
+            sliders.ontime.setRelativeAllowed(true);
+            if (reason) {
+                terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
+            } else {
+                chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
+                    s=>chrome.sockets.tcp.close(socketId));
+                terminal.io.println("Disconnected from MIDI server");
+            }
+        },
+        isActive: () => !canceled,
+        source: "<Network>",
+        data: {
+            remote: name + " at " + ip + ":" + port,
+            id: socketId
+        }
+    };
+    populateMIDISelects();
+    sliders.ontime.setRelativeAllowed(false);
+}
+
+export function update() {
+    if(sid_state==2 && flow_ctl==true){
+        if(connection.connState==ConnectionState.CONNECTED_IP){
+            if(socket_midi){
+                chrome.sockets.tcp.send(socket_midi, sid_file_marked.slice(frame_cnt_old,frame_cnt), ()=>{});
+            }
+            //console.log(sid_file_marked.slice(frame_cnt_old,frame_cnt));
+            frame_cnt_old=frame_cnt;
+            frame_cnt+=byt;
+            if(frame_cnt>sid_file_marked.byteLength){
+                sid_state=0;
+                frame_cnt=byt;
+                frame_cnt_old=0;
+                console.log("finished");
+            }
+
+        }
+    }
 }

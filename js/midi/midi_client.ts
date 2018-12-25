@@ -1,7 +1,10 @@
 import {terminal} from "../gui/gui";
 import * as midiServer from "./midi_server";
-import * as ui_helper from "../gui/ui_helper";
-import {midiIn, populateMIDISelects} from "./midi";
+import * as helper from '../helper';
+import {midiIn, playMidiData, setMidiInAsNone, setMidiInToSocket} from "./midi";
+import {populateMIDISelects} from "./midi_ui";
+import * as chrome from '../network/chrome_types';
+import * as sliders from '../gui/sliders';
 
 export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
     var error = "Connection to MIDI server at "+ip+":"+port+" failed!";
@@ -18,28 +21,8 @@ export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
                     terminal.io.println(error);
                     setMidiInAsNone();
                 } else {
-                    terminal.io.println("Connected to MIDI server \""+name+"\" at "+ip+":"+port);
-                    var canceled = false;
-                    midiIn = {
-                        cancel: (reason) => {
-                            canceled = true;
-                            setMidiInAsNone();
-                            ontimeUI.setRelativeAllowed(true);
-                            if (reason) {
-                                terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
-                            } else {
-                                chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
-                                    s=>chrome.sockets.tcp.close(socketId));
-                                terminal.io.println("Disconnected from MIDI server");
-                            }
-                        },
-                        isActive: () => !canceled,
-                        source: "<Network>",
-                        remote: name + " at " + ip + ":" + port,
-                        data: socketId
-                    };
-                    populateMIDISelects();
-                    ontimeUI.setRelativeAllowed(false);
+                    terminal.io.println("Connected to MIDI server \"" + name + "\" at " + ip + ":" + port);
+                    setMidiInToSocket(name, socketId, ip, port);
                 }
             });
         };
@@ -50,7 +33,7 @@ export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
     }
 }
 
-function onMIDIoverIP(info) {
+export function onMIDIoverIP(info) {
     if (!midiIn.isActive() || info.socketId != midiIn.data)
         return;
     var data = new Uint8Array(info.data);
@@ -66,7 +49,7 @@ function onMIDIoverIP(info) {
             midiServer.loopTest(param);
             break;
         case 'O'.charCodeAt(0):
-            setRelativeOntime(data[1]);
+            sliders.ontime.setRelativeOntime(data[1]);
             break;
     }
 }

@@ -1,5 +1,6 @@
 import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 import {NUM_GAUGES} from "./gauges";
+import {midi_state} from "../midi/midi";
 
 const waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
 
@@ -349,4 +350,16 @@ function onMouseDown(e){
         redrawMeas();
         redrawTrigger();
     }
+}
+
+export function redrawTop(){
+    var x_res = waveCanvas.width;
+    var y_res = waveCanvas.height;
+    waveContext.clearRect(TRIGGER_SPACE, 0, x_res - INFO_SPACE, TOP_SPACE);
+
+    waveContext.font = "12px Arial";
+    waveContext.textAlign = "left";
+    waveContext.fillStyle = "white";
+
+    waveContext.fillText("MIDI-File: " + midi_state.currentFile + ' State: ' + midi_state.state + ' ' + midi_state.progress + '% / 100%'  ,TRIGGER_SPACE, 12);
 }

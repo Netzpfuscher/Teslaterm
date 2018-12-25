@@ -1,14 +1,21 @@
 import * as gui from '../gui/gui';
+import {terminal} from '../gui/gui';
 import * as menu from '../gui/menu';
 import {ConnectionState} from "./telemetry";
 import * as midi from '../midi/midi';
-// @ts-ignore TODO remove
-import * as chrome from 'chrome';
+import * as chrome from './chrome_types';
 import * as commands from './commands';
-import {terminal} from "../gui/gui";
+import {reconnect} from './commands';
+import {populateMIDISelects} from "../midi/midi_ui";
 
 export let socket_midi: number|undefined;
 
+
+const TIMEOUT = 50;
+let response_timeout = TIMEOUT;
+const WD_TIMEOUT = 5;
+let wd_reset = 5;
+const wd_reset_msg=new Uint8Array([0xF0,0x0F,0x00]);
 
 export let mainSocket: number|undefined;
 export let connid: number|undefined;
@@ -56,7 +63,7 @@ function callback_sck(result){
         menu.onConnected();
         connState = ConnectionState.CONNECTED_IP;
         setTimeout(commands.startConf, 200);
-        midi.populateMIDISelects();
+        populateMIDISelects();
     }
 }
 
@@ -150,4 +157,33 @@ function getdevs(devices){
     }
 
 
+}
+
+export function update() {
+    if(connState!=ConnectionState.UNCONNECTED){
+        response_timeout--;
+
+        if(response_timeout==0){
+            response_timeout=TIMEOUT;
+            terminal.io.println('Connection lost, reconnecting...');
+
+            reconnect();
+            chrome.sockets.tcp.getInfo(socket_midi, midi_socket_ckeck);
+            chrome.sockets.tcp.getInfo(mainSocket, telnet_socket_ckeck);
+        }
+
+        wd_reset--;
+        if(wd_reset==0){
+            wd_reset=WD_TIMEOUT;
+            if(connState==ConnectionState.CONNECTED_SERIAL){
+                chrome.serial.send(connid, wd_reset_msg);
+            } else if(connState==ConnectionState.CONNECTED_IP){
+                if(socket_midi){
+                    //TODO why is this commented out? chrome.sockets.tcp.send(socket_midi, wd_reset_msg, sendmidi);
+                }
+            }
+        }
+
+
+    }
 }

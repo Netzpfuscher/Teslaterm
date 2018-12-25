@@ -1,8 +1,8 @@
 import {config} from "./init";
 
-var nano=null;
+let nano=null;
 let nano_out=null;
-let coilHot: boolean = false;
+let coilHot: boolean = true;
 
 export function setNanoOut(newOut) {
     nano_out = newOut;
@@ -40,4 +40,18 @@ export function init(){
     setLedState(config.nano.play,0);
     setLedState(config.nano.stop,1);
 
+}
+
+let warnLed: boolean = false;
+let blinkTimer: number = 0;
+
+export function update() {
+    blinkTimer++;
+    if(blinkTimer>25){
+        blinkTimer=0;
+        if(coilHot){
+            warnLed=!warnLed;
+            setLedState(config.nano.killreset,warnLed);
+        }
+    }
 }
