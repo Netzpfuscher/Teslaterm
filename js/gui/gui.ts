@@ -1,4 +1,4 @@
-import 'hterm/terminal';
+import {hterm, lib as TermLib} from '../hterm_all';
 import * as cmd from '../network/commands';
 import * as connection from '../network/connection';
 import * as midi from "../midi/midi";
@@ -9,7 +9,7 @@ import {SidState} from "../midi/midi";
 import * as nano from '../nano';
 import * as gauges from './gauges';
 
-export function init() {
+export function init(document: HTMLDocument) {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
     terminal.onTerminalReady = function() {
@@ -22,8 +22,9 @@ export function init() {
     };
 }
 
-export let terminal: any = new Terminal();
+hterm.defaultStorage = new TermLib.Storage.Memory();
 
+export let terminal: any = new hterm.Terminal();
 export const MEAS_SPACE = 20;
 export const INFO_SPACE = 150;
 export const TOP_SPACE = 20;

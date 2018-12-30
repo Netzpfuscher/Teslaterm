@@ -1,4 +1,6 @@
 import * as $ from 'jquery';
+global['$'] = $;
+global['jQuery'] = $;
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
 import * as sliders from './gui/sliders';
@@ -8,20 +10,25 @@ import {connect} from "./network/connection";
 import 'simple-ini';
 import './simple_ini_types';
 import * as midi from "./midi/midi";
-import * as chrome from './network/chrome_types';
+import {chrome} from './types/chrome';
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';
 import {NUM_GAUGES} from "./gui/gauges";
 import * as connection from "./network/connection";
 import * as nano from "./nano";
 import * as gauges from "./gui/gauges";
-
+import 'w2ui';
 
 export let config: SimpleIni;
 export const simulated = true;
 
-export function init() {
-    document.addEventListener('DOMContentLoaded', function () {
+export function init(console, document: HTMLDocument, w2ui) {
+    global.console = console;
+    global['w2ui'] = w2ui;
+    console.log("Init");
+    document.addEventListener('DOMContentLoaded', ()=>{
+        console.log("Loaded");
+        readini("config.ini");
 
         $(function () {
             $('#toolbar').w2toolbar({
@@ -141,7 +148,7 @@ export function init() {
             ]
         });
 
-
+        console.log(w2ui);
         w2ui['layout'].on({type: 'resize', execute: 'after'}, function (target, eventData) {
             scope.onResize();
         });
@@ -151,10 +158,8 @@ export function init() {
 
         chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
 
-        gui.init();
+        gui.init(document);
         sliders.init();
-
-        readini("config.ini");
 
         scope.init();
         midi.init();

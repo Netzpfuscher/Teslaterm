@@ -1,5 +1,4 @@
-import 'chrome';
-import * as chrome from '../network/chrome_types';
+import {chrome} from '../types/chrome';
 import * as helper from '../helper';
 import {inputStrings} from "../gui/ui_helper";
 import {terminal} from "../gui/gui";
@@ -309,7 +308,7 @@ function matchesFilterExtracted(filter, channel, note) {
     return resultChannel && resultNote;
 }
 
-
+let chromeL = global["chrome"];
 setPort(5678);
-chrome.sockets.tcpServer.onAccept.addListener(info=>onAccept(info));
-chrome.sockets.tcp.onReceive.addListener(args=>onMessage(args.socketId, args.data));
+chromeL.sockets.tcpServer.onAccept.addListener(info=>onAccept(info));
+chromeL.sockets.tcp.onReceive.addListener(args=>onMessage(args.socketId, args.data));

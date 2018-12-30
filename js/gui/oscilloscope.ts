@@ -2,12 +2,10 @@ import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER
 import {NUM_GAUGES} from "./gauges";
 import {midi_state} from "../midi/midi";
 
-const waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
-
-
-const backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
-const waveContext: CanvasRenderingContext2D = waveCanvas.getContext('2d');
-const backContext: CanvasRenderingContext2D = backCanvas.getContext('2d');
+let waveCanvas: HTMLCanvasElement;
+let backCanvas: HTMLCanvasElement;
+let waveContext: CanvasRenderingContext2D;
+let backContext: CanvasRenderingContext2D;
 export class TraceStats {
     min: number = 0;
     max: number = 1024;
@@ -139,6 +137,10 @@ export function addValue(chart_num: number, val: number): void {
 }
 
 export function init() {
+    waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
+    backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
+    waveContext = waveCanvas.getContext('2d');
+    backContext = backCanvas.getContext('2d');
     waveCanvas.onmousedown = onMouseDown;
 
     for(let i=0;i<NUM_GAUGES;i++){

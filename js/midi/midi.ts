@@ -9,17 +9,15 @@ import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scope from '../gui/oscilloscope';
 import * as connection from '../network/connection';
 import {connState, socket_midi} from '../network/connection';
-import 'webmidi';
+//TODO import 'webmidi';
 import * as nano from '../nano';
-import * as chrome from '../network/chrome_types';
+import {chrome} from '../types/chrome';
 import * as midi_ui from "./midi_ui";
 import {populateMIDISelects} from "./midi_ui";
 import {terminal} from "../gui/gui";
 import * as helper from "../helper";
 import {onMIDIoverIP} from "./midi_client";
 import {sid_file_marked} from "./midi_file";
-
-//TODO split into smaller parts
 
 export interface MidiOutput {
     dest: string;
@@ -38,8 +36,11 @@ class MidiState {
     state: string;
 }
 
-export enum SidState {
-    state0, state1, state2
+export const enum SidState {
+    //TODO deobfuscate names
+    state0 = 0,
+    state1 = 1,
+    state2 = 2
 }
 
 export let midi_state: MidiState = {currentFile: null, progress: 0, state: 'stopped'};
@@ -224,7 +225,9 @@ export function playMidiData(data) {
 }
 
 export function init(){
+    // @ts-ignore TODO
     if (navigator.requestMIDIAccess) {
+        // @ts-ignore TODO
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
         midi_state.progress = 0;
         chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
@@ -238,6 +241,10 @@ function onMIDISystemError( err ) {
     console.log( "MIDI not initialized - error encountered:" + err.code );
 }
 
+//TODO remove or clean up
+declare namespace WebMidi {
+    type MIDIAccess = any;
+}
 export let midiIn: MidiInput;
 export let midiAccess: WebMidi.MIDIAccess;
 

@@ -5,13 +5,12 @@ import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import * as midi from "../midi/midi";
 import {mainSocket, socket_midi} from "./connection";
 import * as menu from '../gui/menu'
-import 'chrome';
-import * as chrome from "./chrome_types";
+import {chrome} from "../types/chrome";
 
-export enum ConnectionState {
-    UNCONNECTED,
-    CONNECTED_SERIAL,
-    CONNECTED_IP
+export const enum ConnectionState {
+    UNCONNECTED = 0,
+    CONNECTED_SERIAL = 2,
+    CONNECTED_IP = 1
 }
 
 

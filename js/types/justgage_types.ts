@@ -4,6 +4,6 @@ declare interface JustGage {
     refreshTitle(val: string);
 }
 
-declare module "justgage" {
+/*declare module "justgage" {
     export let JustGage: JustGage;
-}
+}*/

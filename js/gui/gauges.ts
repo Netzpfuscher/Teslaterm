@@ -1,4 +1,4 @@
-import {JustGage} from "justgage";
+import 'justgage';
 import {terminal} from "./gui";
 
 export class Meter {
@@ -9,7 +9,8 @@ export class Meter {
     constructor(id:number){
             this.meter_buf_old=255;
             this.meter_buf=0;
-            this.gauge= new JustGage({
+            // @ts-ignore TODO figure out how to properly fix this
+        this.gauge= new JustGage({
                 id: ("gauge"+id),
                 value: 255,
                 min: 0,

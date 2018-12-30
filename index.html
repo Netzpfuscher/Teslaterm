@@ -5,10 +5,14 @@
     <title>Teslaterm</title>
     <link href="styles/main.css" rel="stylesheet">
 	<script src="fontawesome-all.js" type="text/javascript"></script>
-	<script src="raphael.js"></script>
+    <script src="raphael.js"></script>
+    <script src="node_modules/jquery/dist/jquery.js"></script>
+    <script src="node_modules/justgage/justgage.js"></script>
+    <script src="node_modules/w2ui/w2ui.js"></script>
     <script type="text/javascript">
         let init = require('./js/init');
-        init.init();
+        init.init(console, document, w2ui);
+		console.log(document['abcdef']);
     </script>
 </head>
 <body>
