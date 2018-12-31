@@ -43,8 +43,10 @@ export const NUM_GAUGES = 7;
 
 
 export let meters:Meter[] = [];
-for (let i = 0;i<NUM_GAUGES;++i) {
-    meters[i] = new Meter(i);
+export function init() {
+    for (let i = 0; i < NUM_GAUGES; ++i) {
+        meters[i] = new Meter(i);
+    }
 }
 
 export function refresh_all(){

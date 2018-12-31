@@ -9,7 +9,7 @@ import {SidState} from "../midi/midi";
 import * as nano from '../nano';
 import * as gauges from './gauges';
 
-export function init(document: HTMLDocument) {
+export function init() {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
     terminal.onTerminalReady = function() {
@@ -20,6 +20,7 @@ export function init(document: HTMLDocument) {
 
         io.sendString = terminal.processInput;
     };
+    gauges.init();
 }
 
 hterm.defaultStorage = new TermLib.Storage.Memory();

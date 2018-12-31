@@ -2,6 +2,7 @@
   "name": "teslaterm",
   "version": "0.1.0",
   "main": "index.html",
+  "chromium-args": "--mixed-context",
   "window": {
     "width": 1024,
     "height": 768

@@ -6,13 +6,16 @@
     <link href="styles/main.css" rel="stylesheet">
 	<script src="fontawesome-all.js" type="text/javascript"></script>
     <script src="raphael.js"></script>
-    <script src="node_modules/jquery/dist/jquery.js"></script>
+    <script type="text/javascript">
+		const jq = require('jquery');
+		global['$'] = global['jQuery'] = jq;
+    </script>
     <script src="node_modules/justgage/justgage.js"></script>
     <script src="node_modules/w2ui/w2ui.js"></script>
     <script type="text/javascript">
+        console.log(w2ui);
         let init = require('./js/init');
-        init.init(console, document, w2ui);
-		console.log(document['abcdef']);
+        init.init();
     </script>
 </head>
 <body>

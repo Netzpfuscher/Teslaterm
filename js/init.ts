@@ -1,6 +1,4 @@
 import * as $ from 'jquery';
-global['$'] = $;
-global['jQuery'] = $;
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
 import * as sliders from './gui/sliders';
@@ -22,15 +20,13 @@ import 'w2ui';
 export let config: SimpleIni;
 export const simulated = true;
 
-export function init(console, document: HTMLDocument, w2ui) {
-    global.console = console;
-    global['w2ui'] = w2ui;
+export function init() {
     console.log("Init");
     document.addEventListener('DOMContentLoaded', ()=>{
         console.log("Loaded");
         readini("config.ini");
 
-        $(function () {
+       // $(function () {
             $('#toolbar').w2toolbar({
                 name: 'toolbar',
                 items: [
@@ -95,7 +91,8 @@ export function init(console, document: HTMLDocument, w2ui) {
                 ],
                 onClick: menu.onCtrlMenuClick
             });
-        });
+            console.log("Done toolbar");
+        //});
 
 
         var html_gauges = '';
@@ -158,7 +155,7 @@ export function init(console, document: HTMLDocument, w2ui) {
 
         chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
 
-        gui.init(document);
+        gui.init();
         sliders.init();
 
         scope.init();
