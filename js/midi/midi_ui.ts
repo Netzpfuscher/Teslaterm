@@ -7,7 +7,7 @@ import {socket_midi} from "../network/connection";
 import {
     midiAccess,
     midiIn,
-    midiMessageReceived,
+    midiMessageReceived, midiNone,
     midiOut,
     setMidiInAsNone,
     setMidiInToPort,

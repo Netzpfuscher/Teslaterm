@@ -15,18 +15,15 @@ import {NUM_GAUGES} from "./gui/gauges";
 import * as connection from "./network/connection";
 import * as nano from "./nano";
 import * as gauges from "./gui/gauges";
-import 'w2ui';
 
 export let config: SimpleIni;
 export const simulated = true;
 
 export function init() {
-    console.log("Init");
-    document.addEventListener('DOMContentLoaded', ()=>{
-        console.log("Loaded");
+    document.addEventListener('DOMContentLoaded', () => {
         readini("config.ini");
 
-       // $(function () {
+        $(function () {
             $('#toolbar').w2toolbar({
                 name: 'toolbar',
                 items: [
@@ -75,16 +72,14 @@ export function init() {
                     {type: 'spacer'},
                     {type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off'},
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
+                    //TODO why is this interpreted in strange ways?
                     {
                         type: 'html', id: 'port',
-                        html: function (item) {
-                            //TODO can this be done without raw html
-                            return '<div style="padding: 3px 10px;">' +
+                        html: '<div style="padding: 3px 10px;">' +
                                 ' Port:' +
                                 '    <input size="20" placeholder="COM1" onchange="var el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
-                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value="' + (item.value || '') + '"/>' +
-                                '</div>';
-                        }
+                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value=""/>' +
+                                '</div>'
                     },
                     {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
                     {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'}
@@ -92,8 +87,7 @@ export function init() {
                 onClick: menu.onCtrlMenuClick
             });
             console.log("Done toolbar");
-        //});
-
+        });
 
         var html_gauges = '';
         for (var i = 0; i < NUM_GAUGES; i++) {
@@ -113,7 +107,7 @@ export function init() {
                     type: 'main', style: pstyle, content:
                         '<div class="scopeview">' +
                         '<article>' +
-                        '<canvas id="waveback" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>' +
+                        '<canvas id="backCanvas" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>' +
                         '<canvas id="waveCanvas" style= "position: absolute; left: 0; top: 0;width: 75%; z-index: 1;"></canvas>' +
                         '</article>' +
                         '<aside>' +
@@ -144,7 +138,6 @@ export function init() {
 
             ]
         });
-
         console.log(w2ui);
         w2ui['layout'].on({type: 'resize', execute: 'after'}, function (target, eventData) {
             scope.onResize();

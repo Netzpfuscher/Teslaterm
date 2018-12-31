@@ -70,7 +70,7 @@ let trigger_lvl_real: number = 0;
 let trigger_block: boolean = false;
 let trigger_trgt: boolean = false;
 let trigger_old: boolean = false;
-export let traces: Trace[];
+export let traces: Trace[] = [];
 let xPos: number = TRIGGER_SPACE + 1;
 let pixelRatio: number = 1;
 let cleared: boolean = false;//Before: draw_mode
@@ -142,6 +142,7 @@ export function init() {
     waveContext = waveCanvas.getContext('2d');
     backContext = backCanvas.getContext('2d');
     waveCanvas.onmousedown = onMouseDown;
+
 
     for(let i=0;i<NUM_GAUGES;i++){
         traces.push(new Trace());

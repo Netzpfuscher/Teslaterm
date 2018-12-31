@@ -53,6 +53,23 @@ export const byt = 29*2;
 export let frame_cnt=byt
 export let frame_cnt_old=0;
 
+let lastTimeoutReset:number = 0;
+export let midiOut: MidiOutput = {dest: "None", send: (msg)=>{}};
+
+export const midiNone = {
+    isActive: () => false,
+    cancel: (arg) => setMidiInAsNone(),
+    data: null,
+    source: ""
+};
+
+//TODO remove or clean up
+declare namespace WebMidi {
+    type MIDIAccess = any;
+}
+export let midiIn: MidiInput = midiNone;
+export let midiAccess: WebMidi.MIDIAccess;
+
 export function setSidState(newState: SidState) {
     sid_state = newState;
 }
@@ -197,9 +214,6 @@ const expectedByteCounts = {
     0xE0: 3
 };
 
-let lastTimeoutReset:number = 0;
-export let midiOut: MidiOutput = undefined;
-
 export function playMidiData(data) {
     var firstByte = data[0];
     if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
@@ -241,13 +255,6 @@ function onMIDISystemError( err ) {
     console.log( "MIDI not initialized - error encountered:" + err.code );
 }
 
-//TODO remove or clean up
-declare namespace WebMidi {
-    type MIDIAccess = any;
-}
-export let midiIn: MidiInput;
-export let midiAccess: WebMidi.MIDIAccess;
-
 function midiConnectionStateChange( e ) {
     console.log("connection: " + e.port.name + " " + e.port.connection + " " + e.port.state );
     midi_ui.populateMIDISelects();
@@ -261,18 +268,11 @@ export function midiInit(midi: WebMidi.MIDIAccess) {
     midi.onstatechange = midiConnectionStateChange;
     midi_ui.populateMIDISelects();
 }
-
-
 export function setMidiInAsNone() {
     if (midiIn.isActive()) {
         midiIn.cancel(null);
     }
-    midiIn = {
-        isActive: () => false,
-        cancel: (arg) => setMidiInAsNone(),
-        data: null,
-        source: ""
-    };
+    midiIn = midiNone;
     midi_ui.select(0);
     midi_ui.populateMIDISelects();
 }

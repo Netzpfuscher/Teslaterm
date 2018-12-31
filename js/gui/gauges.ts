@@ -12,7 +12,7 @@ export class Meter {
             // @ts-ignore TODO figure out how to properly fix this
         this.gauge= new JustGage({
                 id: ("gauge"+id),
-                value: 255,
+                value: 0,
                 min: 0,
                 max: 255,
                 title: ("Gauge"+id)
