@@ -156,13 +156,12 @@ class term_ui {
 	}
 	
 	static ud_settings(uconfig) {
-		var tfields = [];
-		var trecords = [];
+		let tfields = [];
+		let trecords = [];
 		//console.log(udconfig);
-		for(var i=0;i<uconfig.length;i++){
-			var data = uconfig[i];
-
-			var inipage = simpleIni.get('config.'+data[0]);
+		for(let i=0;i<uconfig.length;i++){
+			let data = uconfig[i];
+			let inipage = simpleIni.get('config.'+data[0]);
 			if(!inipage) inipage=0;
 			switch (parseInt(data[2])){
 				case TYPE_CHAR:
@@ -188,7 +187,7 @@ class term_ui {
 		if (w2ui.foo) {
 				w2ui.foo.original = [];
 				w2ui.foo.record = [];
-			for(var copy in trecords){
+			for(let copy in trecords){
 				w2ui.foo.original[copy] =  trecords[copy];
 				w2ui.foo.record[copy] =  trecords[copy];
 			}
@@ -211,7 +210,7 @@ class term_ui {
 				record: trecords,
 				actions: {
 					"save": function () { 
-						for (var changes in this.getChanges()){
+						for (let changes in this.getChanges()){
 							this.record[changes] = this.record[changes].replace(',','.');
 							send_command('set ' + changes + ' ' + this.record[changes] + '\r');
 							this.original[changes] = this.record[changes];
@@ -219,7 +218,7 @@ class term_ui {
 						w2popup.close();
 					},
 					"save EEPROM": function () { 
-						for (var changes in this.getChanges()){
+						for (let changes in this.getChanges()){
 							this.record[changes] = this.record[changes].replace(',','.');
 							send_command('set ' + changes + ' ' + this.record[changes] + '\r');
 							this.original[changes] = this.record[changes];

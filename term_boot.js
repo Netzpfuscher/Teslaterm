@@ -20,6 +20,8 @@ class btldr {
         this.cyacd_chip_id='';
         this.pc=0;
         this.time;
+        this.info_cb=null;
+        this.progress_cb=null;
     }
 
 
@@ -37,11 +39,16 @@ class btldr {
     callback_sck(result){
         if(!result){
             this.connected = true;
+            this.boot_cmd(0x38,[]);
         }
     }
 
-    callback_sent(info){
+    set_progress_cb(cb_func){
+        this.progress_cb=cb_func;
+    }
 
+    set_info_cb(cb_func){
+        this.info_cb=cb_func;
     }
 
     cyacd(file){
@@ -66,10 +73,30 @@ class btldr {
 
     }
 
+    send_info(str){
+        if(this.info_cb==null) return;
+        this.info_cb(str);
+    }
+
     cyacd_loaded(ev){
+
         this.cyacd_file = ev.srcElement.result.split('\n');
         this.cyacd_chip_id = this.cyacd_file[0].substr(0,8);
         let cnt=0;
+        this.send_info('INFO: Cyacd loaded, found chip-ID: ' + this.cyacd_chip_id);
+
+        if(this.connected==false){
+            this.send_info('INFO: Not connected too bootloader... exit');
+            return;
+        }
+
+        if(this.cyacd_chip_id==this.chip_id){
+            this.send_info('INFO: Chip-ID matches, start programming of flash');
+        }else{
+            this.send_info('INFO: Chip-ID match failed... exit');
+            return;
+        }
+
 
         for(let i=1;i<this.cyacd_file.length;i++) {
             if(this.cyacd_file[i]!='') {
@@ -90,19 +117,31 @@ class btldr {
             cnt++;
         }
         this.pc=0;
-        this.time = setInterval(() => this.protmr(), 20);
+        this.time = setInterval(() => this.protmr(), 40);
     }
 
     protmr(){
-        if(this.pc==this.cyacd_arr.array_id.length){
+        let progress = [];
+        if(this.last_command!=0x00 && this.pc != 0){
             clearInterval(this.time);
             this.pc=0;
+            this.send_info('\r\nERROR: Bootloader not responding');
             this.boot_cmd(0x3B,[]);
             return;
         }
-        console.log(this.pc);
+
+        if(this.pc==this.cyacd_arr.array_id.length){
+            this.last_command=0x00;
+            clearInterval(this.time);
+            this.pc=0;
+            this.send_info('\r\nINFO: Programming done');
+            this.boot_cmd(0x3B,[]);
+            return;
+        }
+        progress.percent_done = Math.floor((100.0 / (this.cyacd_arr.array_id.length-1)) * this.pc);
         this.programm(this.cyacd_arr.array_id[this.pc], this.cyacd_arr.row[this.pc], this.cyacd_arr.byte[this.pc]);
         this.pc++;
+        this.progress_cb(progress);
     }
 
 
@@ -116,15 +155,18 @@ class btldr {
                     console.log(this.chip_id);
                     break;
                 case 0x39:
-                    console.log(info.data);
                     if(buf[1]!=0) {
-                        //console.log('Error at Row: ' + this.pc);
+                        console.log('ERROR: Error at Row: ' + this.pc);
                     }
                     break;
             }
 
             this.last_command=0x00;
         }
+    }
+
+    callback_sent(info){
+
     }
 
     boot_cmd(command , data){
@@ -168,6 +210,8 @@ class btldr {
         this.chip_id = (buffer[4] | (buffer[5]<<8) | (buffer[6]<<16) | (buffer[7]<<24)).toString(16).toUpperCase();
         this.silicon_rev = buffer[8].toString(16).toUpperCase();
         this.ldr_version = buffer[10].toString(10) +'.' + buffer[9].toString(10);
+
+        this.send_info('\r\nINFO: Connected to bootloader chip-id: ' + this.chip_id + ' silicon-rev: ' + this.silicon_rev + ' bootloader version: ' + this.ldr_version);
     }
 
 }

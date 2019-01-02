@@ -50,7 +50,24 @@ var ontimeUI = {totalVal: 0, relativeVal: 100, absoluteVal: 0};
 var term_scope;
 
 
+var ldr = new btldr('192.168.50.249', 666);
 
+ldr.set_info_cb((str) => terminal.io.println(str));
+ldr.set_progress_cb((info) => progress_cb(info));
+
+function progress_cb(info){
+    //terminal.io.println('INFO: Programming done: ' + info.percent_done + '%');
+    terminal.io.print('\033[2K');
+    terminal.io.print('\r|');
+    for(let i=0;i<50;i++){
+    	if(info.percent_done>=(i*2)){
+            terminal.io.print('=');
+		}else{
+            terminal.io.print('.');
+		}
+	}
+    terminal.io.print('| '+ info.percent_done + '%');
+}
 
 var times = {'pw':0, 'pwd':0, 'bon':0, 'boff':0,'pw_old':0, 'pwd_old':0, 'bon_old':0, 'boff_old':0};
 
@@ -81,6 +98,7 @@ function createInfo(info){
 	console.log(ipaddr);
 
 	chrome.sockets.tcp.connect(socket,ipaddr,23, callback_sck);
+   //chrome.sockets.tcp.connect(socket,ipaddr,666, callback_sck);
 	//chrome.sockets.tcp.connect(socket,ipaddr,40023, callback_sck);
 	
 }
@@ -173,19 +191,19 @@ function refresh_UI(){
 
 	if(connected){
 		response_timeout--;
-	
-		if(response_timeout==0){
-			response_timeout=TIMEOUT;
-			terminal.io.println('Connection lost, reconnecting...');
-	
-			reconnect();
-			chrome.sockets.tcp.getInfo(socket_midi, midi_socket_ckeck);
-			chrome.sockets.tcp.getInfo(socket, telnet_socket_ckeck);
 
-			
-		}
-		
-		wd_reset--;
+        if (response_timeout == 0) {
+            response_timeout = TIMEOUT;
+            terminal.io.println('Connection lost, reconnecting...');
+
+            reconnect();
+            chrome.sockets.tcp.getInfo(socket_midi, midi_socket_ckeck);
+            chrome.sockets.tcp.getInfo(socket, telnet_socket_ckeck);
+
+
+        }
+
+        wd_reset--;
 		if(wd_reset==0){
 			wd_reset=WD_TIMEOUT;
 			if(connected==2){
@@ -381,22 +399,28 @@ const DATA_NUM = 2;
 var udconfig=[];
 
 function compute(dat){
+	let str;
+	let x;
+	let y;
+	let color;
+	let size;
+	let chart_num;
 	switch(dat[DATA_TYPE]){
 		case TT_GAUGE:
 			meters.value(dat[DATA_NUM], helper.bytes_to_signed(dat[3],dat[4]));
 		break;
 		case TT_GAUGE_CONF:
-			var gauge_num = dat[2].valueOf();
-			var gauge_min = helper.bytes_to_signed(dat[3],dat[4]);
-			var gauge_max = helper.bytes_to_signed(dat[5],dat[6]);
+			let gauge_num = dat[2].valueOf();
+			let gauge_min = helper.bytes_to_signed(dat[3],dat[4]);
+			let gauge_max = helper.bytes_to_signed(dat[5],dat[6]);
 			dat.splice(0,7);
-			var str = helper.convertArrayBufferToString(dat);
+			str = helper.convertArrayBufferToString(dat);
 			meters.text(gauge_num, str);
 			meters.range(gauge_num, gauge_min, gauge_max);
 		break;
 		case TT_CHART_CONF:
-		
-			var chart_num = dat[2].valueOf();
+
+			chart_num = dat[2].valueOf();
 			tterm[chart_num].min = helper.bytes_to_signed(dat[3],dat[4]);
 			tterm[chart_num].max = helper.bytes_to_signed(dat[5],dat[6]);
 			if(tterm[chart_num].min<0){
@@ -404,7 +428,7 @@ function compute(dat){
 			}else{
 				tterm[chart_num].span=(tterm[chart_num].max-tterm[chart_num].min);
 			}
-			tterm[chart_num].count_div=tterm[chart_num].span/5
+			tterm[chart_num].count_div=tterm[chart_num].span/5;
 			tterm[chart_num].offset = helper.bytes_to_signed(dat[7],dat[8]);
 			switch(dat[9]){
 				case TT_UNIT_NONE:
@@ -430,11 +454,11 @@ function compute(dat){
 			tterm[chart_num].name = helper.convertArrayBufferToString(dat);
 			term_scope.redrawInfo();
 			term_scope.redrawMeas();
-			
-		break;		
+
+		break;
 		case TT_CHART:
-			var val=helper.bytes_to_signed(dat[3],dat[4]);
-			var chart_num= dat[DATA_NUM].valueOf();
+            let val=helper.bytes_to_signed(dat[3],dat[4]);
+			chart_num= dat[DATA_NUM].valueOf();
 			tterm[chart_num].value_real = val;
 			tterm[chart_num].value=(1/tterm[chart_num].span) *(val-tterm[chart_num].offset);
 			if(tterm[chart_num].value > 1) tterm[chart_num].value = 1;
@@ -446,13 +470,13 @@ function compute(dat){
 				term_scope.draw_grid();
 				term_scope.redrawTrigger();
 				term_scope.redrawMeas();
-				
+
 				draw_mode=0;
 			}
 			if(tterm.trigger==-1){
 				term_scope.plot();
 			}else{
-				var triggered = Math.sign(tterm.trigger_lvl)==Math.sign(tterm[tterm.trigger].value - tterm.trigger_lvl);
+				let triggered = Math.sign(tterm.trigger_lvl)==Math.sign(tterm[tterm.trigger].value - tterm.trigger_lvl);
 				switch(tterm.trigger_block){
 					case 0:
 						if(term_scope.plot.xpos==11 && triggered){
@@ -466,7 +490,7 @@ function compute(dat){
 						}
 						if(tterm.trigger_trgt!=tterm.trigger_old) term_scope.redrawMeas();
 						tterm.trigger_old = tterm.trigger_trgt;
-					
+
 					break;
 				}
 
@@ -477,40 +501,40 @@ function compute(dat){
 			draw_mode=1;
 		break;
 		case TT_CHART_LINE:
-			var x1 = helper.bytes_to_signed(dat[2],dat[3]);
-			var y1 = helper.bytes_to_signed(dat[4],dat[5]);
-			var x2 = helper.bytes_to_signed(dat[6],dat[7]);
-			var y2 = helper.bytes_to_signed(dat[8],dat[9]);
-			var color = dat[10].valueOf();
+			let x1 = helper.bytes_to_signed(dat[2],dat[3]);
+			let y1 = helper.bytes_to_signed(dat[4],dat[5]);
+            let x2 = helper.bytes_to_signed(dat[6],dat[7]);
+            let y2 = helper.bytes_to_signed(dat[8],dat[9]);
+            color = dat[10].valueOf();
 			ctx.beginPath();
 			ctx.lineWidth = pixel;
 			ctx.strokeStyle = wavecolor[color];
 			ctx.moveTo(x1,y1);
 			ctx.lineTo(x2,y2);
 			ctx.stroke();
-		
+
 		break;
 		case TT_CHART_TEXT:
-			var x = helper.bytes_to_signed(dat[2],dat[3]);
-			var y = helper.bytes_to_signed(dat[4],dat[5]);
-			var color = dat[6].valueOf();
-			var size = dat[7].valueOf();
+			x = helper.bytes_to_signed(dat[2],dat[3]);
+            y = helper.bytes_to_signed(dat[4], dat[5]);
+            color = dat[6].valueOf();
+			size = dat[7].valueOf();
 			if(size<6) size=6;
 			dat.splice(0,8);
-			var str = helper.convertArrayBufferToString(dat);
+			str = helper.convertArrayBufferToString(dat);
 			ctx.font = size + "px Arial";
 			ctx.textAlign = "left";
 			ctx.fillStyle = wavecolor[color];
 			ctx.fillText(str,x, y);
 		break;
 		case TT_CHART_TEXT_CENTER:
-			var x = helper.bytes_to_signed(dat[2],dat[3]);
-			var y = helper.bytes_to_signed(dat[4],dat[5]);
-			var color = dat[6].valueOf();
-			var size = dat[7].valueOf();
+			x = helper.bytes_to_signed(dat[2],dat[3]);
+            y = helper.bytes_to_signed(dat[4], dat[5]);
+            color = dat[6].valueOf();
+			size = dat[7].valueOf();
 			if(size<6) size=6;
 			dat.splice(0,8);
-			var str = helper.convertArrayBufferToString(dat);
+			str = helper.convertArrayBufferToString(dat);
 			ctx.font = size + "px Arial";
 			ctx.textAlign = "center";
 			ctx.fillStyle = wavecolor[color];
@@ -523,11 +547,11 @@ function compute(dat){
 			break;
 		case TT_CONFIG_GET:
 			dat.splice(0,2);
-			var str = helper.convertArrayBufferToString(dat, false);
+			str = helper.convertArrayBufferToString(dat, false);
 			if(str == "NULL;NULL"){
 				term_ui.ud_settings(udconfig);
 			}else{
-				var substrings = str.split(";")
+				let substrings = str.split(";")
 				udconfig.push(substrings);
 			}
 		break;
@@ -580,6 +604,21 @@ function updateSliderAvailability() {
 
 
 
+function bootload(){
+
+	ldr.connect();
+	//let ui = boot_cmd(0x38,[]);
+	//chrome.sockets.tcp.send(socket, ui, sendtel);
+
+}
+
+function load(){
+	ldr.boot_cmd(0x38,[]);
+}
+
+
+
+
 function receive(info){
 	
 	if(info.socketId==socket_midi){
@@ -596,8 +635,10 @@ function receive(info){
 			return;
 		}
 	}
+	if(info.socketId == ldr.socket) return;
 
 	var buf = new Uint8Array(info.data);
+
 	var txt = '';
 	
 	response_timeout = TIMEOUT;
@@ -909,7 +950,9 @@ function ondrop(e){
 				});
 		}else if (extension=="dmp") {
 			loadSIDFile(file);
-		}
+		}else if (extension=="cyacd") {
+			ldr.cyacd(file);
+        }
    }
 }
 
@@ -1443,7 +1486,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				{ text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
 				{ text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'},
-				{ text: 'Settings', id: 'settings', icon: 'fa fa-table'}
+				{ text: 'Settings', id: 'settings', icon: 'fa fa-table'},
+				{ text: 'Bootloader', id: 'bootloader', icon: 'fa fa-microchip'}
             ]},
 			
 			{ type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
@@ -1576,11 +1620,18 @@ document.addEventListener('DOMContentLoaded', function () {
 								midiServer.start();
 							});
 					}
-				break;
+					break;
 				case 'mnu_command:settings':
 					udconfig = [];
 					send_command('config_get\r');
-				break;
+					break;
+                case 'mnu_command:bootloader':
+                	if(connected!=0) {
+                        send_command('bootloader\r');
+                        connect();
+                    }
+                    bootload();
+                    break;
 				case 'mnu_command:Load EEPROM-Config':
 					warn_eeprom_load();
 				break;
@@ -1706,7 +1757,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	chrome.serial.onReceiveError.addListener(error);
 	
-	document.getElementById('layout').addEventListener("drop", ondrop);
+	document.getElementById('layout').addEventListener("drop", (e) => ondrop(e));
 	document.getElementById('layout').addEventListener("dragover", ondragover);
 	ontimeUI.slider = $(".w2ui-panel-content .scopeview #ontime #slider")[0];
 	ontimeUI.relativeSelect = $(".w2ui-panel-content .scopeview #ontime #relativeSelect")[0];

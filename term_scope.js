@@ -30,8 +30,8 @@ class scope {
 		//HiDPI display support
 		if(window.devicePixelRatio){
 			pixel = window.devicePixelRatio;
-			var height = this.wavecanvas.getAttribute('height');
-			var width = this.wavecanvas.getAttribute('width');
+			let height = this.wavecanvas.getAttribute('height');
+			let width = this.wavecanvas.getAttribute('width');
 			// reset the canvas width and height with window.devicePixelRatio applied
 			this.wavecanvas.setAttribute('width', Math.round(width * window.devicePixelRatio));
 			this.wavecanvas.setAttribute('height', Math.round( height * window.devicePixelRatio));
@@ -51,9 +51,8 @@ class scope {
 	}
 	
 	redrawTrigger(){
-		var x_res = this.wavecanvas.width;
-		var y_res = this.wavecanvas.height-this.meas_space-this.top_space;
-		var ytrgpos = Math.floor((this.tt.trigger_lvl*-1+1)*(y_res/2.0))+this.top_space;
+		let y_res = this.wavecanvas.height-this.meas_space-this.top_space;
+		let ytrgpos = Math.floor((this.tt.trigger_lvl*-1+1)*(y_res/2.0))+this.top_space;
 		this.ctx.clearRect(0, 0, 10, this.wavecanvas.height);
 		if(this.tt.trigger!=-1){
 			this.tt.trigger_block=1;
@@ -82,8 +81,8 @@ class scope {
 	
 	draw_grid(){
 		
-		var x_res = this.wavecanvas.width-this.info_space;
-		var y_res = this.wavecanvas.height-this.meas_space-this.top_space;
+		let x_res = this.wavecanvas.width-this.info_space;
+		let y_res = this.wavecanvas.height-this.meas_space-this.top_space;
 
 		this.ctxb.beginPath();
 		this.ctxb.strokeStyle= "yellow";
@@ -103,12 +102,12 @@ class scope {
 		this.ctxb.beginPath();
 		this.ctxb.lineWidth = pixel;
 		this.ctxb.strokeStyle= "grey";
-		for(var i = this.trigger_space+this.grid; i < x_res; i=i+this.grid){
+		for(let i = this.trigger_space+this.grid; i < x_res; i=i+this.grid){
 			this.ctxb.moveTo(i, this.top_space);
 			this.ctxb.lineTo(i, y_res+this.top_space);
 		}
 
-		for(i = (y_res/2)+(y_res/10); i < y_res; i=i+(y_res/10)){
+		for(let i = (y_res/2)+(y_res/10); i < y_res; i=i+(y_res/10)){
 			this.ctxb.moveTo(this.trigger_space, i+this.top_space);
 			this.ctxb.lineTo(x_res, i+this.top_space);
 			this.ctxb.moveTo(this.trigger_space, y_res -i+this.top_space);
@@ -119,15 +118,15 @@ class scope {
 	}
 	
 	redrawInfo(){
-		var x_res = this.wavecanvas.width;
-		var y_res = this.wavecanvas.height;
-		var line_height = 32;
-		var trigger_symbol = "";
+		let x_res = this.wavecanvas.width;
+		let y_res = this.wavecanvas.height;
+		let line_height = 32;
+        let trigger_symbol = "";
 		this.ctx.clearRect(x_res - this.info_space, 0, x_res, y_res - this.meas_space);
 		this.ctx.font = "12px Arial";
 		this.ctx.textAlign = "left";
-		var tterm_length = this.tt.length;
-		for (var i = 0; i < tterm_length; i++){
+        let tterm_length = this.tt.length;
+		for (let i = 0; i < tterm_length; i++){
 			if (tterm[i].name){
 				this.ctx.fillStyle = wavecolor[i];
 				if(i == this.tt.trigger){
@@ -141,16 +140,16 @@ class scope {
 	}
 	
 	redrawMeas(){
-		var x_res = this.wavecanvas.width;
-		var y_res = this.wavecanvas.height;
+        let x_res = this.wavecanvas.width;
+        let y_res = this.wavecanvas.height;
 		this.ctx.clearRect(this.trigger_space, y_res - this.meas_space, x_res - this.info_space, y_res);
 
 		this.ctx.font = "12px Arial";
 		this.ctx.textAlign = "left";
 		this.ctx.fillStyle = "white";
 		if(this.tt.trigger!=-1){
-		this.ctx.fillText("Trg lvl: " + this.tt.trigger_lvl ,this.trigger_space, y_res - this.meas_position);
-		var state='';
+			this.ctx.fillText("Trg lvl: " + this.tt.trigger_lvl ,this.trigger_space, y_res - this.meas_position);
+            let state='';
 		if(this.tt.trigger_trgt){
 			state='Trg...'
 		}else{
@@ -160,8 +159,8 @@ class scope {
 		}else{
 			this.ctx.fillText("Trg lvl: off" ,this.trigger_space, y_res - this.meas_position);
 		}
-		var text_pos = this.trigger_space+180;
-		for(var i=0;i<NUM_GAUGES;i++){
+        let text_pos = this.trigger_space+180;
+		for(let i=0;i<NUM_GAUGES;i++){
 			if (tterm[i].name){
 				this.ctx.fillStyle = wavecolor[i];
 				this.ctx.fillText("Min: " +meas[i].min ,text_pos+=60, y_res - this.meas_position);
@@ -172,8 +171,7 @@ class scope {
 	}
 	
 	redrawTop(){
-		var x_res = this.wavecanvas.width;
-		var y_res = this.wavecanvas.height;
+        let x_res = this.wavecanvas.width;
 		this.ctx.clearRect(this.trigger_space, 0, x_res - this.info_space, this.top_space);
 
 		this.ctx.font = "12px Arial";
@@ -186,14 +184,14 @@ class scope {
 	
 	plot(){
 
-	   var x_res = this.wavecanvas.width-this.info_space;
-	   var y_res = this.wavecanvas.height-this.meas_space-this.top_space;
+        let x_res = this.wavecanvas.width-this.info_space;
+        let y_res = this.wavecanvas.height-this.meas_space-this.top_space;
 
 		
 
-		this.ctx.clearRect(this.plot.xpos, this.top_space, pixel, y_res);
+        this.ctx.clearRect(this.plot.xpos, this.top_space, pixel, y_res);
 
-		for(var i = 0;i<this.tt.length;i++){
+		for(let i = 0;i<this.tt.length;i++){
 			//Meas
 			if(tterm[i].value_real < meas_backbuffer[i].min) meas_backbuffer[i].min = tterm[i].value_real;
 			if(tterm[i].value_real > meas_backbuffer[i].max) meas_backbuffer[i].max = tterm[i].value_real;
@@ -202,7 +200,7 @@ class scope {
 			//Meas
 			
 			
-			var ypos = (tterm[i].value*-1+1)*(y_res/2.0);
+			let ypos = (tterm[i].value*-1+1)*(y_res/2.0);
 			if(this.plot.ypos[i] && (this.plot.ypos[i] != (y_res/2.0) || tterm[i].value)){
 				this.ctx.beginPath();
 				this.ctx.lineWidth = pixel;
@@ -220,7 +218,7 @@ class scope {
 			this.tt.trigger_trgt=0;
 			this.tt.trigger_block=0;
 			this.redrawMeas();
-			this.plot.xpos = this.TRIGGER_SPACE+1;
+			this.plot.xpos = this.trigger_space+1;
 			
 		}
 	}
@@ -231,8 +229,8 @@ class scope {
 	}	
 	
 	wave_mouse_down(e){
-		var pos_y = e.y - 51;
-		var y_res = this.wavecanvas.height-this.meas_space-this.top_space;
+		let pos_y = e.y - 51;
+		let y_res = this.wavecanvas.height-this.meas_space-this.top_space;
 		if((pos_y>=this.top_space && pos_y<=this.wavecanvas.height-this.meas_space) && this.tt.trigger!=-1){
 			pos_y-=this.top_space;
 			this.tt.trigger_lvl=((2/y_res)*((y_res/2)-pos_y)).toFixed(2);
@@ -244,7 +242,7 @@ class scope {
 	}
 
 	calc_meas(){
-		for(var i = 0;i<meas_backbuffer.length;i++){
+		for(let i = 0;i<meas_backbuffer.length;i++){
 			meas[i].min = meas_backbuffer[i].min.toFixed(2);
 			meas[i].max = meas_backbuffer[i].max.toFixed(2);
 			meas[i].avg = Math.sqrt(meas_backbuffer[i].avg_sum / meas_backbuffer[i].avg_samp).toFixed(2);

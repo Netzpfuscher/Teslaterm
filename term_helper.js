@@ -1,7 +1,7 @@
 class helper {
 	static bytes_to_signed(lsb, msb){
-		var sign = msb & (1 << 7);
-		var x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
+		let sign = msb & (1 << 7);
+		let x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
 		if (sign) {
 			return  (0xFFFF0000 | x);  // fill in most significant bits with 1's
 		}else{
@@ -10,8 +10,8 @@ class helper {
 	}
 
 	static convertArrayBufferToString(buf, uri = true){
-		var bufView = new Uint8Array(buf);
-		var encodedString = String.fromCharCode.apply(null, bufView);
+		let bufView = new Uint8Array(buf);
+		let encodedString = String.fromCharCode.apply(null, bufView);
 		if (uri) {
 			return decodeURIComponent(encodedString);
 		} else {
@@ -20,18 +20,18 @@ class helper {
 	}
 
 	static convertStringToArrayBuffer(str) {
-		var buf=new ArrayBuffer(str.length);
-		var bufView=new Uint8Array(buf);
-		for (var i=0; i<str.length; i++) {
+		let buf=new ArrayBuffer(str.length);
+		let bufView=new Uint8Array(buf);
+		for (let i=0; i<str.length; i++) {
 			bufView[i]=str.charCodeAt(i);
 		}
 		return buf;
 	}
 
 	static ascii_to_hex(str) {
-		var arr1 = [];
-		for (var n = 0, l = str.length; n < l; n ++) {
-			var hex = Number(str.charCodeAt(n)).toString(16);
+		let arr1 = [];
+		for (let n = 0, l = str.length; n < l; n ++) {
+			let hex = Number(str.charCodeAt(n)).toString(16);
 			arr1.push(hex);
 			arr1.push(' ');
 		}
@@ -39,8 +39,8 @@ class helper {
    }
 
 	static changeMenuEntry(menu, id, newName) {
-		var items = $('#toolbar').w2toolbar().get(menu, false).items;
-		for (var i = 0;i<items.length;i++) {
+		let items = $('#toolbar').w2toolbar().get(menu, false).items;
+		for (let i = 0;i<items.length;i++) {
 			if (items[i].id==id) {
 				items[i].text = newName;
 				$('#toolbar').w2toolbar().set(menu, items);
@@ -92,8 +92,8 @@ class helper {
 
 	static removeMenuEntry(menu, id) {
 		const mnu = $('#toolbar').w2toolbar().get(menu, false);
-		var items = mnu.items;
-		for (var i = 0;i<items.length;i++) {
+		let items = mnu.items;
+		for (let i = 0;i<items.length;i++) {
 			if (items[i].id==id) {
 				mnu.items.splice(i, 1);
 				return;
@@ -110,7 +110,7 @@ class cls_meter {
 		this.meter_buf = [];
 		this.g = [];
 
-		for(var i=0;i<this.num_meters;i++){
+		for(let i=0;i<this.num_meters;i++){
 			this.meter_buf_old[i]=255;
 			this.meter_buf[i]=0;
 			this.g[i]= new JustGage({
@@ -125,13 +125,13 @@ class cls_meter {
 	}
 
 	refresh_all(){
-		for(var i=0;i<this.num_meters;i++){
+		for(let i=0;i<this.num_meters;i++){
 			this.g[i].refresh(this.meter_buf[i]);
 		}
 	}
 
 	refresh(){
-		for(var i=0;i<this.num_meters;i++){
+		for(let i=0;i<this.num_meters;i++){
 			if(this.meter_buf[i]!=this.meter_buf_old[i]){
 				this.g[i].refresh(this.meter_buf[i]);
 				this.meter_buf_old[i]=this.meter_buf[i];
