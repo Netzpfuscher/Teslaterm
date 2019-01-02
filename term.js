@@ -1630,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         send_command('bootloader\r');
                         connect();
                     }
-                    bootload();
+                    setTimeout(() => bootload(), 500);
                     break;
 				case 'mnu_command:Load EEPROM-Config':
 					warn_eeprom_load();
