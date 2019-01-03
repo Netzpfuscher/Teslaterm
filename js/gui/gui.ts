@@ -8,7 +8,6 @@ import {setScript} from "./menu";
 import {SidState} from "../midi/midi";
 import * as nano from '../nano';
 import * as gauges from './gauges';
-
 export function init() {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);

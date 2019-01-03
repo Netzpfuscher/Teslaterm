@@ -6,22 +6,16 @@
     <link href="styles/main.css" rel="stylesheet">
     <link href="node_modules/w2ui/w2ui.css" rel="stylesheet">
     <script type="text/javascript">
-		const jq = require('jquery');
-		global['$'] = global['jQuery'] = jq;
-		global['w2ui'] = {};
-		global['w2obj'] = {};
-		global['w2utils'] = {};
+		global['$'] = global['jQuery'] = require('jquery');
     </script>
 	<script src="fontawesome-all.js" type="text/javascript"></script>
-    <!---TODO I had to change w2ui to make this work, replaced "var w2ui = ..." with "w2ui = ..."-->
     <script src="node_modules/w2ui/w2ui.js"></script>
     <script src="raphael.js"></script>
     <script src="node_modules/justgage/justgage.js"></script>
     <script src="node_modules/simple-ini/lib/simple-ini.js"></script>
     <script type="text/javascript">
-        console.log(w2ui);
         let init = require('./js/init');
-        init.init();
+		init.init();
     </script>
 </head>
 <body>

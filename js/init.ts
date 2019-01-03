@@ -15,6 +15,7 @@ import {NUM_GAUGES} from "./gui/gauges";
 import * as connection from "./network/connection";
 import * as nano from "./nano";
 import * as gauges from "./gui/gauges";
+import './types/w2types';
 
 export let config: SimpleIni;
 export const simulated = true;

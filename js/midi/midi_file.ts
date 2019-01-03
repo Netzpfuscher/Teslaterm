@@ -1,6 +1,4 @@
 import {midi_state, player} from "./midi";
-
-
 function readmidi(file){
     var fs = new FileReader();
     fs.readAsArrayBuffer(file);

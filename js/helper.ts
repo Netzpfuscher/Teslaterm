@@ -1,5 +1,6 @@
 import * as $ from 'jquery'
-import 'w2ui';
+import './types/w2types';
+
 
 export function bytes_to_signed(lsb: number, msb: number): number {
     const sign = msb & (1 << 7);

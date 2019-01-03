@@ -6,7 +6,6 @@ import {chrome} from '../types/chrome';
 import * as commands from './commands';
 import {reconnect} from './commands';
 import {populateMIDISelects} from "../midi/midi_ui";
-
 export let socket_midi: number|undefined;
 
 

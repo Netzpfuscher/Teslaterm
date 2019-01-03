@@ -2,7 +2,6 @@ import {terminal} from "./gui";
 import {busActive, busControllable, ConnectionState, transientActive} from "../network/telemetry";
 import * as commands from '../network/commands';
 import * as connection from '../network/connection';
-import 'w2ui';
 import * as helper from '../helper';
 import * as sliders from './sliders';
 import * as scripting from '../scripting';
@@ -19,6 +18,7 @@ import {
     startCurrentMidiFile,
     stopMidiFile
 } from "../midi/midi";
+import '../types/w2types';
 
 export function onConnected() {
     terminal.io.println("connected");
