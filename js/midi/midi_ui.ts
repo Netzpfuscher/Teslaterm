@@ -1,7 +1,6 @@
 import {terminal} from "../gui/gui";
 import * as helper from '../helper';
 import * as ui_helper from '../gui/ui_helper';
-import {chrome} from '../types/chrome';
 import {onMidiNetworkConnect} from "./midi_client";
 import {socket_midi} from "../network/connection";
 import {

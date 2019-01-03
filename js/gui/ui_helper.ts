@@ -1,4 +1,3 @@
-import '../types/w2types';
 export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, defPort = undefined) {
     let resolve = (both)=>{};
     let reject = ()=>{};

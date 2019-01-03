@@ -18,7 +18,6 @@ import {
     startCurrentMidiFile,
     stopMidiFile
 } from "../midi/midi";
-import '../types/w2types';
 
 export function onConnected() {
     terminal.io.println("connected");

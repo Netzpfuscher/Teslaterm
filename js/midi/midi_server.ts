@@ -1,4 +1,3 @@
-import {chrome} from '../types/chrome';
 import * as helper from '../helper';
 import {inputStrings} from "../gui/ui_helper";
 import {terminal} from "../gui/gui";

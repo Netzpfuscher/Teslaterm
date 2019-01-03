@@ -33,11 +33,11 @@
     "hterm": "^2.0.2",
     "jquery": "^3.3.1",
     "justgage": "^1.2.2",
-    "midi-player-js": "^2.0.4",
+    "jzz": "^0.6.6",
+    "midi-player-js": "^2.0.5",
     "npm": "^6.5.0",
     "simple-ini": "^1.0.4",
     "vm": "^0.1.0",
-    "w2ui": "^1.4.3",
-    "web-midi-api": "^2.0.1"
+    "w2ui": "^1.4.3"
   }
 }

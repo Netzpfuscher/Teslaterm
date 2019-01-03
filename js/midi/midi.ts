@@ -9,9 +9,7 @@ import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scope from '../gui/oscilloscope';
 import * as connection from '../network/connection';
 import {connState, socket_midi} from '../network/connection';
-//TODO import 'webmidi';
 import * as nano from '../nano';
-import {chrome} from '../types/chrome';
 import * as midi_ui from "./midi_ui";
 import {populateMIDISelects} from "./midi_ui";
 import {terminal} from "../gui/gui";
@@ -63,10 +61,6 @@ export const midiNone = {
     source: ""
 };
 
-//TODO remove or clean up
-declare namespace WebMidi {
-    type MIDIAccess = any;
-}
 export let midiIn: MidiInput = midiNone;
 export let midiAccess: WebMidi.MIDIAccess;
 
@@ -88,7 +82,7 @@ export function startCurrentMidiFile() {
     nano.setLedState(config.nano.play,1);
     nano.setLedState(config.nano.stop,0);
     midi_state.state = 'playing';
-    scope.redrawTop();
+    scope.redrawMidiInfo();
 }
 
 export function stopMidiFile() {
@@ -115,15 +109,15 @@ export function setMidiOut(newOut: MidiOutput) {
 export const player = new MidiPlayer.Player(processMidiFromPlayer);
 
 
-function processMidiFromPlayer(event){
-    if(playMidiData(event.bytes_buf)){
+function processMidiFromPlayer(event: MidiPlayer.Event){
+    if(playMidiEvent(event)){
         midi_state.progress=player.getSongPercentRemaining();
-        scope.drawChart();
     } else if(!simulated && connState==ConnectionState.UNCONNECTED) {
         player.stop();
         midi_state.state = 'stopped';
         scripting.onMidiStopped();
     }
+    scope.redrawMidiInfo();
 }
 
 export function stop() {
@@ -134,13 +128,13 @@ export function midiMessageReceived( ev ) {
     if (!ev.currentTarget.name.includes("nano")) {
         playMidiData(ev.data);
     } else {
-        var cmd = ev.data[0] >> 4;
-        var channel = ev.data[0] & 0xf;
-        var noteNumber = ev.data[1];
-        var velocity = ev.data[2];
+        const cmd = ev.data[0] >> 4;
+        const channel = ev.data[0] & 0xf;
+        const noteNumber = ev.data[1];
+        const velocity = ev.data[2];
         //console.log(ev);
         if (channel == 9)
-            return
+            return;
 
         if (cmd == 8 || ((cmd == 9) && (velocity == 0))) { // with MIDI, note on with velocity zero is the same as note off
             // note off
@@ -214,14 +208,26 @@ const expectedByteCounts = {
     0xE0: 3
 };
 
-export function playMidiData(data) {
-    var firstByte = data[0];
+export function playMidiEvent(event: MidiPlayer.Event): boolean {
+    console.log(event);
+    const trackObj = player.tracks[event.track-1];
+    const track: number[] = trackObj['data'];
+    const startIndex = event.byteIndex+trackObj.getDeltaByteCount();
+    let data: number[] = [track[startIndex]];
+    const len = expectedByteCounts[data[0]];
+    if (!len) {
+        return true;
+    }
+    for (let i = 1;i<len;++i) {
+        data.push(track[startIndex+i]);
+    }
+    return playMidiData(data);
+}
+
+export function playMidiData(data: number[]|Uint8Array): boolean {
+    console.log(data);
     if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
-        var expectedByteCount = expectedByteCounts[firstByte & 0xF0];
-        if (expectedByteCount && expectedByteCount<data.length) {
-            data = data.slice(0, expectedByteCount)
-        }
-        var msg=new Uint8Array(data);
+        const msg=new Uint8Array(data);
         if (!midiServer.sendMidiData(msg)) {
             if (transientActive) {
                 const currTime = new Date().getTime();
@@ -239,9 +245,7 @@ export function playMidiData(data) {
 }
 
 export function init(){
-    // @ts-ignore TODO
     if (navigator.requestMIDIAccess) {
-        // @ts-ignore TODO
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
         midi_state.progress = 0;
         chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
@@ -279,7 +283,7 @@ export function setMidiInAsNone() {
 
 export function setMidiInToPort(source) {
     source.onmidimessage = midiMessageReceived;
-    var canceled = false;
+    let canceled = false;
     midiIn = {
         cancel: (arg) => {
             source.onmidimessage = null;
@@ -294,7 +298,7 @@ export function setMidiInToPort(source) {
 }
 
 export function setMidiInToSocket(name: string, socketId: number, ip: string, port: number) {
-    var canceled = false;
+    let canceled = false;
     midiIn = {
         cancel: (reason) => {
             canceled = true;

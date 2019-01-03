@@ -2,7 +2,6 @@ import {terminal} from "../gui/gui";
 import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
 import {connid, connState, mainSocket} from "./connection";
-import {chrome} from '../types/chrome';
 
 export const maxOntime = 400;
 export const maxBPS = 1000;

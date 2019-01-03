@@ -2,7 +2,6 @@ import * as gui from '../gui/gui';
 import {terminal} from '../gui/gui';
 import * as menu from '../gui/menu';
 import {ConnectionState} from "./telemetry";
-import {chrome} from '../types/chrome';
 import * as commands from './commands';
 import {reconnect} from './commands';
 import {populateMIDISelects} from "../midi/midi_ui";

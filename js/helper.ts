@@ -1,6 +1,4 @@
 import * as $ from 'jquery'
-import './types/w2types';
-
 
 export function bytes_to_signed(lsb: number, msb: number): number {
     const sign = msb & (1 << 7);
@@ -32,7 +30,7 @@ export function convertStringToArrayBuffer(str: string): ArrayBuffer {
 }
 
 export function changeMenuEntry(menu: string, id: string, newName: string): void {
-    const items = (<W2Menu>$('#toolbar').w2toolbar({}).get(menu, false)).items;
+    const items = (<W2UI.W2Menu>$('#toolbar').w2toolbar({}).get(menu, false)).items;
     for (let i = 0;i<items.length;i++) {
         if (items[i].id==id) {
             items[i].text = newName;
@@ -79,12 +77,12 @@ export function matchesFilter(filter: number[][], num: number): boolean {
 }
 
 export function addFirstMenuEntry(menu: string, id: string, text: string, icon: string): void {
-    const mnu = <W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
+    const mnu = <W2UI.W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
     mnu.items = [{text: text, icon: icon, id: id}].concat(mnu.items);
 }
 
 export function removeMenuEntry(menu: string, id: string): void {
-    const mnu = <W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
+    const mnu = <W2UI.W2Menu>$('#toolbar').w2toolbar({}).get(menu, false);
     const items = mnu.items;
     for (let i = 0;i<items.length;i++) {
         if (items[i].id==id) {

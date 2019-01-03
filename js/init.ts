@@ -8,14 +8,12 @@ import {connect} from "./network/connection";
 import 'simple-ini';
 import './simple_ini_types';
 import * as midi from "./midi/midi";
-import {chrome} from './types/chrome';
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';
 import {NUM_GAUGES} from "./gui/gauges";
 import * as connection from "./network/connection";
 import * as nano from "./nano";
 import * as gauges from "./gui/gauges";
-import './types/w2types';
 
 export let config: SimpleIni;
 export const simulated = true;

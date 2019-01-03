@@ -3,7 +3,6 @@ import * as midiServer from "./midi_server";
 import * as helper from '../helper';
 import {midiIn, playMidiData, setMidiInAsNone, setMidiInToSocket} from "./midi";
 import {populateMIDISelects} from "./midi_ui";
-import {chrome} from '../types/chrome';
 import * as sliders from '../gui/sliders';
 
 export function onMidiNetworkConnect(status, ip, port, socketId, filter) {

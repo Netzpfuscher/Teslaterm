@@ -81,26 +81,26 @@ export function plot(): void {
     const x_res = waveCanvas.width - INFO_SPACE;
     const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
 
-    waveContext.clearRect(this.xPos, TOP_SPACE, this.pixelRatio, y_res);
+    waveContext.clearRect(xPos, TOP_SPACE, pixelRatio, y_res);
 
     for (let i: number = 0; i < traces.length; i++) {
         //Meas
         traces[i].plot();
     }
 
-    this.xPos += this.pixelRatio;
-    if (this.xPos >= x_res) {
+    xPos += pixelRatio;
+    if (xPos >= x_res) {
         trigger_trgt = false;
         trigger_block = false;
         redrawMeas();
-        this.xPos = TRIGGER_SPACE + 1;
+        xPos = TRIGGER_SPACE + 1;
     }
-    this.cleared = false;
+    cleared = false;
 }
 
 //TODO also redraw gauge labels on resize!
 export function onResize(): void {
-    this.xPos = TRIGGER_SPACE + 1;
+    xPos = TRIGGER_SPACE + 1;
     waveCanvas.style.width = (90 - CONTROL_SPACE) + '%';
     waveCanvas.style.height = '100%';
     waveCanvas.width = waveCanvas.offsetWidth;
@@ -111,7 +111,7 @@ export function onResize(): void {
     backCanvas.height = waveCanvas.offsetHeight;
     //HiDPI display support
     if (window.devicePixelRatio) {
-        this.pixelRatio = window.devicePixelRatio;
+        pixelRatio = window.devicePixelRatio;
         const height: number = Number(waveCanvas.getAttribute('height'));
         const width: number = Number(waveCanvas.getAttribute('width'));
         // reset the canvas width and height with window.devicePixelRatio applied
@@ -125,10 +125,10 @@ export function onResize(): void {
         backCanvas.style.width = width + "px";
         backCanvas.style.height = height + "px";
     }
-    if (!this.cleared) {
-        this.draw_grid();
-        this.redrawTrigger();
-        this.drawLabels();
+    if (!cleared) {
+        draw_grid();
+        redrawTrigger();
+        drawLabels();
     }
 }
 
@@ -355,7 +355,7 @@ function onMouseDown(e){
     }
 }
 
-export function redrawTop(){
+export function redrawMidiInfo(){
     var x_res = waveCanvas.width;
     var y_res = waveCanvas.height;
     waveContext.clearRect(TRIGGER_SPACE, 0, x_res - INFO_SPACE, TOP_SPACE);
@@ -364,5 +364,5 @@ export function redrawTop(){
     waveContext.textAlign = "left";
     waveContext.fillStyle = "white";
 
-    waveContext.fillText("MIDI-File: " + midi_state.currentFile + ' State: ' + midi_state.state + ' ' + midi_state.progress + '% / 100%'  ,TRIGGER_SPACE, 12);
+    waveContext.fillText("MIDI-File: " + midi_state.currentFile + ' State: ' + midi_state.state + ' ' + (100-midi_state.progress) + '% / 100%'  ,TRIGGER_SPACE, 12);
 }

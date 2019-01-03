@@ -1,4 +1,5 @@
 import {midi_state, player} from "./midi";
+import * as scope from "../gui/oscilloscope";
 function readmidi(file){
     var fs = new FileReader();
     fs.readAsArrayBuffer(file);
@@ -16,6 +17,8 @@ export function loadMidiFile(file) {
     w2ui['toolbar'].refresh();
     midi_state.currentFile = file.name;
     readmidi(file);
+    scope.redrawMidiInfo();
+
 }
 
 export function loadSIDFile(file) {
@@ -23,6 +26,7 @@ export function loadSIDFile(file) {
     w2ui['toolbar'].refresh();
     midi_state.currentFile = file.name;
     readSID(file);
+    scope.redrawMidiInfo();
 }
 
 function readSID(file){
