@@ -68,11 +68,9 @@ export function init() {
                             {text: 'Stop', icon: 'fa fa-bolt'}
                         ]
                     },
-
                     {type: 'spacer'},
                     {type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off'},
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
-                    //TODO why is this interpreted in strange ways?
                     {
                         type: 'html', id: 'port',
                         html: '<div style="padding: 3px 10px;">' +

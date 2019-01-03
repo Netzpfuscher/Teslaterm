@@ -10,9 +10,9 @@ class OntimeUI {
     total: HTMLSpanElement;
     relative: HTMLSpanElement;
     absolute: HTMLSpanElement;
-    absoluteVal: number;
-    relativeVal: number;
-    totalVal: number;
+    absoluteVal: number = 0;
+    relativeVal: number = 100;
+    totalVal: number = 0;
 
     setRelativeAllowed(allow:boolean) {
         if (allow) {
@@ -68,16 +68,16 @@ class OntimeUI {
     }
 
     onSliderMoved(){
-        if (ontime.relativeSelect.checked) {
-            this.setRelativeOntime(parseInt(ontime.slider.value));
+        if (this.relativeSelect.checked) {
+            this.setRelativeOntime(parseInt(this.slider.value));
         } else {
-            this.setAbsoluteOntime(parseInt(ontime.slider.value));
+            this.setAbsoluteOntime(parseInt(this.slider.value));
         }
     }
 
     ontimeChanged() {
-        ontime.totalVal = Math.round(ontime.absoluteVal*ontime.relativeVal/100.);
-        commands.setOntime(ontime.totalVal);
+        this.totalVal = Math.round(this.absoluteVal*this.relativeVal/100.);
+        commands.setOntime(this.totalVal);
         this.updateOntimeLabels();
     }
 }
@@ -101,8 +101,8 @@ export function init() {
     ontime.total = $(".w2ui-panel-content .scopeview #ontime #total")[0];
     ontime.relative = $(".w2ui-panel-content .scopeview #ontime #relative")[0];
     ontime.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
-    ontime.slider.addEventListener("input", ontime.onSliderMoved);
-    ontime.relativeSelect.onclick = ontime.onRelativeOntimeSelect;
+    ontime.slider.addEventListener("input", ()=>ontime.onSliderMoved());
+    ontime.relativeSelect.onclick = ()=>ontime.onRelativeOntimeSelect();
     $('#slider1')[0].addEventListener("input", slider1);
     $('#slider2')[0].addEventListener("input", slider2);
     $('#slider3')[0].addEventListener("input", slider3);

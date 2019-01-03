@@ -1,7 +1,4 @@
 import 'w2ui';
-import {w2utils} from "./w2ui_types";
-import 'w2ui';
-
 
 export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, defPort = undefined) {
     let resolve = (both)=>{};
