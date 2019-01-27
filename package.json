@@ -24,16 +24,37 @@
     }
   },
   "dependencies": {
-    "@types/chrome": "0.0.78",
-    "@types/jquery": "^3.3.29",
-    "@types/node": "^10.12.18",
-    "@types/w2ui": "^1.4.32",
-    "@types/webmidi": "^2.0.2",
     "jquery": "^3.3.1",
     "justgage": "^1.2.2",
     "jzz": "^0.6.6",
     "midi-player-js": "^2.0.5",
     "simple-ini": "^1.0.4",
-    "w2ui": "^1.4.3"
+    "w2ui": "^1.4.3",
+    "npm": "6.5.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.0.78",
+    "@types/jquery": "^3.3.29",
+    "@types/node": "^10.12.18",
+    "@types/w2ui": "^1.4.32",
+    "@types/webmidi": "^2.0.2",
+    "nwjs-builder-phoenix": "^1.15.0"
+  },
+  "build": {
+    "nwVersion": "0.35.5",
+    "files": [
+      "styles/**",
+      "fontawesome-all.js",
+      "raphael*",
+      "js/**",
+      "index.html",
+      "config.ini",
+      "package.json",
+      "node_modules/**"
+    ]
+  },
+  "scripts": {
+    "dist": "tsc;build --tasks linux-x64,win-x64,mac-x64 --mirror https://dl.nwjs.io/ .",
+    "start": "tsc;run --x64 --mirror https://dl.nwjs.io/ ."
   }
 }

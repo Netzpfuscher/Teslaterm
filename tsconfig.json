@@ -1,5 +1,6 @@
 {
   "exclude": ["node_modules"],
+  "include": ["js/**/*"],
   "compilerOptions": {
     "typeRoots": ["node_modules/@types", "js/types"],
     "downlevelIteration": true,

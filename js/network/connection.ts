@@ -158,7 +158,7 @@ function getdevs(devices){
 
 export function update() {
     if(connState!=ConnectionState.UNCONNECTED){
-        //TODO response_timeout--;
+        response_timeout--;
 
         if(response_timeout==0){
             response_timeout=TIMEOUT;
@@ -169,7 +169,7 @@ export function update() {
             chrome.sockets.tcp.getInfo(mainSocket, telnet_socket_ckeck);
         }
 
-        //TODO wd_reset--;
+        wd_reset--;
         if(wd_reset==0){
             wd_reset=WD_TIMEOUT;
             if(connState==ConnectionState.CONNECTED_SERIAL){
