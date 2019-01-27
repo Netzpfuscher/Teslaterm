@@ -19711,6 +19711,3 @@ lib.resource.add('hterm/changelog/date', 'text/plain',
 lib.resource.add('hterm/git/HEAD', 'text/plain',
 'e94b2d3518a3a22786ff31a38c20da51ba98be31'
 );
-
-exports.lib = lib;
-exports.hterm = hterm;

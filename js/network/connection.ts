@@ -158,7 +158,7 @@ function getdevs(devices){
 
 export function update() {
     if(connState!=ConnectionState.UNCONNECTED){
-        response_timeout--;
+        //TODO response_timeout--;
 
         if(response_timeout==0){
             response_timeout=TIMEOUT;
@@ -169,11 +169,11 @@ export function update() {
             chrome.sockets.tcp.getInfo(mainSocket, telnet_socket_ckeck);
         }
 
-        wd_reset--;
+        //TODO wd_reset--;
         if(wd_reset==0){
             wd_reset=WD_TIMEOUT;
             if(connState==ConnectionState.CONNECTED_SERIAL){
-                chrome.serial.send(connid, wd_reset_msg);
+                chrome.serial.send(connid, wd_reset_msg, ()=>{});
             } else if(connState==ConnectionState.CONNECTED_IP){
                 if(socket_midi){
                     //TODO why is this commented out? chrome.sockets.tcp.send(socket_midi, wd_reset_msg, sendmidi);

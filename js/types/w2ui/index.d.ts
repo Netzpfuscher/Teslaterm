@@ -13,3 +13,10 @@ declare namespace W2UI {
         items: W2MenuItem[];
     }
 }
+
+declare interface ConfirmationHandler {
+    yes(handler: ()=>{}): ConfirmationHandler;
+    no(handler: ()=>{}): ConfirmationHandler;
+}
+
+declare function w2confirm(text: string, title: string): ConfirmationHandler;

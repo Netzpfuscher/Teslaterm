@@ -14,10 +14,13 @@ let timeoutDate = null;
 const maxQueueLength = 1000;
 const timeout = 1000;
 
-function wrapForSandbox(func: Function): Function {
+function wrapForSandbox(func: Function, context?: Object): Function {
+	if (!context) {
+		context = this;
+	}
 	const wrapped = function() {
 		if (running) {
-			return func.apply(this, arguments);
+			return func.apply(context, arguments);
 		}
 		throw "Script was interrupted";
 	};
@@ -29,7 +32,7 @@ function wrapForSandbox(func: Function): Function {
 			throw "Maximum queue length reached! "+queue.length;
 		}
 		const args = arguments;
-		queue.push(()=>wrapped.apply(this, args));
+		queue.push(()=>wrapped.apply(context, args));
 	};
 }
 
@@ -73,7 +76,7 @@ function playMidiBlocking() {
 function waitForConfirmation(text, title) {
 	let resolve;
 	const ret = new Promise(res=>resolve = res);
-	w2ui.showConfirmDialog(text, title)
+	w2confirm(text, title)
 		.yes(resolve)
 		.no(()=>{
 			throw "User did not confirm";
@@ -108,7 +111,7 @@ export function loadScript(file):Promise<Promise<any>[]> {
 				playMidiBlocking: wrapForSandbox(playMidiBlocking),
 				playMidiAsync: wrapForSandbox(midi.startCurrentMidiFile),
 				stopMidi: wrapForSandbox(midi.stopMidiFile),
-				setOntime: wrapForSandbox(sliders.ontime.setRelativeOntime),
+				setOntime: wrapForSandbox(s=>sliders.ontime.setRelativeOntime(s)),
 				setBPS: wrapForSandbox(sliders.setBPS),
 				setBurstOntime: wrapForSandbox(sliders.setBurstOntime),
 				setBurstOfftime: wrapForSandbox(sliders.setBurstOfftime),

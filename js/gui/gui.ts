@@ -1,4 +1,3 @@
-import {hterm, lib as TermLib} from '../hterm_all';
 import * as cmd from '../network/commands';
 import * as connection from '../network/connection';
 import * as midi from "../midi/midi";
@@ -22,7 +21,7 @@ export function init() {
     gauges.init();
 }
 
-hterm.defaultStorage = new TermLib.Storage.Memory();
+hterm.defaultStorage = new lib.Storage.Memory();
 
 export let terminal: any = new hterm.Terminal();
 export const MEAS_SPACE = 20;

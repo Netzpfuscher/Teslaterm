@@ -4,7 +4,7 @@ import {terminal} from "./gui";
 import * as commands from '../network/commands';
 import * as midiServer from '../midi/midi_server';
 
-class OntimeUI {
+export class OntimeUI {
     slider: HTMLInputElement;
     relativeSelect: HTMLInputElement;
     total: HTMLSpanElement;
@@ -36,6 +36,7 @@ class OntimeUI {
     }
 
     setRelativeOntime(percentage) {
+        console.log(this);
         if (this.relativeSelect.checked) {
             setSliderValue(null, percentage, this.slider);
         }

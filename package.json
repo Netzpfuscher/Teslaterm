@@ -24,20 +24,16 @@
     }
   },
   "dependencies": {
-    "@types/chrome": "~0.0.72",
-    "@types/jquery": "~3.3.1",
-    "@types/node": "^10.12.9",
+    "@types/chrome": "0.0.78",
+    "@types/jquery": "^3.3.29",
+    "@types/node": "^10.12.18",
     "@types/w2ui": "^1.4.32",
     "@types/webmidi": "^2.0.2",
-    "fs": "0.0.1-security",
-    "hterm": "^2.0.2",
     "jquery": "^3.3.1",
     "justgage": "^1.2.2",
     "jzz": "^0.6.6",
     "midi-player-js": "^2.0.5",
-    "npm": "^6.5.0",
     "simple-ini": "^1.0.4",
-    "vm": "^0.1.0",
     "w2ui": "^1.4.3"
   }
 }
