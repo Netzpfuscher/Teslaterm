@@ -28,9 +28,10 @@
     "justgage": "^1.2.2",
     "jzz": "^0.6.6",
     "midi-player-js": "^2.0.5",
+    "npm": "6.5.0",
     "simple-ini": "^1.0.4",
-    "w2ui": "^1.4.3",
-    "npm": "6.5.0"
+    "typescript": "^3.3.3",
+    "w2ui": "^1.4.3"
   },
   "devDependencies": {
     "@types/chrome": "0.0.78",
