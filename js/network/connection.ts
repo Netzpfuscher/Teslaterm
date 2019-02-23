@@ -156,6 +156,10 @@ function getdevs(devices){
 
 }
 
+export function resetTimeout() {
+    response_timeout = TIMEOUT;
+}
+
 export function update() {
     if(connState!=ConnectionState.UNCONNECTED){
         response_timeout--;

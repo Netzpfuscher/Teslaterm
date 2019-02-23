@@ -7,7 +7,7 @@ interface EventHandler {
 declare namespace chrome.sockets.tcp {
     export const onReceive: EventHandler;
 
-    export function send(id: number, data: number[] | Buffer | ArrayBuffer | Uint8Array, callback?: Function);
+    export function send(id: number, data: number[] | Buffer | ArrayBuffer | Uint8Array, callback: Function);
 
     export function close(id: number, callback?: Function);
 

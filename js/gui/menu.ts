@@ -119,10 +119,10 @@ export function onCtrlMenuClick(event) {
             scripting.cancel();
             break;
         case 'kill_set':
-            commands.resetKill();
+            commands.setKill();
             break;
         case 'kill_reset':
-            commands.setKill();
+            commands.resetKill();
             break;
     }
 }

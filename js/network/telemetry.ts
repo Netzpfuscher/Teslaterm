@@ -3,7 +3,7 @@ import {meters} from '../gui/gauges';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import * as midi from "../midi/midi";
-import {mainSocket, socket_midi} from "./connection";
+import {mainSocket, socket_midi, resetTimeout} from "./connection";
 import * as menu from '../gui/menu'
 
 export const enum ConnectionState {
@@ -48,12 +48,13 @@ function compute(dat: number[]){
             meters[dat[DATA_NUM]].value(bytes_to_signed(dat[3],dat[4]));
             break;
         case TT_GAUGE_CONF:
+            const index = dat[DATA_NUM];
             const gauge_min = bytes_to_signed(dat[3],dat[4]);
             const gauge_max = bytes_to_signed(dat[5],dat[6]);
             dat.splice(0,7);
             const str = convertArrayBufferToString(dat);
-            meters[dat[DATA_NUM]].text(str);
-            meters[dat[DATA_NUM]].range(gauge_min, gauge_max);
+            meters[index].text(str);
+            meters[index].range(gauge_min, gauge_max);
             break;
         case TT_CHART_CONF:
             let chart_num = dat[2].valueOf();
@@ -137,7 +138,6 @@ const TIMEOUT = 50;
 
 let buffer: number[] = [];
 let bytes_done:number = 0;
-let response_timeout: number = TIMEOUT;
 function receive(info){
 
     if(info.socketId==socket_midi){
@@ -155,12 +155,9 @@ function receive(info){
     }
 
     const buf = new Uint8Array(info.data);
-
-    response_timeout = TIMEOUT;
+    resetTimeout();
 
     for (let i = 0; i < buf.length; i++) {
-
-
         switch(term_state){
             case TT_STATE_IDLE:
                 if(buf[i]== 0xff){
@@ -178,7 +175,6 @@ function receive(info){
                 break;
 
             case TT_STATE_COLLECT:
-
                 if(bytes_done==0){
                     buffer[0] = buf[i];
                     bytes_done++;

@@ -12,7 +12,7 @@ export function sendCommand(command){
         chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), ()=>{});
     }
     if(connState==ConnectionState.CONNECTED_IP){
-        chrome.sockets.tcp.send(mainSocket, helper.convertStringToArrayBuffer(command));
+        chrome.sockets.tcp.send(mainSocket, helper.convertStringToArrayBuffer(command), ()=>{});
     }
 }
 export function clear(){
@@ -75,5 +75,5 @@ export function setOfftime(number: number) {
     sendCommand('set pwd ' + number + '\r');
 }
 export function setTransientEnabled(enable: boolean) {
-    sendCommand('tr '+enable?'on':'off');
+    sendCommand('tr '+(enable?'on':'off'));
 }

@@ -28,13 +28,15 @@ export class Meter {
 
     value(value){
         this.meter_buf = value;
+        this.gauge.refresh(value);
     }
 
     text(text){
-        this.gauge.refreshTitle(text);
+        this.gauge.txtLabel.attr({"text": text});
     }
 
     range(min, max){
+        //TODO does this work?
         this.gauge.refresh(min,max);
     }
 }
