@@ -30,8 +30,7 @@
     "midi-player-js": "^2.0.5",
     "npm": "6.5.0",
     "simple-ini": "^1.0.4",
-    "typescript": "^3.3.3",
-    "w2ui": "^1.4.3"
+    "typescript": "^3.3.3"
   },
   "devDependencies": {
     "@types/chrome": "0.0.78",
@@ -48,6 +47,7 @@
       "fontawesome-all.js",
       "raphael*",
       "js/**",
+      "libs/**",
       "index.html",
       "config.ini",
       "package.json",

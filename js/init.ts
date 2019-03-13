@@ -40,10 +40,10 @@ export function init() {
                         text: function (item) {
                             var el = this.get('trigger_radio:' + item.selected);
                             const triggerId = item.selected.substr(7);
-                            scope.setTrigger(triggerId);
+                            scope.setTrigger(Number(triggerId));
                             return 'Trigger: ' + el.text;
                         },
-                        selected: 'waveoff',
+                        selected: 'waveoff-1',
                         items: [
                             {id: 'waveoff-1', text: 'Off'},
                             {id: 'waveoid0', text: 'Wave 0'},
@@ -175,9 +175,9 @@ function event_read_ini(ev){
         return inicontent;
     });
 
-    if(config.general.port){
-
+    if(config.general.port) {
         w2ui['toolbar'].get('port').value = config.general.port;
+        w2ui['toolbar'].get('port').text = config.general.port;
 
         w2ui['toolbar'].refresh();
     }

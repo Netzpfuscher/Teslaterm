@@ -97,7 +97,6 @@ export function stopMidiFile() {
 
 export function stopMidiOutput() {
     playMidiData([0xB0,0x7B,0x00]);
-    console.log(midiOut);
 }
 
 export function setMidiOut(newOut: MidiOutput) {
@@ -132,7 +131,6 @@ export function midiMessageReceived( ev ) {
         const channel = ev.data[0] & 0xf;
         const noteNumber = ev.data[1];
         const velocity = ev.data[2];
-        //console.log(ev);
         if (channel == 9)
             return;
 
@@ -169,7 +167,6 @@ export function midiMessageReceived( ev ) {
                     commands.resetKill();
                     break;
             }
-            console.log(noteNumber);
         } else if (cmd == 11) {
             //controller( noteNumber, velocity/127.0);
             switch (String(noteNumber)) {
@@ -209,7 +206,6 @@ const expectedByteCounts = {
 };
 
 export function playMidiEvent(event: MidiPlayer.Event): boolean {
-    console.log(event);
     const trackObj = player.tracks[event.track-1];
     const track: number[] = trackObj['data'];
     const startIndex = event.byteIndex+trackObj.getDeltaByteCount();
@@ -225,7 +221,6 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
 }
 
 export function playMidiData(data: number[]|Uint8Array): boolean {
-    console.log(data);
     if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
         const msg=new Uint8Array(data);
         if (!midiServer.sendMidiData(msg)) {

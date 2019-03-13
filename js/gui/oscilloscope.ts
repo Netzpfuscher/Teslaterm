@@ -40,6 +40,10 @@ export class Trace {
     unit: string = '';
     perDiv: number = 1;
 
+    constructor(color: string) {
+        this.wavecolor = color;
+    }
+
     plot(): void {
         const y_res: number = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
         const newYPos: number = (this.value * -1 + 1) * (y_res / 2.0);
@@ -75,7 +79,7 @@ let xPos: number = TRIGGER_SPACE + 1;
 let pixelRatio: number = 1;
 let cleared: boolean = false;//Before: draw_mode
 const gridResolution = 50;
-const wavecolor: string[] = ["white", "red", "blue", "green", "rgb(255, 128, 0)", "rgb(128, 128, 64)", "rgb(128, 64, 128)", "rgb(64, 128, 128)", "DimGray"];
+const wavecolors: string[] = ["white", "red", "blue", "green", "rgb(255, 128, 0)", "rgb(128, 128, 64)", "rgb(128, 64, 128)", "rgb(64, 128, 128)", "DimGray"];
 export function plot(): void {
 
     const x_res = waveCanvas.width - INFO_SPACE;
@@ -145,7 +149,7 @@ export function init() {
 
 
     for(let i=0;i<NUM_GAUGES;i++){
-        traces.push(new Trace());
+        traces.push(new Trace(wavecolors[i]));
     }
 }
 
@@ -242,7 +246,7 @@ export function redrawTrigger() {
 export function drawLine(x1: number, x2: number, y1: number, y2: number, color: number) {
     waveContext.beginPath();
     waveContext.lineWidth = pixelRatio;
-    waveContext.strokeStyle = wavecolor[color];
+    waveContext.strokeStyle = wavecolors[color];
     waveContext.moveTo(x1, y1);
     waveContext.lineTo(x2, y2);
     waveContext.stroke();
@@ -258,7 +262,7 @@ export function clear() {
 export function drawString(x: number, y: number, color: number, size: number, str: string, center: boolean) {
     waveContext.font = size + "px Arial";
     waveContext.textAlign = "left";
-    waveContext.fillStyle = wavecolor[color];
+    waveContext.fillStyle = wavecolors[color];
     if (center) {
         waveContext.fillText(str,x, y);
     } else {
@@ -307,7 +311,7 @@ export function redrawInfo(){
     const tterm_length = traces.length;
     for (let i = 0; i < tterm_length; i++){
         if (traces[i].name){
-            waveContext.fillStyle = wavecolor[i];
+            waveContext.fillStyle = wavecolors[i];
             if(i == trigger_id){
                 trigger_symbol = "->";
             }
@@ -327,7 +331,7 @@ function redrawMeas(){
     let text_pos = TRIGGER_SPACE+180;
     for(let i=0;i<traces.length;i++){
         if (traces[i].name){
-            waveContext.fillStyle = wavecolor[i];
+            waveContext.fillStyle = wavecolors[i];
             waveContext.fillText("Min: " +traces[i].stats.min ,text_pos+=60, y_res - MEAS_POSITION);
             waveContext.fillText("Max: " +traces[i].stats.max ,text_pos+=60, y_res - MEAS_POSITION);
             waveContext.fillText("Avg: "+traces[i].stats.avgDisplay ,text_pos+=60, y_res - MEAS_POSITION);

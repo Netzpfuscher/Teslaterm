@@ -93,8 +93,8 @@ export function removeMenuEntry(menu: string, id: string): void {
     console.log("Didn't find name to remove!");
 }
 
-export function warn(message: string, onConfirmed: Function) {
-    w2ui.w2confirm(message)
+export function warn(message: string, onConfirmed: ()=>void) {
+    w2confirm(message)
         .no(()=>{ })
         .yes(onConfirmed);
 }

@@ -15,8 +15,8 @@ declare namespace W2UI {
 }
 
 declare interface ConfirmationHandler {
-    yes(handler: ()=>{}): ConfirmationHandler;
-    no(handler: ()=>{}): ConfirmationHandler;
+    yes(handler: ()=>void): ConfirmationHandler;
+    no(handler: ()=>void): ConfirmationHandler;
 }
 
-declare function w2confirm(text: string, title: string): ConfirmationHandler;
+declare function w2confirm(text: string, title?: string): ConfirmationHandler;

@@ -75,5 +75,5 @@ export function setOfftime(number: number) {
     sendCommand('set pwd ' + number + '\r');
 }
 export function setTransientEnabled(enable: boolean) {
-    sendCommand('tr '+(enable?'on':'off'));
+    sendCommand('tr '+(enable?'start':'stop')+'\r');
 }
