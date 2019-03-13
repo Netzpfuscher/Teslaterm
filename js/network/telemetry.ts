@@ -74,10 +74,10 @@ function compute(dat: number[]){
             scope.addValue(chart_num, val);
             break;
         case TT_CHART_DRAW:
-            scope.plot();
+            scope.drawChart();
             break;
         case TT_CHART_CLEAR:
-            scope.clear();
+            scope.beginControlledDraw();
             break;
         case TT_CHART_LINE:
             const x1 = bytes_to_signed(dat[2],dat[3]);

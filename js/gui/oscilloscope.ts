@@ -1,8 +1,10 @@
-import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
+import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, terminal, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 import {NUM_GAUGES} from "./gauges";
 import {midi_state} from "../midi/midi";
 
 let waveCanvas: HTMLCanvasElement;
+
+
 let backCanvas: HTMLCanvasElement;
 let waveContext: CanvasRenderingContext2D;
 let backContext: CanvasRenderingContext2D;
@@ -26,7 +28,6 @@ export class TraceStats {
         this.avgDisplay = Math.sqrt(this.squareSum / this.samples).toFixed(2);
     }
 }
-
 export class Trace {
     stats: TraceStats = new TraceStats();
     value_real: number = 0;
@@ -70,6 +71,7 @@ export class Trace {
 let trigger_id: number = -1;
 
 let trigger_lvl: number = 0;
+
 let trigger_lvl_real: number = 0;
 let trigger_block: boolean = false;
 let trigger_trgt: boolean = false;
@@ -77,10 +79,16 @@ let trigger_old: boolean = false;
 export let traces: Trace[] = [];
 let xPos: number = TRIGGER_SPACE + 1;
 let pixelRatio: number = 1;
-let cleared: boolean = false;//Before: draw_mode
+enum DrawMode {
+    standard = 0,
+    controlled = 1
+}
+
+let drawMode: DrawMode = DrawMode.controlled;
+
 const gridResolution = 50;
 const wavecolors: string[] = ["white", "red", "blue", "green", "rgb(255, 128, 0)", "rgb(128, 128, 64)", "rgb(128, 64, 128)", "rgb(64, 128, 128)", "DimGray"];
-export function plot(): void {
+export function plotTraces(): void {
 
     const x_res = waveCanvas.width - INFO_SPACE;
     const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
@@ -99,9 +107,8 @@ export function plot(): void {
         redrawMeas();
         xPos = TRIGGER_SPACE + 1;
     }
-    cleared = false;
+    drawMode = DrawMode.standard;
 }
-
 //TODO also redraw gauge labels on resize!
 export function onResize(): void {
     xPos = TRIGGER_SPACE + 1;
@@ -129,10 +136,10 @@ export function onResize(): void {
         backCanvas.style.width = width + "px";
         backCanvas.style.height = height + "px";
     }
-    if (!cleared) {
+    if (drawMode!=DrawMode.standard) {
         draw_grid();
         redrawTrigger();
-        drawLabels();
+        drawTriggerStatus();
     }
 }
 
@@ -153,17 +160,13 @@ export function init() {
     }
 }
 
-export function drawLabels() {
-
-    const x_res = waveCanvas.width;
+export function drawTriggerStatus() {
     const y_res = waveCanvas.height;
-    waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - INFO_SPACE, y_res);
-
     waveContext.font = "12px Arial";
     waveContext.textAlign = "left";
     waveContext.fillStyle = "white";
     if (trigger_id != -1) {
-        waveContext.fillText("Trg lvl: " + trigger_lvl, TRIGGER_SPACE, y_res - MEAS_POSITION);
+        waveContext.fillText("Trg lvl: " + trigger_lvl.toFixed(2), TRIGGER_SPACE, y_res - MEAS_POSITION);
         let state: string;
         if (trigger_trgt) {
             state = 'Trg...';
@@ -217,9 +220,10 @@ export function draw_grid() {
 export function redrawTrigger() {
     const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
     const ytrgpos = Math.floor((trigger_lvl * -1 + 1) * (y_res / 2.0)) + TOP_SPACE;
-    waveContext.clearRect(0, 0, 10, waveCanvas.height);
+    waveContext.clearRect(0, 0, TRIGGER_SPACE, waveCanvas.height);
     if (trigger_id != -1) {
         trigger_block = true;
+        //Arrow
         waveContext.beginPath();
         waveContext.lineWidth = pixelRatio;
         waveContext.strokeStyle = traces[trigger_id].wavecolor;
@@ -232,6 +236,7 @@ export function redrawTrigger() {
             waveContext.lineTo(5, ytrgpos + 2);
         }
         waveContext.stroke();
+        //Text
         waveContext.font = "12px Arial";
         waveContext.textAlign = "center";
         waveContext.fillStyle = traces[trigger_id].wavecolor;
@@ -252,11 +257,26 @@ export function drawLine(x1: number, x2: number, y1: number, y2: number, color: 
     waveContext.stroke();
 }
 
-
 export function clear() {
-    cleared = true;
     backContext.clearRect(0, 0, backCanvas.width, backCanvas.height);
     waveContext.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+    xPos = TRIGGER_SPACE+1;
+}
+
+
+export function beginControlledDraw() {
+    clear();
+    drawMode = DrawMode.controlled;
+}
+
+function beginStandardDraw() {
+    clear();
+    draw_grid();
+    redrawTrigger();
+    redrawMeas();
+    redrawInfo();
+
+    drawMode = DrawMode.standard;
 }
 
 export function drawString(x: number, y: number, color: number, size: number, str: string, center: boolean) {
@@ -271,16 +291,11 @@ export function drawString(x: number, y: number, color: number, size: number, st
 }
 
 export function drawChart(): void {
-    if(cleared){
-        clear();
-        draw_grid();
-        redrawTrigger();
-        redrawMeas();
-
-        cleared = false;
+    if(drawMode==DrawMode.controlled){
+        beginStandardDraw();
     }
     if(trigger_id==-1){
-        plot();
+        plotTraces();
     }else{
         const triggered = (trigger_lvl>0)==(traces[trigger_id].value > trigger_lvl);
         if (trigger_block === false) {
@@ -290,7 +305,7 @@ export function drawChart(): void {
         } else {
             if (trigger_trgt || triggered) {
                 trigger_trgt = true;
-                plot();
+                plotTraces();
             }
             if (trigger_trgt != trigger_old) redrawMeas();
             trigger_old = trigger_trgt;
@@ -326,8 +341,8 @@ export function redrawInfo(){
 function redrawMeas(){
     const x_res = waveCanvas.width;
     const y_res = waveCanvas.height;
-    waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - INFO_SPACE, y_res);
-
+    waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - INFO_SPACE - TRIGGER_SPACE, y_res);
+    drawTriggerStatus();
     let text_pos = TRIGGER_SPACE+180;
     for(let i=0;i<traces.length;i++){
         if (traces[i].name){
@@ -339,11 +354,10 @@ function redrawMeas(){
     }
 }
 
-
 export function setTrigger(triggerId: number) {
     trigger_id = triggerId;
-    redrawInfo();
-    redrawTrigger();
+    trigger_trgt = false;
+    beginStandardDraw();
 }
 
 
