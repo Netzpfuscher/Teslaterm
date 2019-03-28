@@ -5,8 +5,6 @@ import * as sliders from './gui/sliders';
 import {terminal} from "./gui/gui";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
 import {connect} from "./network/connection";
-import 'simple-ini';
-import './simple_ini_types';
 import * as midi from "./midi/midi";
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';

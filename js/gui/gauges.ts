@@ -32,7 +32,7 @@ export class Meter {
     }
 
     text(text){
-        this.gauge.txtLabel.attr({"text": text});
+        this.gauge.txtTitle.attr({"text": text});
     }
 
     range(min, max){

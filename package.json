@@ -29,7 +29,6 @@
     "jzz": "^0.6.6",
     "midi-player-js": "^2.0.5",
     "npm": "6.5.0",
-    "simple-ini": "^1.0.4",
     "typescript": "^3.3.3"
   },
   "devDependencies": {
