@@ -136,10 +136,11 @@ export function onResize(): void {
         backCanvas.style.width = width + "px";
         backCanvas.style.height = height + "px";
     }
-    if (drawMode!=DrawMode.standard) {
+    if (drawMode==DrawMode.standard) {
         draw_grid();
         redrawTrigger();
         drawTriggerStatus();
+        redrawInfo();
     }
 }
 
