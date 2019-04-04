@@ -175,10 +175,9 @@ function event_read_ini(ev){
     });
 
     if(config.general.port) {
-        w2ui['toolbar'].get('port').value = config.general.port;
-        w2ui['toolbar'].get('port').text = config.general.port;
-
-        w2ui['toolbar'].refresh();
+        w2ui.toolbar.get('port').value = config.general.port;
+        w2ui.toolbar.get('port').text = config.general.port;
+        w2ui.toolbar.refresh();
     }
     if(config.general.autoconnect=="true"){
         connect(config.general.port);
