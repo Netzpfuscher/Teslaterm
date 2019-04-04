@@ -70,12 +70,16 @@ export function init() {
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
                     {
                         type: 'html', id: 'port',
-                        html: '<div style="padding: 3px 10px;">' +
-                                ' Port:' +
-                                '    <input size="20" placeholder="COM1" onchange="var el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
-                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value=""/>' +
-                                '</div>'
-                    },
+                        html: function (item) {
+                            var html =
+                                '<div style="padding: 3px 10px;">'+
+                                ' Port:'+
+                                '    <input size="20" placeholder="COM1" onchange="var el = w2ui.toolbar.set(\'port\', { value: this.value });" '+
+                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value="'+ (item.value || '') +'"/>'+
+                                '</div>';
+                            return html;
+                        }
+                     },
                     {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
                     {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'}
                 ],
@@ -133,7 +137,6 @@ export function init() {
 
             ]
         });
-        console.log(w2ui);
         w2ui['layout'].on({type: 'resize', execute: 'after'}, function (target, eventData) {
             scope.onResize();
         });
@@ -175,7 +178,6 @@ function event_read_ini(ev){
 
     if(config.general.port) {
         w2ui['toolbar'].get('port').value = config.general.port;
-        w2ui['toolbar'].get('port').text = config.general.port;
 
         w2ui['toolbar'].refresh();
     }
