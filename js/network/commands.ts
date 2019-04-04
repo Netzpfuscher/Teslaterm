@@ -74,11 +74,11 @@ export function setBurstOfftime(offtime: number) {
 export function setOfftime(number: number) {
     sendCommand('set pwd ' + number + '\r');
 }
-/*
-export function setParam(param, value) {
-	sendCommand('set pwd ' + number + '\r');
+
+export function setParam(param:string, value:string) {
+	sendCommand('set ' + param + ' ' + value + '\r');
 }
-*/
+
 export function setTransientEnabled(enable: boolean) {
     sendCommand('tr '+(enable?'start':'stop')+'\r');
 }

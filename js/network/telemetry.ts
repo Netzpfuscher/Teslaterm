@@ -32,6 +32,7 @@ const TT_CHART_LINE = 7;
 const TT_CHART_TEXT = 8;
 const TT_CHART_TEXT_CENTER = 9;
 const TT_STATE_SYNC = 10;
+const TT_CONFIG_GET = 11;
 const UNITS: string[] = ['', 'V', 'A', 'W', 'Hz', '°C'];
 
 const TYPE_UNSIGNED = 0;
@@ -51,7 +52,10 @@ const DATA_LEN = 1;
 const DATA_NUM = 2;
 let term_state:number=0;
 
+let udconfig=[];
+
 function compute(dat: number[]){
+    let str:string;
     switch(dat[DATA_TYPE]){
         case TT_GAUGE:
             meters[dat[DATA_NUM]].value(bytes_to_signed(dat[3],dat[4]));
@@ -61,7 +65,7 @@ function compute(dat: number[]){
             const gauge_min = bytes_to_signed(dat[3],dat[4]);
             const gauge_max = bytes_to_signed(dat[5],dat[6]);
             dat.splice(0,7);
-            const str = convertArrayBufferToString(dat);
+            str = convertArrayBufferToString(dat);
             meters[index].text(str);
             meters[index].range(gauge_min, gauge_max);
             break;
@@ -107,6 +111,17 @@ function compute(dat: number[]){
             setBusActive((dat[2]&1)!=0);
             setTransientActive((dat[2]&2)!=0);
             setBusControllable((dat[2]&4)!=0);
+            break;
+        case TT_CONFIG_GET:
+            dat.splice(0,2);
+            str = convertArrayBufferToString(dat,false);
+            if(str == "NULL;NULL"){
+                ud_settings(udconfig);
+                udconfig=[];
+            }else{
+                let substrings = str.split(";")
+                udconfig.push(substrings);
+            }
             break;
     }
 }
@@ -263,7 +278,8 @@ export function  ud_settings(uconfig) {
 				"save": function () { 
 					for (let changes in this.getChanges()){
 						this.record[changes] = this.record[changes].replace(',','.');
-						commands.sendCommand('set ' + changes + ' ' + this.record[changes] + '\r');
+						commands.setParam(changes,this.record[changes]);
+						//commands.sendCommand('set ' + changes + ' ' + this.record[changes] + '\r');
 						this.original[changes] = this.record[changes];
 					}
 					w2popup.close();
@@ -271,7 +287,7 @@ export function  ud_settings(uconfig) {
 				"save EEPROM": function () { 
 					for (let changes in this.getChanges()){
 						this.record[changes] = this.record[changes].replace(',','.');
-						commands.sendCommand('set ' + changes + ' ' + this.record[changes] + '\r');
+                        commands.setParam(changes,this.record[changes]);
 						this.original[changes] = this.record[changes];
 					}
 					commands.eepromSave();
@@ -297,8 +313,7 @@ export function  ud_settings(uconfig) {
 		onOpen: function (event) {
 			event.onComplete = function () {
 				// specifying an onOpen handler instead is equivalent to specifying an onBeforeOpen handler, which would make this code execute too early and hence not deliver.
-				//$('#w2ui-popup #form').w2render('foo'); //TODO: Property 'w2render' does not exist on type 'JQuery<HTMLElement>'.
-				w2ui.foo.w2render();
+                (<any>$('#w2ui-popup #form')).w2render('foo'); //TODO: Property 'w2render' does not exist on type 'JQuery<HTMLElement>'.
 			}
 		}
 	});

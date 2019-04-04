@@ -56,6 +56,9 @@ export function onCtrlMenuClick(event) {
         case 'mnu_command:transient':
             commands.setTransientEnabled(!transientActive);
             break;
+        case 'mnu_command:settings':
+            commands.sendCommand('config_get\r');
+            break;
         case 'mnu_command:startStopMidi':
             if (midiServer.active) {
                 midiServer.close();

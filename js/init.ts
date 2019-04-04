@@ -29,6 +29,7 @@ export function init() {
                             {text: 'TR Start', icon: 'fa fa-bolt', id: 'transient'},
                             {text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
                             {text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
+                            { text: 'Settings', id: 'settings', icon: 'fa fa-table'},
                             {text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
                         ]
                     },
@@ -170,7 +171,7 @@ function readini(file: string) {
 function event_read_ini(ev){
     var inicontent=this.result;
     config = new SimpleIni(function() {
-        return inicontent;
+       return inicontent;
     });
 
     if(config.general.port) {
