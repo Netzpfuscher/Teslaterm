@@ -159,7 +159,6 @@ export function inputStrings(msg, title, checkValid, names) {
 }
 
 
-
 function keyDownListener(event) {
     // if there are no messages
     if ($('#w2ui-popup .w2ui-message').length === 0) {
