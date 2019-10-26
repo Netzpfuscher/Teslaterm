@@ -28,27 +28,38 @@ export interface MidiInput {
     source: string;
 }
 
+export const enum PlayerState {
+    playing,
+    idle
+}
+
+export const enum MediaFileType {
+    none,
+    midi,
+    sid_dmp
+}
+
 class MidiState {
     currentFile: File;
+    type: MediaFileType;
     progress: number;
-    state: string;
+    state: PlayerState;
 }
 
 export const enum SidState {
-    //TODO deobfuscate names
-    state0 = 0,
-    state1 = 1,
-    state2 = 2
+    none_loaded = 0,
+    loaded = 1,
+    playing = 2
 }
 
-export let midi_state: MidiState = {currentFile: null, progress: 0, state: 'stopped'};
+export let media_state: MidiState = {currentFile: null, type:MediaFileType.none, progress: 0, state: PlayerState.idle};
 
 export let flow_ctl: boolean = true;
 export let sid_state: SidState;
 export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
 export const sid_marker = new Uint8Array([0xFF,0xFF,0xFF,0xFF]);
 export const byt = 29*2;
-export let frame_cnt=byt
+export let frame_cnt=byt;
 export let frame_cnt_old=0;
 
 let lastTimeoutReset:number = 0;
@@ -81,7 +92,7 @@ export function startCurrentMidiFile() {
     player.play();
     nano.setLedState(config.nano.play,1);
     nano.setLedState(config.nano.stop,0);
-    midi_state.state = 'playing';
+    media_state.state = PlayerState.playing;
     scope.redrawMidiInfo();
 }
 
@@ -89,7 +100,7 @@ export function stopMidiFile() {
     nano.setLedState(config.nano.play,0);
     nano.setLedState(config.nano.stop,1);
     player.stop();
-    midi_state.state = 'stopped';
+    media_state.state = PlayerState.idle;
     scope.drawChart();
     stopMidiOutput();
     scripting.onMidiStopped();
@@ -110,10 +121,10 @@ export const player = new MidiPlayer.Player(processMidiFromPlayer);
 
 function processMidiFromPlayer(event: MidiPlayer.Event){
     if(playMidiEvent(event)){
-        midi_state.progress=player.getSongPercentRemaining();
+        media_state.progress=100-player.getSongPercentRemaining();
     } else if(!simulated && connState==ConnectionState.UNCONNECTED) {
         player.stop();
-        midi_state.state = 'stopped';
+        media_state.state = PlayerState.idle;
         scripting.onMidiStopped();
     }
     scope.redrawMidiInfo();
@@ -148,7 +159,7 @@ export function midiMessageReceived( ev ) {
                     nano.setLedState(config.nano.play, 1);
                     nano.setLedState(config.nano.stop, 0);
                     player.play();
-                    midi_state.state = 'playing';
+                    media_state.state = PlayerState.playing;
                     scope.drawChart();
                     break;
                 case config.nano.stop:
@@ -242,7 +253,7 @@ export function playMidiData(data: number[]|Uint8Array): boolean {
 export function init(){
     if (navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
-        midi_state.progress = 0;
+        media_state.progress = 0;
         chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
     } else {
         alert("No MIDI support in your browser.");
@@ -276,7 +287,7 @@ export function setMidiInAsNone() {
     midi_ui.populateMIDISelects();
 }
 
-export function setMidiInToPort(source) {
+export function setMidiInToPort(source: WebMidi.MIDIInput) {
     source.onmidimessage = midiMessageReceived;
     let canceled = false;
     midiIn = {
@@ -319,21 +330,21 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
 }
 
 export function update() {
-    if(sid_state==2 && flow_ctl==true){
+    if(sid_state==SidState.playing && flow_ctl==true){
         if(connection.connState==ConnectionState.CONNECTED_IP){
             if(socket_midi){
                 chrome.sockets.tcp.send(socket_midi, sid_file_marked.slice(frame_cnt_old,frame_cnt), ()=>{});
             }
-            //console.log(sid_file_marked.slice(frame_cnt_old,frame_cnt));
             frame_cnt_old=frame_cnt;
             frame_cnt+=byt;
+            media_state.progress = Math.floor(100*(frame_cnt/sid_file_marked.byteLength));
             if(frame_cnt>sid_file_marked.byteLength){
-                sid_state=0;
+                sid_state=SidState.loaded;//TODO this used to be none_loaded
                 frame_cnt=byt;
                 frame_cnt_old=0;
                 console.log("finished");
             }
-
+            scope.redrawMidiInfo();
         }
     }
 }

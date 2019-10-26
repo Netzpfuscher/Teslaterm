@@ -10,8 +10,10 @@ import * as ui_helper from './ui_helper';
 import {
     byt,
     kill_msg,
-    midi_state,
-    midiOut, setFrameCount,
+    media_state,
+    midiOut,
+    PlayerState,
+    setFrameCount,
     setSidState,
     sid_state,
     SidState,
@@ -82,24 +84,24 @@ export function onCtrlMenuClick(event) {
                 commands.eepromSave);
             break;
         case 'mnu_midi:Play':
-            if (midi_state.currentFile==null){
-                terminal.io.println("Please select a MIDI file using drag&drop");
+            if (media_state.currentFile==null){
+                terminal.io.println("Please select a media file using drag&drop");
                 break;
             }
             startCurrentMidiFile();
-            if(sid_state==SidState.state1){
-                setSidState(SidState.state2);
+            if(sid_state==SidState.loaded){
+                setSidState(SidState.playing);
             }
             break;
         case 'mnu_midi:Stop':
             midiOut.send(kill_msg);
-            if (midi_state.currentFile==null || midi_state.state!='playing'){
-                terminal.io.println("No MIDI file is currently playing");
+            if (media_state.currentFile==null || media_state.state!=PlayerState.playing){
+                terminal.io.println("No media file is currently playing");
                 break;
             }
             stopMidiFile();
-            if(sid_state==SidState.state2){
-                setSidState(SidState.state1);
+            if(sid_state==SidState.playing){
+                setSidState(SidState.loaded);
                 setFrameCount(byt);
             }
             break;

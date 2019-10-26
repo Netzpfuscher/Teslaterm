@@ -80,7 +80,7 @@ function enterFilterForMidi(result) {
         .then(filter=>setMidiInToNetwork(result.ip, result.port, {channel: filter[0], note: filter[1]}));
 }
 
-function setMidiInToNetwork(ip, port, filter) {
+function setMidiInToNetwork(ip: string, port: number, filter) {
     terminal.io.println("Connecting to MIDI server at "+ip+":"+port+"...");
     chrome.sockets.tcp.create({}, function(createInfo) {
         chrome.sockets.tcp.connect(createInfo.socketId,
@@ -136,7 +136,7 @@ function onSelectMidiIn(ev ) {
                     setMidiInAsNone();
                 });
         } else if (id) {
-            var midiSource = midiAccess.inputs.get(id);
+            let midiSource = midiAccess.inputs.get(id);
             setMidiInToPort(midiSource);
         } else {
             setMidiInAsNone();
@@ -145,6 +145,6 @@ function onSelectMidiIn(ev ) {
 }
 
 function addElementKeepingSelected(name, id, oldId, selector, forceSelect = false) {
-    var preferred = forceSelect || id == oldId;
+    let preferred = forceSelect || id == oldId;
     selector.appendChild(new Option(name, id, preferred, preferred));
 }

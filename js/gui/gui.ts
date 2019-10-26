@@ -35,7 +35,7 @@ function ondrop(e){
     e.stopPropagation();
     e.preventDefault();
     if(e.dataTransfer.items.length == 1){//only one file
-        midi.setSidState(SidState.state0);
+        midi.setSidState(SidState.none_loaded);
         const file = e.dataTransfer.files[0];
         const extension = file.name.substring(file.name.lastIndexOf(".")+1);
         if (extension==="mid"){

@@ -1,6 +1,6 @@
-import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, terminal, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
+import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 import {NUM_GAUGES} from "./gauges";
-import {midi_state} from "../midi/midi";
+import {media_state, MediaFileType, PlayerState} from "../midi/midi";
 
 let waveCanvas: HTMLCanvasElement;
 
@@ -383,5 +383,17 @@ export function redrawMidiInfo(){
     waveContext.textAlign = "left";
     waveContext.fillStyle = "white";
 
-    waveContext.fillText("MIDI-File: " + midi_state.currentFile + ' State: ' + midi_state.state + ' ' + (100-midi_state.progress) + '% / 100%'  ,TRIGGER_SPACE, 12);
+    if (media_state.type!=MediaFileType.none) {
+        let output = "MIDI";
+        if (media_state.type==MediaFileType.sid_dmp) {
+            output = "SID-DMP";
+        }
+        output += "-File: " + media_state.currentFile + ' State: ';
+        if (media_state.state==PlayerState.playing) {
+            output += "playing " + media_state.progress + '% / 100%'
+        } else {
+            output += "idle";
+        }
+        waveContext.fillText(output, TRIGGER_SPACE, 12);
+    }
 }
