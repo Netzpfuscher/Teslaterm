@@ -1,4 +1,4 @@
-import {media_state, MediaFileType, player, setSidState, SidState} from "./midi";
+import {media_state, MediaFileType, player} from "./midi";
 import * as scope from "../gui/oscilloscope";
 
 function readmidi(file){
@@ -30,6 +30,7 @@ export function loadSIDFile(file) {
     w2ui['toolbar'].refresh();
     media_state.currentFile = file.name;
     media_state.type = MediaFileType.sid_dmp;
+    sid_file_marked = null;
     readSID(file);
     scope.redrawMidiInfo();
 }
@@ -39,7 +40,7 @@ function readSID(file){
     fs.onload = event_read_SID;
     fs.readAsArrayBuffer(file);
 }
-export let sid_file_marked;
+export let sid_file_marked: Uint8Array | null;
 function event_read_SID(this: FileReader, progressEvent: ProgressEvent){
     if (!(this.result instanceof ArrayBuffer)) {
         console.error("SID dump not read as ArrayBuffer!");
@@ -65,5 +66,4 @@ function event_read_SID(this: FileReader, progressEvent: ProgressEvent){
         }
     }
     sid_file_marked=sid_file;
-    setSidState(SidState.loaded);
 }

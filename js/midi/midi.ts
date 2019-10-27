@@ -46,16 +46,9 @@ class MidiState {
     state: PlayerState;
 }
 
-export const enum SidState {
-    none_loaded = 0,
-    loaded = 1,
-    playing = 2
-}
-
 export let media_state: MidiState = {currentFile: null, type:MediaFileType.none, progress: 0, state: PlayerState.idle};
 
-export let flow_ctl: boolean = true;
-export let sid_state: SidState;
+export let sending_sid: boolean = true;
 export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
 export const sid_marker = new Uint8Array([0xFF,0xFF,0xFF,0xFF]);
 export const byt = 29*2;
@@ -75,24 +68,19 @@ export const midiNone = {
 export let midiIn: MidiInput = midiNone;
 export let midiAccess: WebMidi.MIDIAccess;
 
-export function setSidState(newState: SidState) {
-    sid_state = newState;
-}
-
 export function setFrameCount(newVal: number) {
     frame_cnt_old = frame_cnt;
     frame_cnt = newVal;
 }
 
-export function setFlowCtl(newVal: boolean) {
-    flow_ctl = newVal;
+export function setSendingSID(newVal: boolean) {
+    sending_sid = newVal;
 }
 
 export function startCurrentMidiFile() {
     player.play();
     nano.setLedState(config.nano.play,1);
     nano.setLedState(config.nano.stop,0);
-    media_state.state = PlayerState.playing;
     scope.redrawMidiInfo();
 }
 
@@ -100,7 +88,6 @@ export function stopMidiFile() {
     nano.setLedState(config.nano.play,0);
     nano.setLedState(config.nano.stop,1);
     player.stop();
-    media_state.state = PlayerState.idle;
     scope.drawChart();
     stopMidiOutput();
     scripting.onMidiStopped();
@@ -330,7 +317,8 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
 }
 
 export function update() {
-    if(sid_state==SidState.playing && flow_ctl==true){
+    if(sid_file_marked && media_state.state==PlayerState.playing && media_state.type==MediaFileType.sid_dmp
+        && sending_sid==true){
         if(connection.connState==ConnectionState.CONNECTED_IP){
             if(socket_midi){
                 chrome.sockets.tcp.send(socket_midi, sid_file_marked.slice(frame_cnt_old,frame_cnt), ()=>{});
@@ -339,7 +327,7 @@ export function update() {
             frame_cnt+=byt;
             media_state.progress = Math.floor(100*(frame_cnt/sid_file_marked.byteLength));
             if(frame_cnt>sid_file_marked.byteLength){
-                sid_state=SidState.loaded;//TODO this used to be none_loaded
+                media_state.state = PlayerState.idle;
                 frame_cnt=byt;
                 frame_cnt_old=0;
                 console.log("finished");

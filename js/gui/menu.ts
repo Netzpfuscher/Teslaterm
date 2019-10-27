@@ -11,15 +11,15 @@ import {
     byt,
     kill_msg,
     media_state,
+    MediaFileType,
     midiOut,
     PlayerState,
     setFrameCount,
-    setSidState,
-    sid_state,
-    SidState,
+    setSendingSID,
     startCurrentMidiFile,
     stopMidiFile
 } from "../midi/midi";
+import {redrawMidiInfo} from "./oscilloscope";
 
 export function onConnected() {
     terminal.io.println("connected");
@@ -88,10 +88,14 @@ export function onCtrlMenuClick(event) {
                 terminal.io.println("Please select a media file using drag&drop");
                 break;
             }
-            startCurrentMidiFile();
-            if(sid_state==SidState.loaded){
-                setSidState(SidState.playing);
+            if (media_state.state!=PlayerState.idle){
+                terminal.io.println("A media file is currently playing, stop it before starting it again");
+                break;
             }
+            if (media_state.type==MediaFileType.midi) {
+                startCurrentMidiFile();
+            }
+            media_state.state = PlayerState.playing;
             break;
         case 'mnu_midi:Stop':
             midiOut.send(kill_msg);
@@ -99,11 +103,14 @@ export function onCtrlMenuClick(event) {
                 terminal.io.println("No media file is currently playing");
                 break;
             }
-            stopMidiFile();
-            if(sid_state==SidState.playing){
-                setSidState(SidState.loaded);
+            if(media_state.type==MediaFileType.sid_dmp){
                 setFrameCount(byt);
+                setSendingSID(true);
+            } else if (media_state.type==MediaFileType.midi) {
+                stopMidiFile();
             }
+            media_state.state = PlayerState.idle;
+            redrawMidiInfo();
             break;
         case 'mnu_script:Start':
             if (currentScript==null) {

@@ -167,10 +167,10 @@ function receive(info){
     if(info.socketId==socket_midi){
         const buf = new Uint8Array(info.data);
         if(buf[0]==0x78){
-            midi.setFlowCtl(false);
+            midi.setSendingSID(false);
         }
         if(buf[0]==0x6f){
-            midi.setFlowCtl(true);
+            midi.setSendingSID(true);
         }
     }
 

@@ -4,7 +4,6 @@ import * as midi from "../midi/midi";
 import {loadMidiFile, loadSIDFile} from "../midi/midi_file";
 import * as scripting from '../scripting';
 import {setScript} from "./menu";
-import {SidState} from "../midi/midi";
 import * as nano from '../nano';
 import * as gauges from './gauges';
 export function init() {
@@ -35,7 +34,6 @@ function ondrop(e){
     e.stopPropagation();
     e.preventDefault();
     if(e.dataTransfer.items.length == 1){//only one file
-        midi.setSidState(SidState.none_loaded);
         const file = e.dataTransfer.files[0];
         const extension = file.name.substring(file.name.lastIndexOf(".")+1);
         if (extension==="mid"){
