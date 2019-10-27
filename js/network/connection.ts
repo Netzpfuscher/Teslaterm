@@ -45,14 +45,14 @@ function createInfo(info){
 
     console.log(ipaddr);
 
-    chrome.sockets.tcp.connect(mainSocket,ipaddr,23, callback_sck);
+    chrome.sockets.tcp.connect(mainSocket,ipaddr,2323, callback_sck);
 
 
 }
 
 function createInfo_midi(info){
     socket_midi = info.socketId;
-    chrome.sockets.tcp.connect(socket_midi,ipaddr,123, callback_sck_midi);
+    chrome.sockets.tcp.connect(socket_midi,ipaddr,2324, callback_sck_midi);
 
 }
 function callback_sck(result){
