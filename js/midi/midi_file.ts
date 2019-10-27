@@ -1,4 +1,4 @@
-import {media_state, MediaFileType, player} from "./midi";
+import {media_state, MediaFileType, player, setMediaType} from "./midi";
 import * as scope from "../gui/oscilloscope";
 
 function readmidi(file){
@@ -19,7 +19,7 @@ export function loadMidiFile(file) {
     w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: '+file.name;
     w2ui['toolbar'].refresh();
     media_state.currentFile = file.name;
-    media_state.type = MediaFileType.midi;
+    setMediaType(MediaFileType.midi);
     readmidi(file);
     scope.redrawMidiInfo();
 
@@ -29,7 +29,7 @@ export function loadSIDFile(file) {
     w2ui['toolbar'].get('mnu_midi').text = 'SID-File: '+file.name;
     w2ui['toolbar'].refresh();
     media_state.currentFile = file.name;
-    media_state.type = MediaFileType.sid_dmp;
+    setMediaType(MediaFileType.sid_dmp);
     sid_file_marked = null;
     readSID(file);
     scope.redrawMidiInfo();

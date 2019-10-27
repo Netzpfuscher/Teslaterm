@@ -2,6 +2,7 @@ import {terminal} from "../gui/gui";
 import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
 import {connid, connState, mainSocket} from "./connection";
+import {media_state, MediaFileType} from "../midi/midi";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;
@@ -36,7 +37,7 @@ export function startConf(){
     sendCommand('set pw 0\r');
     sendCommand('set pwd 50000\r');
     sendCommand('kill reset\rtterm start\rcls\r');
-
+    setSynth(media_state.type);
 }
 
 
@@ -77,6 +78,18 @@ export function setOfftime(number: number) {
 
 export function setParam(param:string, value:string) {
 	sendCommand('set ' + param + ' ' + value + '\r');
+}
+
+export function setSynth(type: MediaFileType) {
+    let synth_id: number;
+    if (type==MediaFileType.sid_dmp) {
+        synth_id = 2;
+    } else if (type==MediaFileType.midi) {
+        synth_id = 1;
+    } else {
+        synth_id = 0;
+    }
+    setParam("synth", synth_id.toString());
 }
 
 export function setTransientEnabled(enable: boolean) {

@@ -73,6 +73,11 @@ export function setFrameCount(newVal: number) {
     frame_cnt = newVal;
 }
 
+export function setMediaType(type: MediaFileType) {
+    media_state.type = type;
+    commands.setSynth(type);
+}
+
 export function setSendingSID(newVal: boolean) {
     sending_sid = newVal;
 }
