@@ -3,7 +3,8 @@ import * as sliders from "../gui/sliders";
 import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
 import {connid, connState, mainSocket} from "./connection";
-import {media_state, MediaFileType} from "../midi/midi";
+import {media_state} from "../midi/midi";
+import {MediaFileType} from "../media/media_player";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;

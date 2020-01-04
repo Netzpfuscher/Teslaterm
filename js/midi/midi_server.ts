@@ -307,7 +307,8 @@ function matchesFilterExtracted(filter, channel, note) {
     return resultChannel && resultNote;
 }
 
-let chromeL = global["chrome"];
-setPort(5678);
-chromeL.sockets.tcpServer.onAccept.addListener(info=>onAccept(info));
-chromeL.sockets.tcp.onReceive.addListener(args=>onMessage(args.socketId, args.data));
+export function init() {
+    setPort(5678);
+    chrome.sockets.tcpServer.onAccept.addListener(info => onAccept(info));
+    chrome.sockets.tcp.onReceive.addListener(args => onMessage(args.socketId, args.data));
+}

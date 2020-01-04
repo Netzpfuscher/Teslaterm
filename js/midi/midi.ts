@@ -15,7 +15,7 @@ import {populateMIDISelects} from "./midi_ui";
 import {terminal} from "../gui/gui";
 import * as helper from "../helper";
 import {onMIDIoverIP} from "./midi_client";
-import {sid_file_marked} from "./midi_file";
+import {MediaFileType, PlayerState, PlayerActivity, checkTransientDisabled} from "../media/media_player";
 
 export interface MidiOutput {
     dest: string;
@@ -28,33 +28,10 @@ export interface MidiInput {
     source: string;
 }
 
-export const enum PlayerState {
-    playing,
-    idle
-}
+export let media_state: PlayerState = {currentFile: null, type:MediaFileType.none, progress: 0, state: PlayerActivity.idle};
 
-export const enum MediaFileType {
-    none,
-    midi,
-    sid_dmp
-}
-
-class MidiState {
-    currentFile: File;
-    type: MediaFileType;
-    progress: number;
-    state: PlayerState;
-}
-
-export let media_state: MidiState = {currentFile: null, type:MediaFileType.none, progress: 0, state: PlayerState.idle};
-
-export let sending_sid: boolean = true;
 export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
-export const byt = 29*2;
-export let frame_cnt=byt;
-export let frame_cnt_old=0;
 
-let lastTimeoutReset:number = 0;
 export let midiOut: MidiOutput = {dest: "None", send: ()=>{}};
 
 export const midiNone = {
@@ -67,18 +44,9 @@ export const midiNone = {
 export let midiIn: MidiInput = midiNone;
 export let midiAccess: WebMidi.MIDIAccess;
 
-export function setFrameCount(newVal: number) {
-    frame_cnt_old = frame_cnt;
-    frame_cnt = newVal;
-}
-
 export function setMediaType(type: MediaFileType) {
     media_state.type = type;
     commands.setSynth(type);
-}
-
-export function setSendingSID(newVal: boolean) {
-    sending_sid = newVal;
 }
 
 export function startCurrentMidiFile() {
@@ -115,7 +83,7 @@ function processMidiFromPlayer(event: MidiPlayer.Event){
         media_state.progress=100-player.getSongPercentRemaining();
     } else if(!simulated && connState==ConnectionState.UNCONNECTED) {
         player.stop();
-        media_state.state = PlayerState.idle;
+        media_state.state = PlayerActivity.idle;
         scripting.onMidiStopped();
     }
     scope.redrawMidiInfo();
@@ -150,7 +118,7 @@ export function midiMessageReceived( ev ) {
                     nano.setLedState(config.nano.play, 1);
                     nano.setLedState(config.nano.stop, 0);
                     player.play();
-                    media_state.state = PlayerState.playing;
+                    media_state.state = PlayerActivity.playing;
                     scope.drawChart();
                     break;
                 case config.nano.stop:
@@ -220,16 +188,6 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
         data.push(track[startIndex+i]);
     }
     return playMidiData(data);
-}
-
-function checkTransientDisabled() {
-    if (transientActive) {
-        const currTime = new Date().getTime();
-        if (currTime-lastTimeoutReset>500) {
-            commands.setTransientEnabled(false);
-            lastTimeoutReset = currTime;
-        }
-    }
 }
 
 export function playMidiData(data: number[]|Uint8Array): boolean {
@@ -324,23 +282,4 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
     sliders.ontime.setRelativeAllowed(false);
 }
 
-export function update() {
-    if(sid_file_marked && media_state.state==PlayerState.playing && media_state.type==MediaFileType.sid_dmp
-        && sending_sid==true){
-        if(connection.connState==ConnectionState.CONNECTED_IP){
-            checkTransientDisabled();
-            if(socket_midi){
-                chrome.sockets.tcp.send(socket_midi, sid_file_marked.slice(frame_cnt_old,frame_cnt), ()=>{});
-            }
-            frame_cnt_old=frame_cnt;
-            frame_cnt+=byt;
-            media_state.progress = Math.floor(100*(frame_cnt/sid_file_marked.byteLength));
-            if(frame_cnt>sid_file_marked.byteLength){
-                media_state.state = PlayerState.idle;
-                frame_cnt=byt;
-                frame_cnt_old=0;
-            }
-            scope.redrawMidiInfo();
-        }
-    }
-}
+

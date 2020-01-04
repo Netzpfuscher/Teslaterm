@@ -8,18 +8,15 @@ import * as scripting from '../scripting';
 import * as midiServer from '../midi/midi_server';
 import * as ui_helper from './ui_helper';
 import {
-    byt,
     kill_msg,
     media_state,
-    MediaFileType,
     midiOut,
-    PlayerState,
-    setFrameCount,
-    setSendingSID,
     startCurrentMidiFile,
     stopMidiFile
 } from "../midi/midi";
 import {redrawMidiInfo} from "./oscilloscope";
+import {MediaFileType, PlayerActivity} from "../media/media_player";
+import {loadSidFile, setSendingSID} from "../sid/sid";
 
 export function onConnected() {
     terminal.io.println("connected");
@@ -87,28 +84,28 @@ export function onCtrlMenuClick(event) {
                 terminal.io.println("Please select a media file using drag&drop");
                 break;
             }
-            if (media_state.state!=PlayerState.idle){
+            if (media_state.state!=PlayerActivity.idle){
                 terminal.io.println("A media file is currently playing, stop it before starting it again");
                 break;
             }
             if (media_state.type==MediaFileType.midi) {
                 startCurrentMidiFile();
             }
-            media_state.state = PlayerState.playing;
+            media_state.state = PlayerActivity.playing;
             break;
         case 'mnu_midi:Stop':
             midiOut.send(kill_msg);
-            if (media_state.currentFile==null || media_state.state!=PlayerState.playing){
+            if (media_state.currentFile==null || media_state.state!=PlayerActivity.playing){
                 terminal.io.println("No media file is currently playing");
                 break;
             }
             if(media_state.type==MediaFileType.sid_dmp){
-                setFrameCount(byt);
                 setSendingSID(true);
+                loadSidFile(media_state.currentFile).then(()=>{});
             } else if (media_state.type==MediaFileType.midi) {
                 stopMidiFile();
             }
-            media_state.state = PlayerState.idle;
+            media_state.state = PlayerActivity.idle;
             redrawMidiInfo();
             break;
         case 'mnu_script:Start':

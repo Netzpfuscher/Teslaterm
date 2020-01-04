@@ -8,7 +8,7 @@ export function bytes_to_signed(lsb: number, msb: number): number {
     }
 }
 
-export function convertArrayBufferToString(buf: number[]|Buffer, uri: boolean = true): string {
+export function convertArrayBufferToString(buf: number[]|Buffer|Uint8Array, uri: boolean = true): string {
     const bufView = new Uint8Array(buf);
     const encodedString = String.fromCharCode.apply(null, bufView);
     if (uri) {

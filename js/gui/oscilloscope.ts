@@ -1,6 +1,7 @@
 import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 import {NUM_GAUGES} from "./gauges";
-import {media_state, MediaFileType, PlayerState} from "../midi/midi";
+import {media_state} from "../midi/midi";
+import {MediaFileType, PlayerActivity, PlayerState} from "../media/media_player";
 
 let waveCanvas: HTMLCanvasElement;
 let backCanvas: HTMLCanvasElement;
@@ -387,7 +388,8 @@ export function redrawMidiInfo(){
             output = "SID-DMP";
         }
         output += "-File: " + media_state.currentFile + ' State: ';
-        if (media_state.state==PlayerState.playing) {
+        if (media_state.state==PlayerActivity.playing) {
+            //TODO support for undefined length (real SID)?
             output += "playing " + media_state.progress + '% / 100%'
         } else {
             output += "idle";

@@ -1,8 +1,9 @@
 import * as cmd from '../network/commands';
-import {loadMidiFile, loadSIDFile} from "../midi/midi_file";
+import {loadMidiFile} from "../midi/midi_file";
 import * as scripting from '../scripting';
 import {setScript} from "./menu";
 import * as gauges from './gauges';
+import {loadSidFile} from "../sid/sid";
 
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
@@ -47,8 +48,8 @@ function ondrop(e: DragEvent): void {
                     terminal.io.println("Failed to load script: "+err);
                     console.log(err);
                 });
-        }else if (extension=="dmp") {
-            loadSIDFile(file);
+        } else if (extension=="dmp"||extension=="sid") {
+            loadSidFile(file);
         }
     }
 }

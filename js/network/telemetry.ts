@@ -2,7 +2,7 @@ import {terminal} from '../gui/gui';
 import {meters} from '../gui/gauges';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
-import * as midi from "../midi/midi";
+import * as sid from "../sid/sid";
 import {mainSocket, socket_midi, resetTimeout} from "./connection";
 import * as menu from '../gui/menu'
 import {config} from '../init';
@@ -167,10 +167,10 @@ function receive(info){
     if(info.socketId==socket_midi){
         const buf = new Uint8Array(info.data);
         if(buf[0]==0x78){
-            midi.setSendingSID(false);
+            sid.setSendingSID(false);
         }
         if(buf[0]==0x6f){
-            midi.setSendingSID(true);
+            sid.setSendingSID(true);
         }
     }
 

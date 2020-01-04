@@ -7,6 +7,8 @@ import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/comm
 import * as connection from "./network/connection";
 import {connect} from "./network/connection";
 import * as midi from "./midi/midi";
+import * as midi_server from "./midi/midi_server";
+import * as sid from "./sid/sid";
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';
 import * as gauges from "./gui/gauges";
@@ -14,7 +16,7 @@ import {NUM_GAUGES} from "./gui/gauges";
 import * as nano from "./nano";
 
 export let config: SimpleIni;
-export const simulated = true;
+export const simulated = false;
 
 export function init() {
     document.addEventListener('DOMContentLoaded', () => {
@@ -150,6 +152,7 @@ export function init() {
 
         scope.init();
         midi.init();
+        midi_server.init();
         setInterval(update, 20);
     });
 }
@@ -192,6 +195,5 @@ function update(){
     nano.update();
     gauges.refresh_all();
 
-    midi.update();
-
+    sid.update();
 }
