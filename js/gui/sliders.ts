@@ -24,24 +24,32 @@ export class OntimeUI {
         }
     }
 
+    setToZero() {
+        if (this.relativeSelect.checked) {
+            this.setRelativeOntime(0);
+        } else {
+            this.setAbsoluteOntime(0);
+        }
+    }
 
-
-    setAbsoluteOntime(time) {
+    setAbsoluteOntime(time: number) {
         if (!this.relativeSelect.checked) {
             setSliderValue(null, time, this.slider);
         }
         time = Math.min(commands.maxOntime, Math.max(0, time));
-        this.absolute.textContent = this.absoluteVal = time;
+        this.absoluteVal = time;
+        this.absolute.textContent = this.absoluteVal.toString();
         this.ontimeChanged();
     }
 
-    setRelativeOntime(percentage) {
+    setRelativeOntime(percentage: number) {
         console.log(this);
         if (this.relativeSelect.checked) {
             setSliderValue(null, percentage, this.slider);
         }
         percentage = Math.min(100, Math.max(0, percentage));
-        this.relative.textContent = this.relativeVal = percentage;
+        this.relativeVal = percentage;
+        this.relative.textContent =this.relativeVal.toString();
         midiServer.sendRelativeOntime(this.relativeVal);
         this.ontimeChanged();
     }
@@ -124,13 +132,17 @@ function slider1(){
     const slider = <HTMLInputElement>document.getElementById('slider1');
     const slider_disp = document.getElementById('slider1_disp');
     slider_disp.innerHTML = slider.value + ' Hz';
-    const pwd = Math.floor(1/Number(slider.value)*1000000);
-    commands.setOfftime(Number(pwd));
+    commands.setBPS(Number(slider.value));
 }
 
 export function setBPS(bps){
     setSliderValue("slider1", bps);
     slider1();
+}
+
+export function getBPS(): number {
+    const slider = <HTMLInputElement>document.getElementById("slider1");
+    return Number(slider.value);
 }
 
 function slider2(){
@@ -145,6 +157,11 @@ export function setBurstOntime(time){
     slider2();
 }
 
+export function getBurstOntime(): number {
+    const slider = <HTMLInputElement>document.getElementById("slider2");
+    return Number(slider.value);
+}
+
 function slider3(){
     const slider = <HTMLInputElement>document.getElementById('slider3');
     const slider_disp = document.getElementById('slider3_disp');
@@ -156,3 +173,9 @@ export function setBurstOfftime(time){
     setSliderValue("slider3", time);
     slider3();
 }
+
+export function getBurstOfftime(): number {
+    const slider = <HTMLInputElement>document.getElementById("slider3");
+    return Number(slider.value);
+}
+

@@ -6,7 +6,7 @@ import {socket_midi} from "../network/connection";
 import {
     midiAccess,
     midiIn,
-    midiMessageReceived, midiNone,
+    midiMessageReceived,
     midiOut,
     setMidiInAsNone,
     setMidiInToPort,
@@ -40,22 +40,22 @@ export function populateMIDISelects() {
     }
     addElementKeepingSelected(networkText, networkId, midiIn.source, selectMidiIn);
     for (let input of midiAccess.inputs.values()) {
-        var str = input.name.toString();
-        var preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1) || (str.toLowerCase().indexOf("keyboard") != -1));
+        const str = input.name.toString();
+        const preferred = !midiIn.isActive() && ((str.indexOf("Tesla") != -1) || (str.toLowerCase().indexOf("keyboard") != -1));
         if (str.includes("nano")) {
             input.onmidimessage = midiMessageReceived;
             nano.setNano(input);
         }
         addElementKeepingSelected(input.name, input.id, midiIn.source, selectMidiIn, preferred)
     }
-    onSelectMidiIn(null);
+    onSelectMidiIn();
     selectMidiOut.options.length = 0;
     addElementKeepingSelected("None", "", midiOut.dest, selectMidiOut);
     if (connection.connState==ConnectionState.CONNECTED_IP) {
         addElementKeepingSelected("UD3 over Ethernet", "<Network>", midiOut.dest, selectMidiOut);
     }
     for (let output of midiAccess.outputs.values()) {
-        var str = output.name.toString();
+        const str = output.name.toString();
         if (str.includes("nano")) {
             nano.setNanoOut(output);
             nano.init();
@@ -63,8 +63,9 @@ export function populateMIDISelects() {
             addElementKeepingSelected(str, output.id, midiOut.dest, selectMidiOut, str.indexOf("UD3")>=0);
         }
     }
-    onSelectMidiOut(null);
+    onSelectMidiOut();
 }
+
 function enterFilterForMidi(result) {
     ui_helper.inputStrings("Please enter the filters", "MIDI filters", (channel, note)=>{
         const filterChannel = helper.parseFilter(channel);
@@ -88,9 +89,9 @@ function setMidiInToNetwork(ip: string, port: number, filter) {
     });
 }
 
-function onSelectMidiOut(ev) {
+function onSelectMidiOut() {
     const selected = selectMidiOut.selectedIndex;
-    var id = (<HTMLOptionElement>selectMidiOut[selected]).value;
+    const id = (<HTMLOptionElement>selectMidiOut[selected]).value;
     if (id!=midiOut.dest) {
         stopMidiOutput();
         if (id == "<Network>") {
@@ -99,14 +100,14 @@ function onSelectMidiOut(ev) {
                 dest: id
             });
         } else if (id) {
-            var midiSink = midiAccess.outputs.get(id);
+            const midiSink = midiAccess.outputs.get(id);
             setMidiOut({
                 send: (data) => midiSink.send(<number[] | Uint8Array>data),
                 dest: id
             });
         } else {
             setMidiOut({
-                send: (data) => {
+                send: () => {
                 },
                 dest: id
             });
@@ -119,9 +120,9 @@ export function select(select: number) {
     selectMidiIn.selectedIndex = select;
 }
 
-function onSelectMidiIn(ev ) {
+function onSelectMidiIn() {
     const selected = selectMidiIn.selectedIndex;
-    var id = (<HTMLOptionElement>selectMidiIn[selected]).value;
+    const id = (<HTMLOptionElement>selectMidiIn[selected]).value;
     if (id!=midiIn.source) {
         if (midiIn.isActive())
             midiIn.cancel(null);
@@ -129,7 +130,7 @@ function onSelectMidiIn(ev ) {
         selectMidiIn.selectedIndex = selected;
         if (id=="<Network>") {
             midiServer.requestName()
-                .then(()=>ui_helper.inputIpAddress("Please enter the remote IP address", "MIDI over IP", true, true))
+                .then(()=>ui_helper.inputIpAndPort("Please enter the remote IP address", "MIDI over IP"))
                 .then(enterFilterForMidi)
                 .catch((err)=>{
                     console.log("Caught something!", err);

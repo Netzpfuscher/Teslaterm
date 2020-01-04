@@ -12,6 +12,10 @@ declare namespace W2UI {
     export interface W2Menu {
         items: W2MenuItem[];
     }
+
+    export interface KeyDownListener {
+        originalEvent: KeyboardEvent;
+    }
 }
 
 declare interface ConfirmationHandler {

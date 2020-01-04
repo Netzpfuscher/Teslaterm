@@ -1,4 +1,5 @@
 import {terminal} from "../gui/gui";
+import * as sliders from "../gui/sliders";
 import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
 import {connid, connState, mainSocket} from "./connection";
@@ -8,7 +9,7 @@ export const maxOntime = 400;
 export const maxBPS = 1000;
 export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
-export function sendCommand(command){
+export function sendCommand(command: string){
     if(connState==ConnectionState.CONNECTED_SERIAL){
         chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), ()=>{});
     }
@@ -34,12 +35,14 @@ export function reconnect(){
 
 export function startConf(){
     sendCommand('\r');
+    sliders.ontime.setToZero();
     sendCommand('set pw 0\r');
-    sendCommand('set pwd 50000\r');
-    sendCommand('kill reset\rtterm start\rcls\r');
+    setBPS(sliders.getBPS());
+    setBurstOntime(sliders.getBurstOntime());
+    setBurstOfftime(sliders.getBurstOfftime());
     setSynth(media_state.type);
+    sendCommand('kill reset\rtterm start\rcls\r');
 }
-
 
 export function busOff() {
     sendCommand('bus off\r');
@@ -75,9 +78,12 @@ export function setBurstOfftime(offtime: number) {
 export function setOfftime(number: number) {
     sendCommand('set pwd ' + number + '\r');
 }
-
+export function setBPS(bps: number) {
+    const pwd = Math.floor(1000000/bps);
+    setOfftime(Number(pwd));
+}
 export function setParam(param:string, value:string) {
-	sendCommand('set ' + param + ' ' + value + '\r');
+    sendCommand('set ' + param + ' ' + value + '\r');
 }
 
 export function setSynth(type: MediaFileType) {
@@ -94,4 +100,8 @@ export function setSynth(type: MediaFileType) {
 
 export function setTransientEnabled(enable: boolean) {
     sendCommand('tr '+(enable?'start':'stop')+'\r');
+}
+
+export function resetWatchdog() {
+    sendCommand('\u0007');
 }

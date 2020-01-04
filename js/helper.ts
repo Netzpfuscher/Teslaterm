@@ -1,5 +1,3 @@
-import * as $ from 'jquery'
-
 export function bytes_to_signed(lsb: number, msb: number): number {
     const sign = msb & (1 << 7);
     const x = (((msb & 0xFF) << 8) | (lsb & 0xFF));

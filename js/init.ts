@@ -1,17 +1,17 @@
 import * as $ from 'jquery';
 import * as scope from './gui/oscilloscope';
 import * as gui from './gui/gui';
+import {terminal} from './gui/gui';
 import * as sliders from './gui/sliders';
-import {terminal} from "./gui/gui";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
+import * as connection from "./network/connection";
 import {connect} from "./network/connection";
 import * as midi from "./midi/midi";
 import * as menu from './gui/menu';
 import * as telemetry from './network/telemetry';
-import {NUM_GAUGES} from "./gui/gauges";
-import * as connection from "./network/connection";
-import * as nano from "./nano";
 import * as gauges from "./gui/gauges";
+import {NUM_GAUGES} from "./gui/gauges";
+import * as nano from "./nano";
 
 export let config: SimpleIni;
 export const simulated = true;
@@ -37,7 +37,7 @@ export function init() {
                     {
                         type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
                         text: function (item) {
-                            var el = this.get('trigger_radio:' + item.selected);
+                            let el = this.get('trigger_radio:' + item.selected);
                             const triggerId = item.selected.substr(7);
                             scope.setTrigger(Number(triggerId));
                             return 'Trigger: ' + el.text;
@@ -72,13 +72,11 @@ export function init() {
                     {
                         type: 'html', id: 'port',
                         html: function (item) {
-                            var html =
-                                '<div style="padding: 3px 10px;">'+
-                                ' Port:'+
-                                '    <input size="20" placeholder="COM1" onchange="var el = w2ui.toolbar.set(\'port\', { value: this.value });" '+
-                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value="'+ (item.value || '') +'"/>'+
+                            return '<div style="padding: 3px 10px;">' +
+                                ' Port:' +
+                                '    <input size="20" placeholder="COM1" onchange="let el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
+                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value="' + (item.value || '') + '"/>' +
                                 '</div>';
-                            return html;
                         }
                      },
                     {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
@@ -89,13 +87,13 @@ export function init() {
             console.log("Done toolbar");
         });
 
-        var html_gauges = '';
-        for (var i = 0; i < NUM_GAUGES; i++) {
+        let html_gauges = '';
+        for (let i = 0; i < NUM_GAUGES; i++) {
             html_gauges += '<div id="gauge' + i + '" style= "width: 100px; height: 100px"></div>'
         }
 
 
-        var pstyle = 'background-color: #F5F6F7;  padding: 5px;';
+        let pstyle = 'background-color: #F5F6F7;  padding: 5px;';
         $('#layout').w2layout({
             name: 'layout',
             panels: [
@@ -138,7 +136,7 @@ export function init() {
 
             ]
         });
-        w2ui['layout'].on({type: 'resize', execute: 'after'}, function (target, eventData) {
+        w2ui['layout'].on({type: 'resize', execute: 'after'}, function () {
             scope.onResize();
         });
         terminal.decorate(document.querySelector('#terminal'));
@@ -161,18 +159,18 @@ function readini(file: string) {
 	chrome.runtime.getPackageDirectoryEntry(function (root) {
 		root.getFile(file, {}, function (fileEntry) {
 			fileEntry.file(function (file) {
-				var reader = new FileReader();
+				let reader = new FileReader();
 				reader.onloadend = event_read_ini;
 				reader.readAsText(file);
-			}, (e) => {
+			}, () => {
 			});
-		}, (e) => {
+		}, () => {
 		});
 	});
 }
 
-function event_read_ini(ev){
-    var inicontent=this.result;
+function event_read_ini(){
+    let inicontent=this.result;
     config = new SimpleIni(function() {
        return inicontent;
     });

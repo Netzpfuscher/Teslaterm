@@ -3,11 +3,10 @@ import {NUM_GAUGES} from "./gauges";
 import {media_state, MediaFileType, PlayerState} from "../midi/midi";
 
 let waveCanvas: HTMLCanvasElement;
-
-
 let backCanvas: HTMLCanvasElement;
 let waveContext: CanvasRenderingContext2D;
 let backContext: CanvasRenderingContext2D;
+
 export class TraceStats {
     min: number = 0;
     max: number = 1024;
@@ -148,7 +147,7 @@ export function addValue(chart_num: number, val: number): void {
     traces[chart_num].addValue(val);
 }
 
-export function init() {
+export function init(): void {
     waveCanvas = <HTMLCanvasElement>document.getElementById("waveCanvas");
     backCanvas = <HTMLCanvasElement>document.getElementById("backCanvas");
     waveContext = waveCanvas.getContext('2d');
@@ -161,7 +160,7 @@ export function init() {
     }
 }
 
-export function drawTriggerStatus() {
+export function drawTriggerStatus(): void {
     const y_res = waveCanvas.height;
     waveContext.font = "12px Arial";
     waveContext.textAlign = "left";
@@ -220,7 +219,7 @@ export function draw_grid() {
 
 export function redrawTrigger() {
     const y_res = waveCanvas.height - MEAS_SPACE - TOP_SPACE;
-    const ytrgpos = Math.floor((trigger_lvl * -1 + 1) * (y_res / 2.0)) + TOP_SPACE;
+    const y_trigger_position = Math.floor((trigger_lvl * -1 + 1) * (y_res / 2.0)) + TOP_SPACE;
     waveContext.clearRect(0, 0, TRIGGER_SPACE, waveCanvas.height);
     if (trigger_id != -1) {
         trigger_block = true;
@@ -228,23 +227,23 @@ export function redrawTrigger() {
         waveContext.beginPath();
         waveContext.lineWidth = pixelRatio;
         waveContext.strokeStyle = traces[trigger_id].wavecolor;
-        waveContext.moveTo(0, ytrgpos);
-        waveContext.lineTo(10, ytrgpos);
-        waveContext.moveTo(10, ytrgpos);
+        waveContext.moveTo(0, y_trigger_position);
+        waveContext.lineTo(10, y_trigger_position);
+        waveContext.moveTo(10, y_trigger_position);
         if (trigger_lvl > 0) {
-            waveContext.lineTo(5, ytrgpos - 2);
+            waveContext.lineTo(5, y_trigger_position - 2);
         } else {
-            waveContext.lineTo(5, ytrgpos + 2);
+            waveContext.lineTo(5, y_trigger_position + 2);
         }
         waveContext.stroke();
         //Text
         waveContext.font = "12px Arial";
         waveContext.textAlign = "center";
         waveContext.fillStyle = traces[trigger_id].wavecolor;
-        if (ytrgpos < 14) {
-            waveContext.fillText(trigger_id.toString(), 4, ytrgpos + 12);
+        if (y_trigger_position < 14) {
+            waveContext.fillText(trigger_id.toString(), 4, y_trigger_position + 12);
         } else {
-            waveContext.fillText(trigger_id.toString(), 4, ytrgpos - 4);
+            waveContext.fillText(trigger_id.toString(), 4, y_trigger_position - 4);
         }
     }
 }
@@ -363,8 +362,8 @@ export function setTrigger(triggerId: number) {
 
 
 function onMouseDown(e){
-    var pos_y = e.y - 51;
-    var y_res = waveCanvas.height-MEAS_SPACE-TOP_SPACE;
+    let pos_y = e.y - 51;
+    const y_res = waveCanvas.height-MEAS_SPACE-TOP_SPACE;
     if((pos_y>=TOP_SPACE && pos_y<=waveCanvas.height-MEAS_SPACE) && trigger_id!=-1){
         pos_y-=TOP_SPACE;
         trigger_lvl=(2/y_res)*((y_res/2)-pos_y);
@@ -375,8 +374,7 @@ function onMouseDown(e){
 }
 
 export function redrawMidiInfo(){
-    var x_res = waveCanvas.width;
-    var y_res = waveCanvas.height;
+    const x_res = waveCanvas.width;
     waveContext.clearRect(TRIGGER_SPACE, 0, x_res - INFO_SPACE, TOP_SPACE);
 
     waveContext.font = "12px Arial";
@@ -384,7 +382,7 @@ export function redrawMidiInfo(){
     waveContext.fillStyle = "white";
 
     if (media_state.type!=MediaFileType.none) {
-        let output = "MIDI";
+        let output: string = "MIDI";
         if (media_state.type==MediaFileType.sid_dmp) {
             output = "SID-DMP";
         }

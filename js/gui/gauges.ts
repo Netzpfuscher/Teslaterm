@@ -10,7 +10,7 @@ export class Meter {
             this.meter_buf_old=255;
             this.meter_buf=0;
             // @ts-ignore TODO figure out how to properly fix this
-        this.gauge= new JustGage({
+            this.gauge= new JustGage({
                 id: ("gauge"+id),
                 value: 0,
                 min: 0,
@@ -19,23 +19,23 @@ export class Meter {
             });
     }
 
-    refresh(){
+    refresh(): void {
         if(this.meter_buf!=this.meter_buf_old){
             this.gauge.refresh(this.meter_buf);
             this.meter_buf_old=this.meter_buf;
         }
     }
 
-    value(value){
+    value(value: number): void {
         this.meter_buf = value;
         this.gauge.refresh(value);
     }
 
-    text(text){
-        this.gauge.txtTitle.attr({"text": text});
+    text(text: string): void {
+        this.gauge.txtLabel.attr({"text": text});
     }
 
-    range(min, max){
+    range(min: number, max: number){
         //TODO does this work?
         this.gauge.refresh(min,max);
     }
@@ -45,13 +45,13 @@ export const NUM_GAUGES = 7;
 
 
 export let meters:Meter[] = [];
-export function init() {
+export function init(): void {
     for (let i = 0; i < NUM_GAUGES; ++i) {
         meters[i] = new Meter(i);
     }
 }
 
-export function refresh_all(){
+export function refresh_all(): void {
     for(var i=0;i<this.num_meters;i++){
         meters[i].refresh();
     }

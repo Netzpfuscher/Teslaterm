@@ -5,5 +5,5 @@ declare interface Config {
 declare interface JustGage {
     new (options: any): JustGage;
     refresh(val: any, max?: any, config?: any);
-    txtTitle: JQuery;
+    txtLabel: JQuery;
 }

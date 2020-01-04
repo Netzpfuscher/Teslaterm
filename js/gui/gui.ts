@@ -1,12 +1,10 @@
 import * as cmd from '../network/commands';
-import * as connection from '../network/connection';
-import * as midi from "../midi/midi";
 import {loadMidiFile, loadSIDFile} from "../midi/midi_file";
 import * as scripting from '../scripting';
 import {setScript} from "./menu";
-import * as nano from '../nano';
 import * as gauges from './gauges';
-export function init() {
+
+export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
     terminal.onTerminalReady = function() {
@@ -22,7 +20,7 @@ export function init() {
 
 hterm.defaultStorage = new lib.Storage.Memory();
 
-export let terminal: any = new hterm.Terminal();
+export let terminal = new hterm.Terminal();
 export const MEAS_SPACE = 20;
 export const INFO_SPACE = 150;
 export const TOP_SPACE = 20;
@@ -30,7 +28,7 @@ export const TRIGGER_SPACE = 10;
 export const CONTROL_SPACE = 15;
 export const MEAS_POSITION = 4;
 
-function ondrop(e){
+function ondrop(e: DragEvent): void {
     e.stopPropagation();
     e.preventDefault();
     if(e.dataTransfer.items.length == 1){//only one file
@@ -55,7 +53,7 @@ function ondrop(e){
     }
 }
 
-function ondragover(e){
+function ondragover(e: DragEvent): void {
     e.stopPropagation();
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';

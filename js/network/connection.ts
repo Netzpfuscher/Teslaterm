@@ -12,7 +12,7 @@ const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
 let wd_reset = 5;
-const wd_reset_msg=new Uint8Array([0xF0,0x0F,0x00]);
+const wd_reset_msg=new Uint8Array([0xFF, 0xF1]);
 
 export let mainSocket: number|undefined;
 export let connid: number|undefined;
@@ -122,11 +122,9 @@ export function connect(port: string) {
 
 function connected_cb(connectionInfo){
     if(connectionInfo.connectionId){
-        gui.terminal.io.println("connected");
         connid = connectionInfo.connectionId;
         connState = ConnectionState.CONNECTED_SERIAL;
-        w2ui['toolbar'].get('connect').text = 'Disconnect';
-        w2ui['toolbar'].refresh();
+        menu.onConnected();
         commands.startConf();
     } else {
         gui.terminal.io.println("failed!");
@@ -176,13 +174,7 @@ export function update() {
         wd_reset--;
         if(wd_reset==0){
             wd_reset=WD_TIMEOUT;
-            if(connState==ConnectionState.CONNECTED_SERIAL){
-                chrome.serial.send(connid, wd_reset_msg, ()=>{});
-            } else if(connState==ConnectionState.CONNECTED_IP){
-                if(socket_midi){
-                    //TODO why is this commented out? chrome.sockets.tcp.send(socket_midi, wd_reset_msg, sendmidi);
-                }
-            }
+            commands.resetWatchdog();
         }
 
 

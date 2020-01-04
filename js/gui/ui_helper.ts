@@ -1,6 +1,13 @@
-export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, defPort = undefined) {
-    let resolve = (both)=>{};
-    let reject = ()=>{};
+
+type BothConsumer = (ip: string, port: number) => any;
+type IPConsumer = (ip: string) => any;
+type PortConsumer = (port: number) => any;
+type IpPortConsumer = BothConsumer | IPConsumer | PortConsumer;
+
+function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort: boolean, defIp: string = undefined,
+                            defPort: number = undefined): Promise<IpPortConsumer> {
+    let resolve: (value?: (PromiseLike<IpPortConsumer> | IpPortConsumer)) => void = ()=>{};
+    let reject: ()=>any = ()=>{};
     if (title == null) title = w2utils.lang('Notification');
     let bodyHtml: string = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg;
     if (reqIp) {
@@ -10,10 +17,13 @@ export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, de
         bodyHtml += '<br>IP: <input id="ipIn" placeholder="'+defIp+'">';
     }
     if (reqPort) {
+        let defPortString: string;
         if (!defPort) {
-            defPort = "";
+            defPortString = "";
+        } else {
+            defPortString = defPort.toString();
         }
-        bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="'+defPort+'">';
+        bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="'+defPortString+'">';
     }
     bodyHtml += "</div>";
     const process = function (success) {
@@ -35,11 +45,11 @@ export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, de
                 port = null;
             }
             if (ip&&port) {
-                setTimeout(resolve, 10, {ip: ip, port: port});
+                setTimeout(resolve, 10, ip, port);
             } else if (ip) {
-                setTimeout(resolve, 10, ip);
+                setTimeout(resolve, 10, ip, undefined);
             } else {
-                setTimeout(resolve, 10, port);
+                setTimeout(resolve, 10, undefined, port);
             }
         } else {
             setTimeout(reject, 10);
@@ -81,10 +91,18 @@ export function inputIpAddress(msg, title, reqIp, reqPort, defIp = undefined, de
             onKeydown: this.keyDownListener
         });
     }
-    return new Promise((res, rej)=>{
+    return new Promise<IpPortConsumer>((res, rej)=>{
         resolve = res;
         reject = rej;
     });
+}
+
+export function inputIpAndPort(msg: string, title: string, defIp: string = undefined, defPort: number = undefined): Promise<BothConsumer> {
+    return <Promise<BothConsumer>>inputIpAddressImpl(msg, title, true, true, defIp, defPort);
+}
+
+export function inputPort(msg: string, title: string, defPort: number = undefined): Promise<PortConsumer> {
+    return <Promise<PortConsumer>>inputIpAddressImpl(msg, title, false, true, undefined, defPort);
 }
 
 export function inputStrings(msg, title, checkValid, names) {
@@ -106,7 +124,7 @@ export function inputStrings(msg, title, checkValid, names) {
         const failedId = checkValid(...input);
         if (failedId >= 0) {
             inputFields[failedId].style.backgroundColor = "red";
-            inputFields[failedId].focus();
+            inputFields[failedId].trigger("focus");
             setTimeout(()=>inputFields[failedId].style.backgroundColor = "white", 750);
             return false;
         } else {
@@ -159,16 +177,16 @@ export function inputStrings(msg, title, checkValid, names) {
 }
 
 
-function keyDownListener(event) {
+function keyDownListener(event: W2UI.KeyDownListener) {
     // if there are no messages
     if ($('#w2ui-popup .w2ui-message').length === 0) {
         const btn = <HTMLButtonElement>($('#w2ui-popup .w2ui-popup-btn')[0]);
-        switch (event.originalEvent.keyCode) {
-            case 13: // enter
+        switch (event.originalEvent.code) {
+            case "Enter":
                 btn.focus();
                 btn.classList.add('clicked'); // no need fo click as enter will do click
                 break;
-            case 27: // esc
+            case "Escape":
                 // Don't click Ok when the user pressed escape
                 if (btn.onabort) {
                     btn.onabort(new UIEvent('abort'));

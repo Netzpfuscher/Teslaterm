@@ -27,7 +27,6 @@ export function onConnected() {
     w2ui['toolbar'].refresh();
 }
 
-
 export function onDisconnect() {
     w2ui['toolbar'].get('connect').text = 'Connect';
     w2ui['toolbar'].refresh();
@@ -67,8 +66,8 @@ export function onCtrlMenuClick(event) {
             } else {
                 midiServer.requestName()
                     .then(() =>
-                        ui_helper.inputIpAddress("Please enter the port for the local MIDI server", "MIDI over IP Server",
-                            false, true, null, midiServer.port)
+                        ui_helper.inputPort("Please enter the port for the local MIDI server", "MIDI over IP Server",
+                            midiServer.port)
                     ).then(port=> {
                     midiServer.setPort(port);
                     midiServer.start();

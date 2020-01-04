@@ -50,17 +50,16 @@ export let media_state: MidiState = {currentFile: null, type:MediaFileType.none,
 
 export let sending_sid: boolean = true;
 export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
-export const sid_marker = new Uint8Array([0xFF,0xFF,0xFF,0xFF]);
 export const byt = 29*2;
 export let frame_cnt=byt;
 export let frame_cnt_old=0;
 
 let lastTimeoutReset:number = 0;
-export let midiOut: MidiOutput = {dest: "None", send: (msg)=>{}};
+export let midiOut: MidiOutput = {dest: "None", send: ()=>{}};
 
 export const midiNone = {
     isActive: () => false,
-    cancel: (arg) => setMidiInAsNone(),
+    cancel: () => setMidiInAsNone(),
     data: null,
     source: ""
 };
@@ -223,17 +222,21 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
     return playMidiData(data);
 }
 
+function checkTransientDisabled() {
+    if (transientActive) {
+        const currTime = new Date().getTime();
+        if (currTime-lastTimeoutReset>500) {
+            commands.setTransientEnabled(false);
+            lastTimeoutReset = currTime;
+        }
+    }
+}
+
 export function playMidiData(data: number[]|Uint8Array): boolean {
     if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
         const msg=new Uint8Array(data);
         if (!midiServer.sendMidiData(msg)) {
-            if (transientActive) {
-                const currTime = new Date().getTime();
-                if (currTime-lastTimeoutReset>500) {
-                    commands.setTransientEnabled(false);
-                    lastTimeoutReset = currTime;
-                }
-            }
+            checkTransientDisabled();
             midiOut.send(msg);
         }
         return true;
@@ -325,6 +328,7 @@ export function update() {
     if(sid_file_marked && media_state.state==PlayerState.playing && media_state.type==MediaFileType.sid_dmp
         && sending_sid==true){
         if(connection.connState==ConnectionState.CONNECTED_IP){
+            checkTransientDisabled();
             if(socket_midi){
                 chrome.sockets.tcp.send(socket_midi, sid_file_marked.slice(frame_cnt_old,frame_cnt), ()=>{});
             }
@@ -335,7 +339,6 @@ export function update() {
                 media_state.state = PlayerState.idle;
                 frame_cnt=byt;
                 frame_cnt_old=0;
-                console.log("finished");
             }
             scope.redrawMidiInfo();
         }
