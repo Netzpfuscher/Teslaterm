@@ -1,4 +1,4 @@
-import {checkTransientDisabled, MediaFileType, PlayerActivity} from "../media/media_player";
+import {checkTransientDisabled, isSID, MediaFileType, PlayerActivity} from "../media/media_player";
 import * as connection from "../network/connection";
 import {ConnectionState} from "../network/telemetry";
 import {socket_midi} from "../network/connection";
@@ -6,11 +6,10 @@ import * as scope from "../gui/oscilloscope";
 import {media_state, setMediaType} from "../midi/midi";
 import {DumpSidSource} from "./sid_dump";
 import {EmulationSidSource} from "./sid_emulated";
+import {readFileAsync} from "../helper";
+import {simulated} from "../init";
 
-export class SidFrame extends Uint8Array {
-    //TODO this isn't really working
-    length: 25;
-}
+export type SidFrame = Uint8Array;
 
 export interface SidSource {
     next_frame(): SidFrame;
@@ -28,36 +27,39 @@ export function setSendingSID(newVal: boolean) {
 }
 
 export async function loadSidFile(file: File) {
-    let fs = new FileReader();
-    await fs.readAsArrayBuffer(file);
-    if (!(fs.result instanceof ArrayBuffer)) {
-        console.error("SID dump not read as ArrayBuffer!");
-        return;
-    }
+    const data = await readFileAsync(file);
     const extension = file.name.substring(file.name.lastIndexOf(".")+1).toLowerCase();
     w2ui['toolbar'].get('mnu_midi').text = 'SID-File: '+file.name;
     w2ui['toolbar'].refresh();
     media_state.currentFile = file;
-    setMediaType(MediaFileType.sid_dmp);
     if (extension=="dmp") {
-        current_sid_source = new DumpSidSource(fs.result);
+        current_sid_source = new DumpSidSource(data);
+        media_state.title = file.name;
+        setMediaType(MediaFileType.sid_dmp);
     } else if (extension=="sid") {
-        current_sid_source = new EmulationSidSource(fs.result);
+        const source_emulated = new EmulationSidSource(data);
+        current_sid_source = source_emulated;
+        media_state.title = source_emulated.sid_info.title;
+        setMediaType(MediaFileType.sid_emulated);
     } else {
         throw "Unknown extension "+extension;
     }
-    scope.redrawMidiInfo();
+    scope.redrawMediaInfo();
 }
 
 export function update() {
-    if(current_sid_source && media_state.state==PlayerActivity.playing && media_state.type==MediaFileType.sid_dmp
+    if(current_sid_source && media_state.state==PlayerActivity.playing && isSID(media_state.type)
         && sending_sid){
-        if(connection.connState==ConnectionState.CONNECTED_IP){
+        if(simulated||connection.connState==ConnectionState.CONNECTED_IP){
             checkTransientDisabled();
             if(socket_midi){
                 for (let i = 0;i<2;++i) {
                     const real_frame = current_sid_source.next_frame();
-                    const data = new Uint8Array(real_frame, 0, FRAME_LENGTH+4);
+                    console.assert(real_frame.length==FRAME_LENGTH);
+                    const data = new Uint8Array(FRAME_LENGTH+4);
+                    for (let j = 0;j<FRAME_LENGTH;++j) {
+                        data[j] = real_frame[j];
+                    }
                     for (let j = FRAME_LENGTH;j<data.length;++j) {
                         data[j] = 0xFF;
                     }
@@ -73,8 +75,7 @@ export function update() {
             if(current_sid_source.isDone()){
                 media_state.state = PlayerActivity.idle;
             }
-            scope.redrawMidiInfo();
+            scope.redrawMediaInfo();
         }
     }
 }
-

@@ -9,7 +9,9 @@ export function bytes_to_signed(lsb: number, msb: number): number {
 }
 
 export function convertArrayBufferToString(buf: number[]|Buffer|Uint8Array, uri: boolean = true): string {
-    const bufView = new Uint8Array(buf);
+    let firstNull = 0;
+    while (firstNull<buf.length && buf[firstNull]!=0) ++firstNull;
+    const bufView = new Uint8Array(buf).slice(0, firstNull);
     const encodedString = String.fromCharCode.apply(null, bufView);
     if (uri) {
         return decodeURIComponent(encodedString);
@@ -95,4 +97,21 @@ export function warn(message: string, onConfirmed: ()=>void) {
     w2confirm(message)
         .no(()=>{ })
         .yes(onConfirmed);
+}
+
+export async function readFileAsync(file: File): Promise<Uint8Array> {
+    let fs = new FileReader();
+    const ret = new Promise<Uint8Array>((res, rej)=> {
+        fs.onerror = rej;
+        fs.onload = ()=> {
+            if (!(fs.result instanceof ArrayBuffer)) {
+                rej();
+                console.error("File not read as ArrayBuffer!");
+                return;
+            }
+            res(new Uint8Array(fs.result));
+        };
+    });
+    fs.readAsArrayBuffer(file);
+    return ret;
 }

@@ -16,7 +16,7 @@ import {NUM_GAUGES} from "./gui/gauges";
 import * as nano from "./nano";
 
 export let config: SimpleIni;
-export const simulated = false;
+export const simulated = true;
 
 export function init() {
     document.addEventListener('DOMContentLoaded', () => {

@@ -1,7 +1,7 @@
 import {CONTROL_SPACE, INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE, TRIGGER_SPACE,} from "./gui";
 import {NUM_GAUGES} from "./gauges";
 import {media_state} from "../midi/midi";
-import {MediaFileType, PlayerActivity, PlayerState} from "../media/media_player";
+import {MediaFileType, PlayerActivity} from "../media/media_player";
 
 let waveCanvas: HTMLCanvasElement;
 let backCanvas: HTMLCanvasElement;
@@ -374,7 +374,7 @@ function onMouseDown(e){
     }
 }
 
-export function redrawMidiInfo(){
+export function redrawMediaInfo(){
     const x_res = waveCanvas.width;
     waveContext.clearRect(TRIGGER_SPACE, 0, x_res - INFO_SPACE, TOP_SPACE);
 
@@ -386,8 +386,10 @@ export function redrawMidiInfo(){
         let output: string = "MIDI";
         if (media_state.type==MediaFileType.sid_dmp) {
             output = "SID-DMP";
+        } else if (media_state.type==MediaFileType.sid_emulated) {
+            output = "SID";
         }
-        output += "-File: " + media_state.currentFile + ' State: ';
+        output += "-File: " + media_state.title + ' State: ';
         if (media_state.state==PlayerActivity.playing) {
             //TODO support for undefined length (real SID)?
             output += "playing " + media_state.progress + '% / 100%'

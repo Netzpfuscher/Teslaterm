@@ -28,7 +28,13 @@ export interface MidiInput {
     source: string;
 }
 
-export let media_state: PlayerState = {currentFile: null, type:MediaFileType.none, progress: 0, state: PlayerActivity.idle};
+export let media_state: PlayerState = {
+    currentFile: null,
+    type:MediaFileType.none,
+    progress: 0,
+    state: PlayerActivity.idle,
+    title: null
+};
 
 export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
 
@@ -53,7 +59,7 @@ export function startCurrentMidiFile() {
     player.play();
     nano.setLedState(config.nano.play,1);
     nano.setLedState(config.nano.stop,0);
-    scope.redrawMidiInfo();
+    scope.redrawMediaInfo();
 }
 
 export function stopMidiFile() {
@@ -86,7 +92,7 @@ function processMidiFromPlayer(event: MidiPlayer.Event){
         media_state.state = PlayerActivity.idle;
         scripting.onMidiStopped();
     }
-    scope.redrawMidiInfo();
+    scope.redrawMediaInfo();
 }
 
 export function stop() {

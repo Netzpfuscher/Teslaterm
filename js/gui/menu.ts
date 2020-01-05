@@ -14,8 +14,8 @@ import {
     startCurrentMidiFile,
     stopMidiFile
 } from "../midi/midi";
-import {redrawMidiInfo} from "./oscilloscope";
-import {MediaFileType, PlayerActivity} from "../media/media_player";
+import {redrawMediaInfo} from "./oscilloscope";
+import {isSID, MediaFileType, PlayerActivity} from "../media/media_player";
 import {loadSidFile, setSendingSID} from "../sid/sid";
 
 export function onConnected() {
@@ -37,7 +37,6 @@ export function setScript(script: Promise<any>[]) {
 
 export function onCtrlMenuClick(event) {
     switch (event.target) {
-
         case 'connect':
             connect();
             break;
@@ -99,14 +98,14 @@ export function onCtrlMenuClick(event) {
                 terminal.io.println("No media file is currently playing");
                 break;
             }
-            if(media_state.type==MediaFileType.sid_dmp){
+            if(isSID(media_state.type)) {
                 setSendingSID(true);
                 loadSidFile(media_state.currentFile).then(()=>{});
             } else if (media_state.type==MediaFileType.midi) {
                 stopMidiFile();
             }
             media_state.state = PlayerActivity.idle;
-            redrawMidiInfo();
+            redrawMediaInfo();
             break;
         case 'mnu_script:Start':
             if (currentScript==null) {

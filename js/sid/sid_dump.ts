@@ -3,14 +3,14 @@ import {FRAME_LENGTH, SidFrame, SidSource} from "./sid";
 export class DumpSidSource implements SidSource {
     sid_file: Uint8Array;
     processedFrames: number = 0;
-    constructor(data: ArrayBuffer) {
-        this.sid_file = new Uint8Array(data);
+    constructor(data: Uint8Array) {
+        this.sid_file = data;
     }
 
     next_frame(): SidFrame {
         const ret = this.sid_file.slice(FRAME_LENGTH*this.processedFrames, FRAME_LENGTH*(this.processedFrames+1));
         this.processedFrames++;
-        return new SidFrame(ret);
+        return ret;
     }
 
     getTotalFrameCount(): number | null {

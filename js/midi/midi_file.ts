@@ -19,9 +19,9 @@ function event_read_midi(this: FileReader, progressEvent: ProgressEvent){
 export function loadMidiFile(file) {
     w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: '+file.name;
     w2ui['toolbar'].refresh();
-    media_state.currentFile = file.name;
+    media_state.currentFile = file;
+    media_state.title = file.name;
     setMediaType(MediaFileType.midi);
     readmidi(file);
-    scope.redrawMidiInfo();
-
+    scope.redrawMediaInfo();
 }

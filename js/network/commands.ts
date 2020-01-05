@@ -4,7 +4,7 @@ import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
 import {connid, connState, mainSocket} from "./connection";
 import {media_state} from "../midi/midi";
-import {MediaFileType} from "../media/media_player";
+import {isSID, MediaFileType} from "../media/media_player";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;
@@ -89,7 +89,7 @@ export function setParam(param:string, value:string) {
 
 export function setSynth(type: MediaFileType) {
     let synth_id: number;
-    if (type==MediaFileType.sid_dmp) {
+    if (isSID(type)) {
         synth_id = 2;
     } else if (type==MediaFileType.midi) {
         synth_id = 1;

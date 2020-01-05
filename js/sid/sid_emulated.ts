@@ -64,8 +64,8 @@ export class EmulationSidSource implements SidSource {
     SP: number;
     A: number;
 
-    constructor(file: ArrayBuffer) {
-        this.sid_info = this.load(new Uint8Array(file));
+    constructor(file: Uint8Array) {
+        this.sid_info = this.load(file);
         this.init(this.sid_info);
     }
 
@@ -99,7 +99,7 @@ export class EmulationSidSource implements SidSource {
             }
         }
         this.cpu_time -= CYCLES_PER_FRAME;
-        let data: SidFrame = new SidFrame(25);
+        let data: SidFrame = new Uint8Array(25);
         for (let i = 0;i<data.byteLength;++i) {
             data[i] = this.memory[SID_BASE_ADDR+i];
         }
