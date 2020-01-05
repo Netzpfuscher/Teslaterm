@@ -4,6 +4,7 @@ import * as scripting from '../scripting';
 import {setScript} from "./menu";
 import * as gauges from './gauges';
 import {loadSidFile} from "../sid/sid";
+import {loadCyacd} from "../network/bootloader";
 
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
@@ -50,6 +51,8 @@ function ondrop(e: DragEvent): void {
                 });
         } else if (extension=="dmp"||extension=="sid") {
             loadSidFile(file);
+        } else if (extension=="cyacd") {
+            loadCyacd(file);
         }
     }
 }

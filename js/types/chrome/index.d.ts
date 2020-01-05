@@ -4,6 +4,10 @@ interface EventHandler {
     addListener(listener: Function);
 }
 
+interface SocketCreationInfo {
+    socketId: number;
+}
+
 declare namespace chrome.sockets.tcp {
     export const onReceive: EventHandler;
 
@@ -13,7 +17,7 @@ declare namespace chrome.sockets.tcp {
 
     export function setPaused(id: number, paused: boolean);
 
-    export function create(options: Object, callback: Function);
+    export function create(options: Object, callback: (info: SocketCreationInfo) => void);
 
     export function connect(socketId: number, ip: string, port: number, callback: Function);
 

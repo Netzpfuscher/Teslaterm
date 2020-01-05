@@ -10,6 +10,8 @@ export const maxOntime = 400;
 export const maxBPS = 1000;
 export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
+
+//TODO async/await-ify?
 export function sendCommand(command: string){
     if(connState==ConnectionState.CONNECTED_SERIAL){
         chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), ()=>{});

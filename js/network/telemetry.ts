@@ -162,23 +162,28 @@ const TIMEOUT = 50;
 
 let buffer: number[] = [];
 let bytes_done:number = 0;
+
+let receive_callbacks: {[socket: number]: (data: Uint8Array)=>void} = {};
+
+export function register_callback(socket: number, callback: (data: Uint8Array)=>void) {
+    receive_callbacks[socket] = callback;
+}
+
+export function remove_callback(socket: number) {
+    receive_callbacks[socket] = undefined;
+}
+
 function receive(info){
-
-    if(info.socketId==socket_midi){
-        const buf = new Uint8Array(info.data);
-        if(buf[0]==0x78){
-            sid.setSendingSID(false);
-        }
-        if(buf[0]==0x6f){
-            sid.setSendingSID(true);
-        }
-    }
-
-    if (info.socketId!=mainSocket) {
-        return;
-    }
-
     const buf = new Uint8Array(info.data);
+    const callback = receive_callbacks[info.socketId];
+    if (callback) {
+        callback(buf);
+    } else {
+        console.log("Unhandled packet on socket "+info.socketId, buf)
+    }
+}
+
+export function main_socket_receive(buf: Uint8Array) {
     resetTimeout();
 
     for (let i = 0; i < buf.length; i++) {
@@ -204,9 +209,8 @@ function receive(info){
                     bytes_done++;
                     break;
                 }else{
-
                     if(bytes_done<buffer[DATA_LEN]-1){
-                        buffer[bytes_done+1]=buf[i]
+                        buffer[bytes_done+1]=buf[i];
                         bytes_done++;
                     }else{
                         buffer[bytes_done+1]=buf[i];

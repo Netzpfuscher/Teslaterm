@@ -1,10 +1,11 @@
 import * as gui from '../gui/gui';
 import {terminal} from '../gui/gui';
 import * as menu from '../gui/menu';
-import {ConnectionState} from "./telemetry";
+import {ConnectionState, main_socket_receive, register_callback, remove_callback} from "./telemetry";
 import * as commands from './commands';
 import {reconnect} from './commands';
 import {populateMIDISelects} from "../midi/midi_ui";
+import * as sid from "../sid/sid";
 export let socket_midi: number|undefined;
 
 
@@ -12,11 +13,10 @@ const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
 let wd_reset = 5;
-const wd_reset_msg=new Uint8Array([0xFF, 0xF1]);
 
 export let mainSocket: number|undefined;
 export let connid: number|undefined;
-let ipaddr:string = '0.0.0.0';
+export let ipaddr:string = '0.0.0.0';
 //previously int connected. 0->Unconnected, 2->Serial, 1->IP
 export let connState: ConnectionState = ConnectionState.UNCONNECTED;
 function connect_ip(){
@@ -29,6 +29,7 @@ function reconnect_tel(){
 }
 
 function callback_dsk(info){
+    remove_callback(mainSocket);
     chrome.sockets.tcp.close(mainSocket, function clb(){chrome.sockets.tcp.create({}, createInfo);});
 
 }
@@ -37,23 +38,31 @@ function reconnect_midi(){
 }
 
 function callback_dsk_midi(info){
+    remove_callback(socket_midi);
     chrome.sockets.tcp.close(socket_midi, function clb(){chrome.sockets.tcp.create({}, createInfo_midi);});
 }
 
 function createInfo(info){
     mainSocket = info.socketId;
+    register_callback(mainSocket, main_socket_receive);
 
     console.log(ipaddr);
 
     chrome.sockets.tcp.connect(mainSocket,ipaddr,2323, callback_sck);
-
-
 }
 
 function createInfo_midi(info){
     socket_midi = info.socketId;
     chrome.sockets.tcp.connect(socket_midi,ipaddr,2324, callback_sck_midi);
-
+    register_callback(socket_midi, (data:Uint8Array)=>{
+        const buf = new Uint8Array(info.data);
+        if(buf[0]==0x78){
+            sid.setSendingSID(false);
+        }
+        if(buf[0]==0x6f){
+            sid.setSendingSID(true);
+        }
+    });
 }
 function callback_sck(result){
     if(!result){
@@ -69,15 +78,6 @@ function callback_sck(result){
 function callback_sck_midi(info){
 
 }
-
-var onReceive = function(info) {
-    if (info.socketId !== mainSocket)
-        return;
-    console.log(info.data);
-};
-
-var check_cnt=0;
-
 
 function midi_socket_ckeck(info){
     if(info.connected==false){
@@ -97,11 +97,14 @@ export function disconnect() {
             chrome.serial.disconnect(connid, () => gui.terminal.io.println('\r\nDisconnected'));
         else if (connState == ConnectionState.CONNECTED_IP) {
             chrome.sockets.tcp.disconnect(mainSocket, () => {
+                remove_callback(mainSocket);
                 chrome.sockets.tcp.close(mainSocket);
                 gui.terminal.io.println('\r\nDisconnected');
             });
-            chrome.sockets.tcp.disconnect(socket_midi, () =>
-                chrome.sockets.tcp.close(socket_midi));
+            chrome.sockets.tcp.disconnect(socket_midi, () => {
+                chrome.sockets.tcp.close(socket_midi);
+                remove_callback(socket_midi);
+            });
         }
         menu.onDisconnect();
         connState = ConnectionState.UNCONNECTED;
