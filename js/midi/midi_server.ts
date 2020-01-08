@@ -83,7 +83,8 @@ export function close() {
         const client = clients[key];
         chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
             if (sendInfo.resultCode>=0) {
-                chrome.sockets.tcp.close(client.socketId, (state)=>{});
+                chrome.sockets.tcp.close(client.socketId, () => {
+                });
             }
         });
     }
@@ -164,7 +165,8 @@ export function removeClient(name, reason) {
     const client = clients[name];
     const data = helper.convertStringToArrayBuffer("C"+reason);
     chrome.sockets.tcp.send(client.socketId, data, sendInfo => {
-        chrome.sockets.tcp.close(client.socketId, (state)=>{});
+        chrome.sockets.tcp.close(client.socketId, () => {
+        });
         deleteClient(client, reason);
     });
 }

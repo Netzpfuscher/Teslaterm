@@ -4,10 +4,12 @@ import * as scripting from '../scripting';
 import {setScript} from "./menu";
 import * as gauges from './gauges';
 import {loadSidFile} from "../sid/sid";
+import * as $ from "jquery";
 
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
+
     terminal.onTerminalReady = function() {
         const io = terminal.io.push();
 

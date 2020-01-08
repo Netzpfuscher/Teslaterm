@@ -273,7 +273,12 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
                 terminal.io.println("Disconnected from MIDI server. Reason: " + reason);
             } else {
                 chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
-                    s=>chrome.sockets.tcp.close(socketId));
+                    s => {
+                        if (chrome.runtime.lastError) {
+                            console.log("Disconnect failed: ", chrome.runtime.lastError);
+                        }
+                        chrome.sockets.tcp.close(socketId);
+                    });
                 terminal.io.println("Disconnected from MIDI server");
             }
         },
