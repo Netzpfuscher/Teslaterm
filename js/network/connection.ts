@@ -55,6 +55,7 @@ function createInfo_midi(info){
     socket_midi = info.socketId;
     chrome.sockets.tcp.connect(socket_midi,ipaddr,2324, callback_sck_midi);
     register_callback(socket_midi, (data:Uint8Array)=>{
+        console.log("Received data on media socket", data);
         const buf = new Uint8Array(info.data);
         if(buf[0]==0x78){
             sid.setSendingSID(false);
@@ -81,11 +82,13 @@ function callback_sck_midi(info){
 
 function midi_socket_ckeck(info){
     if(info.connected==false){
+        terminal.io.println("Lost MIDI connection, reconnecting...");
         reconnect_midi();
     }
 }
 function telnet_socket_ckeck(info){
     if(info.connected==false){
+        terminal.io.println("Lost main connection, reconnecting...");
         reconnect_tel();
     }
 }
