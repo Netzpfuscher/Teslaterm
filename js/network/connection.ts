@@ -200,7 +200,5 @@ export function update() {
             wd_reset=WD_TIMEOUT;
             commands.resetWatchdog();
         }
-
-
     }
 }

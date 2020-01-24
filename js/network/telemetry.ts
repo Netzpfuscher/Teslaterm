@@ -166,10 +166,12 @@ let bytes_done:number = 0;
 let receive_callbacks: {[socket: number]: (data: Uint8Array)=>void} = {};
 
 export function register_callback(socket: number, callback: (data: Uint8Array)=>void) {
+    console.log("Registered callback for socket " + socket);
     receive_callbacks[socket] = callback;
 }
 
 export function remove_callback(socket: number) {
+    console.log("Removed callback for socket " + socket);
     receive_callbacks[socket] = undefined;
 }
 
