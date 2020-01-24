@@ -84,8 +84,18 @@ function enterFilterForMidi(result) {
 function setMidiInToNetwork(ip: string, port: number, filter) {
     terminal.io.println("Connecting to MIDI server at "+ip+":"+port+"...");
     chrome.sockets.tcp.create({}, function(createInfo) {
-        chrome.sockets.tcp.connect(createInfo.socketId,
-            ip, port, s=>onMidiNetworkConnect(s, ip, port, createInfo.socketId, filter));
+        if (chrome.runtime.lastError) {
+            terminal.io.println("Failed to create MIDI socket: " + chrome.runtime.lastError.message);
+        } else {
+            chrome.sockets.tcp.connect(createInfo.socketId,
+                ip, port, s => {
+                    if (chrome.runtime.lastError) {
+                        terminal.io.println("Failed to connect to network MIDI: " + chrome.runtime.lastError.message);
+                    } else {
+                        onMidiNetworkConnect(s, ip, port, createInfo.socketId, filter);
+                    }
+                });
+        }
     });
 }
 
@@ -96,7 +106,11 @@ function onSelectMidiOut() {
         stopMidiOutput();
         if (id == "<Network>") {
             setMidiOut({
-                send: (data) => chrome.sockets.tcp.send(socket_midi, data, ()=>{}),
+                send: (data) => chrome.sockets.tcp.send(socket_midi, data, () => {
+                    if (chrome.runtime.lastError) {
+                        console.log("Failed to send MIDI network data: " + chrome.runtime.lastError.message);
+                    }
+                }),
                 dest: id
             });
         } else if (id) {

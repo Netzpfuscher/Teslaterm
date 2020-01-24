@@ -13,11 +13,19 @@ export const maxBurstOfftime = 1000;
 
 //TODO async/await-ify?
 export function sendCommand(command: string){
-    if(connState==ConnectionState.CONNECTED_SERIAL){
-        chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), ()=>{});
+    if (connState == ConnectionState.CONNECTED_SERIAL) {
+        chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), () => {
+            if (chrome.runtime.lastError) {
+                terminal.io.println("Failed to send command over serial: " + chrome.runtime.lastError.message);
+            }
+        });
     }
-    if(connState==ConnectionState.CONNECTED_IP){
-        chrome.sockets.tcp.send(mainSocket, helper.convertStringToArrayBuffer(command), ()=>{});
+    if (connState == ConnectionState.CONNECTED_IP) {
+        chrome.sockets.tcp.send(mainSocket, helper.convertStringToArrayBuffer(command), () => {
+            if (chrome.runtime.lastError) {
+                terminal.io.println("Failed to send command over ethernet: " + chrome.runtime.lastError.message);
+            }
+        });
     }
 }
 export function clear(){

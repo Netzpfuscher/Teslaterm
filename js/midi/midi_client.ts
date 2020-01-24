@@ -12,11 +12,14 @@ export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
             if (info.socketId != socketId)
                 return;
             // info.data is an arrayBuffer.
-            var name = helper.convertArrayBufferToString(info.data);
+            const name = helper.convertArrayBufferToString(info.data);
             chrome.sockets.tcp.onReceive.removeListener(connectListener);
-            const data = name+";"+JSON.stringify(filter);
-            chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer(data), s=>{
-                if (s<0) {
+            const data = name + ";" + JSON.stringify(filter);
+            chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer(data), s => {
+                if (chrome.runtime.lastError) {
+                    console.log("Error in midi connect: ", chrome.runtime.lastError.message);
+                }
+                if (s.resultCode < 0) {
                     terminal.io.println(error);
                     setMidiInAsNone();
                 } else {
@@ -35,6 +38,10 @@ export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
 export function onMIDIoverIP(info) {
     if (!midiIn.isActive() || info.socketId != midiIn.data)
         return;
+    if (chrome.runtime.lastError) {
+        console.log("Eror in MIDI over IP: ", chrome.runtime.lastError.message);
+        return;
+    }
     var data = new Uint8Array(info.data);
     let param = helper.convertArrayBufferToString(info.data).substring(1);
     switch (data[0]) {

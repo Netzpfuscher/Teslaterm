@@ -87,6 +87,7 @@ export function init() {
                 onClick: menu.onCtrlMenuClick
             });
             console.log("Done toolbar");
+            menu.init();
         });
 
         let html_gauges = '';

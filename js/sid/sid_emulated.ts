@@ -1,7 +1,6 @@
 //Based on https://github.com/og2t/jsSID/blob/master/source/jsSID.js
 import {SidFrame, SidSource} from "./sid";
 import {convertArrayBufferToString} from "../helper";
-import network = chrome.privacy.network;
 
 enum CPUStatus {
     running,

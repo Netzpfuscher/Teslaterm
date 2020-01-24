@@ -9,6 +9,7 @@ import {loadCyacd} from "../network/bootloader";
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
     document.getElementById('layout').addEventListener("dragover", ondragover);
+
     terminal.onTerminalReady = function() {
         const io = terminal.io.push();
 

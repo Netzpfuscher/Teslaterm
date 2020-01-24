@@ -285,17 +285,17 @@ class Bootloader {
 }
 
 async function close_socket(socket: number) {
-    return new Promise<SocketCreationInfo>((resolve, reject) => {
+    return new Promise<CreateResult>((resolve, reject) => {
         chrome.sockets.tcp.close(socket, resolve);
     });
 }
 async function create_socket() {
-    return new Promise<SocketCreationInfo>((resolve, reject) => {
+    return new Promise<CreateResult>((resolve, reject) => {
         chrome.sockets.tcp.create({}, resolve);
     });
 }
 async function disconnect(socket: number) {
-    return new Promise<SocketCreationInfo>((resolve, reject) => {
+    return new Promise<CreateResult>((resolve, reject) => {
         chrome.sockets.tcp.disconnect(socket, resolve);
     });
 }

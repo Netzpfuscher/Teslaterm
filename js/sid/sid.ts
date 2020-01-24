@@ -64,6 +64,9 @@ export function update() {
                         data[j] = 0xFF;
                     }
                     chrome.sockets.tcp.send(socket_midi, data, () => {
+                        if (chrome.runtime.lastError) {
+                            console.log("Failed to send SID data: " + chrome.runtime.lastError.message);
+                        }
                     });
                 }
             }

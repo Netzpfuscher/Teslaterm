@@ -25,24 +25,29 @@ function connect_ip(){
 }
 
 function reconnect_tel(){
-    chrome.sockets.tcp.disconnect(mainSocket,callback_dsk);
+    chrome.sockets.tcp.disconnect(mainSocket, callback_dsk);
 }
 
-function callback_dsk(info){
+function callback_dsk() {
     remove_callback(mainSocket);
-    chrome.sockets.tcp.close(mainSocket, function clb(){chrome.sockets.tcp.create({}, createInfo);});
+    chrome.sockets.tcp.close(mainSocket, function clb() {
+        chrome.sockets.tcp.create({}, createInfo);
+    });
 
 }
-function reconnect_midi(){
-    chrome.sockets.tcp.disconnect(socket_midi,callback_dsk_midi);
+
+function reconnect_midi() {
+    chrome.sockets.tcp.disconnect(socket_midi, callback_dsk_midi);
 }
 
-function callback_dsk_midi(info){
+function callback_dsk_midi() {
     remove_callback(socket_midi);
-    chrome.sockets.tcp.close(socket_midi, function clb(){chrome.sockets.tcp.create({}, createInfo_midi);});
+    chrome.sockets.tcp.close(socket_midi, function clb() {
+        chrome.sockets.tcp.create({}, createInfo_midi);
+    });
 }
 
-function createInfo(info){
+function createInfo(info) {
     mainSocket = info.socketId;
     register_callback(mainSocket, main_socket_receive);
 
@@ -66,18 +71,31 @@ function createInfo_midi(info){
     });
 }
 function callback_sck(result){
-    if(!result){
+    if (result >= 0) {
         menu.onConnected();
         connState = ConnectionState.CONNECTED_IP;
         setTimeout(commands.startConf, 200);
         populateMIDISelects();
+    } else {
+        terminal.io.print("Failed to connect main socket: ");
+        if (chrome.runtime.lastError) {
+            terminal.io.println(chrome.runtime.lastError.message);
+        } else {
+            terminal.io.println(result);
+        }
     }
 }
 
 
-
-function callback_sck_midi(info){
-
+function callback_sck_midi(info) {
+    if (info < 0) {
+        terminal.io.print("Failed to connect MIDI socket: ");
+        if (chrome.runtime.lastError) {
+            terminal.io.println(chrome.runtime.lastError.message);
+        } else {
+            terminal.io.println(info);
+        }
+    }
 }
 
 function midi_socket_ckeck(info){

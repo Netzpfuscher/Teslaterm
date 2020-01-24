@@ -18,6 +18,18 @@ import {redrawMediaInfo} from "./oscilloscope";
 import {isSID, MediaFileType, PlayerActivity} from "../media/media_player";
 import {loadSidFile, setSendingSID} from "../sid/sid";
 
+export function init() {
+    const port = $('#toolbar #tb_toolbar_item_port');
+    port.on("keypress", (e) => {
+        console.log(e);
+        if (e.originalEvent.key == "Enter") {
+            w2ui.toolbar.set('port', {value: this.value});
+            w2ui.toolbar.refresh();
+            w2ui['toolbar'].click('connect');
+        }
+    });
+}
+
 export function onConnected() {
     terminal.io.println("connected");
     w2ui['toolbar'].get('connect').text = 'Disconnect';
