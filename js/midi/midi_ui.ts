@@ -106,11 +106,7 @@ function onSelectMidiOut() {
         stopMidiOutput();
         if (id == "<Network>") {
             setMidiOut({
-                send: (data) => chrome.sockets.tcp.send(mediaSocket, data, () => {
-                    if (chrome.runtime.lastError) {
-                        console.log("Failed to send MIDI network data: " + chrome.runtime.lastError.message);
-                    }
-                }),
+                send: (data) => mediaSocket.write(data),
                 dest: id
             });
         } else if (id) {

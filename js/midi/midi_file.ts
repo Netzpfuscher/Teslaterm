@@ -1,27 +1,21 @@
 import {media_state, player, setMediaType} from "./midi";
 import * as scope from "../gui/oscilloscope";
 import {MediaFileType} from "../media/media_player";
+import * as helper from '../helper';
+import * as path from "path";
 
-function readmidi(file){
-    var fs = new FileReader();
-    fs.readAsArrayBuffer(file);
-    fs.onload = event_read_midi;
+async function readmidi(file: string) {
+    const content = await helper.readFileAsync(file);
+    player.loadArrayBuffer(content);
 }
 
-function event_read_midi(this: FileReader, progressEvent: ProgressEvent){
-    if (!(this.result instanceof ArrayBuffer)) {
-        console.error("MIDI not read as ArrayBuffer!");
-        return;
-    }
-    player.loadArrayBuffer(this.result);
-}
-
-export function loadMidiFile(file) {
-    w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: '+file.name;
+export async function loadMidiFile(file: string) {
+    const name = path.basename(file);
+    w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: ' + name;
     w2ui['toolbar'].refresh();
     media_state.currentFile = file;
-    media_state.title = file.name;
+    media_state.title = name;
     setMediaType(MediaFileType.midi);
-    readmidi(file);
+    await readmidi(file);
     scope.redrawMediaInfo();
 }

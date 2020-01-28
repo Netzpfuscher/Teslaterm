@@ -1,10 +1,8 @@
 import * as cmd from '../network/commands';
-import {loadMidiFile} from "../midi/midi_file";
 import * as scripting from '../scripting';
 import {setScript} from "./menu";
 import * as gauges from './gauges';
-import {loadSidFile} from "../sid/sid";
-import * as $ from "jquery";
+import * as media_player from '../media/media_player';
 
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
@@ -31,27 +29,25 @@ export const TRIGGER_SPACE = 10;
 export const CONTROL_SPACE = 15;
 export const MEAS_POSITION = 4;
 
-function ondrop(e: DragEvent): void {
+async function ondrop(e: DragEvent): Promise<void> {
     e.stopPropagation();
     e.preventDefault();
-    if(e.dataTransfer.items.length == 1){//only one file
+    if (e.dataTransfer.items.length == 1) {//only one file
         const file = e.dataTransfer.files[0];
-        const extension = file.name.substring(file.name.lastIndexOf(".")+1);
-        if (extension==="mid"){
-            loadMidiFile(file);
-        } else if (extension=="js") {
+        const extension = file.name.substring(file.name.lastIndexOf(".") + 1);
+        if (extension == "js") {
             scripting.loadScript(file.path)
-                .then((script)=> {
+                .then((script) => {
                     setScript(script);
-                    w2ui['toolbar'].get('mnu_script').text = 'Script: '+file.name;
+                    w2ui['toolbar'].get('mnu_script').text = 'Script: ' + file.name;
                     w2ui['toolbar'].refresh();
                 })
-                .catch((err)=>{
-                    terminal.io.println("Failed to load script: "+err);
+                .catch((err) => {
+                    terminal.io.println("Failed to load script: " + err);
                     console.log(err);
                 });
-        } else if (extension=="dmp"||extension=="sid") {
-            loadSidFile(file);
+        } else {
+            await media_player.loadMediaFile(file.path);
         }
     }
 }

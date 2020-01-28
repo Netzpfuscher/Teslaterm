@@ -15,7 +15,7 @@ import {
     stopMidiFile
 } from "../midi/midi";
 import {redrawMediaInfo} from "./oscilloscope";
-import {isSID, MediaFileType, PlayerActivity} from "../media/media_player";
+import * as media_player from "../media/media_player";
 import {loadSidFile, setSendingSID} from "../sid/sid";
 
 export function init() {
@@ -41,9 +41,9 @@ export function onDisconnect() {
     w2ui['toolbar'].refresh();
 }
 
-let currentScript: Promise<any>[] = null;
+let currentScript: (() => Promise<any>)[] = null;
 
-export function setScript(script: Promise<any>[]) {
+export function setScript(script: (() => Promise<any>)[]) {
     currentScript = script;
 }
 
@@ -91,33 +91,10 @@ export function onCtrlMenuClick(event) {
                 commands.eepromSave);
             break;
         case 'mnu_midi:Play':
-            if (media_state.currentFile==null){
-                terminal.io.println("Please select a media file using drag&drop");
-                break;
-            }
-            if (media_state.state!=PlayerActivity.idle){
-                terminal.io.println("A media file is currently playing, stop it before starting it again");
-                break;
-            }
-            if (media_state.type==MediaFileType.midi) {
-                startCurrentMidiFile();
-            }
-            media_state.state = PlayerActivity.playing;
+            media_player.startPlaying();
             break;
         case 'mnu_midi:Stop':
-            midiOut.send(kill_msg);
-            if (media_state.currentFile==null || media_state.state!=PlayerActivity.playing){
-                terminal.io.println("No media file is currently playing");
-                break;
-            }
-            if(isSID(media_state.type)) {
-                setSendingSID(true);
-                loadSidFile(media_state.currentFile).then(()=>{});
-            } else if (media_state.type==MediaFileType.midi) {
-                stopMidiFile();
-            }
-            media_state.state = PlayerActivity.idle;
-            redrawMediaInfo();
+            media_player.stopPlaying();
             break;
         case 'mnu_script:Start':
             if (currentScript==null) {

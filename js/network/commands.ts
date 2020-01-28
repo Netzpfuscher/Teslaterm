@@ -10,23 +10,21 @@ export const maxOntime = 400;
 export const maxBPS = 1000;
 export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
-export function sendCommand(command: string){
-    if(connState==ConnectionState.CONNECTED_SERIAL){
+
+export function sendCommand(command: string) {
+    if (connState == ConnectionState.CONNECTED_SERIAL) {
         chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), () => {
             if (chrome.runtime.lastError) {
                 terminal.io.println("Failed to send command over serial: " + chrome.runtime.lastError.message);
             }
         });
     }
-    if(connState==ConnectionState.CONNECTED_IP) {
-        chrome.sockets.tcp.send(mainSocket, helper.convertStringToArrayBuffer(command), () => {
-            if (chrome.runtime.lastError) {
-                terminal.io.println("Failed to send command over ethernet: " + chrome.runtime.lastError.message);
-            }
-        });
+    if (connState == ConnectionState.CONNECTED_IP) {
+        mainSocket.write(helper.convertStringToArrayBuffer(command));
     }
 }
-export function clear(){
+
+export function clear() {
     // \033=\u1B
     terminal.io.print('\u001B[2J\u001B[0;0H');
     sendCommand('cls\r');

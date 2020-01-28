@@ -158,35 +158,29 @@ function drawString(dat: number[], center: boolean) {
     scope.drawString(x, y, color, size, str, center);
 }
 
-const TIMEOUT = 50;
-
 let buffer: number[] = [];
 let bytes_done:number = 0;
 
-export function receive(info) {
-    if (info.socketId == mediaSocket) {
-        const buf = new Uint8Array(info.data);
-        if (buf[0] == 0x78) {
-            sid.setSendingSID(false);
-        }
-        if (buf[0] == 0x6f) {
-            sid.setSendingSID(true);
-        }
+export function receive_media(data: Buffer) {
+    const buf = new Uint8Array(data);
+    if (buf[0] == 0x78) {
+        sid.setSendingSID(false);
     }
-
-    if (info.socketId != mainSocket) {
-        return;
+    if (buf[0] == 0x6f) {
+        sid.setSendingSID(true);
     }
+}
 
-    const buf = new Uint8Array(info.data);
+export function receive_main(data: Buffer) {
+    const buf = new Uint8Array(data);
     resetTimeout();
 
     for (let i = 0; i < buf.length; i++) {
-        switch(term_state){
+        switch (term_state) {
             case TT_STATE_IDLE:
-                if(buf[i]== 0xff){
+                if (buf[i] == 0xff) {
                     term_state = TT_STATE_FRAME;
-                }else{
+                } else {
                     const str = String.fromCharCode.apply(null, [buf[i]]);
                     terminal.io.print(str);
                 }
@@ -317,9 +311,4 @@ export function  ud_settings(uconfig) {
 			}
 		}
 	});
-}
-
-export function init() {
-    chrome.serial.onReceive.addListener(receive);
-    chrome.sockets.tcp.onReceive.addListener(receive);
 }

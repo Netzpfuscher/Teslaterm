@@ -1,10 +1,13 @@
+import {fstat} from "fs";
+import * as fs from "fs";
+
 export function bytes_to_signed(lsb: number, msb: number): number {
     const sign = msb & (1 << 7);
     const x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
     if (sign) {
-        return  (0xFFFF0000 | x);  // fill in most significant bits with 1's
-    }else{
-        return  x;
+        return (0xFFFF0000 | x);  // fill in most significant bits with 1's
+    } else {
+        return x;
     }
 }
 
@@ -31,7 +34,7 @@ export function convertStringToArrayBuffer(str: string): ArrayBuffer {
 
 export function changeMenuEntry(menu: string, id: string, newName: string): void {
     const items = (<W2UI.W2Menu>w2ui['toolbar'].get(menu, false)).items;
-    for (let i = 0;i<items.length;i++) {
+    for (let i = 0; i<items.length; i++) {
         if (items[i].id==id) {
             items[i].text = newName;
             w2ui['toolbar'].set(menu, items);
@@ -50,7 +53,7 @@ export function parseFilter(str: string): number[][] {
     }
     let ret = [];
     const sections = str.split(",");
-    for (let i = 0;i<sections.length;i++) {
+    for (let i = 0; i<sections.length; i++) {
         const bounds = sections[i].split("-");
         if (bounds.length<2) {
             const bound = parseInt(bounds[0]);
@@ -68,7 +71,7 @@ export function parseFilter(str: string): number[][] {
 }
 
 export function matchesFilter(filter: number[][], num: number): boolean {
-    for (let i = 0;i<filter.length;i++) {
+    for (let i = 0; i<filter.length; i++) {
         if (filter[i][0]<=num && num<=filter[i][1]) {
             return true;
         }
@@ -84,7 +87,7 @@ export function addFirstMenuEntry(menu: string, id: string, text: string, icon: 
 export function removeMenuEntry(menu: string, id: string): void {
     const mnu = <W2UI.W2Menu>w2ui['toolbar'].get(menu, false);
     const items = mnu.items;
-    for (let i = 0;i<items.length;i++) {
+    for (let i = 0; i<items.length; i++) {
         if (items[i].id==id) {
             mnu.items.splice(i, 1);
             return;
@@ -99,19 +102,14 @@ export function warn(message: string, onConfirmed: ()=>void) {
         .yes(onConfirmed);
 }
 
-export async function readFileAsync(file: File): Promise<Uint8Array> {
-    let fs = new FileReader();
-    const ret = new Promise<Uint8Array>((res, rej)=> {
-        fs.onerror = rej;
-        fs.onload = ()=> {
-            if (!(fs.result instanceof ArrayBuffer)) {
-                rej();
-                console.error("File not read as ArrayBuffer!");
-                return;
+export async function readFileAsync(file: fs.PathLike): Promise<Uint8Array> {
+    return new Promise<Uint8Array>((res, rej) => {
+        fs.readFile(file, (err, data) => {
+            if (err) {
+                rej(err);
+            } else {
+                res(data);
             }
-            res(new Uint8Array(fs.result));
-        };
+        });
     });
-    fs.readAsArrayBuffer(file);
-    return ret;
 }

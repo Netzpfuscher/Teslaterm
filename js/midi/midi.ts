@@ -68,7 +68,6 @@ export function stopMidiFile() {
     player.stop();
     scope.drawChart();
     stopMidiOutput();
-    scripting.onMidiStopped();
 }
 
 export function stopMidiOutput() {

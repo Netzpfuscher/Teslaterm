@@ -8,13 +8,18 @@ import {DumpSidSource} from "./sid_dump";
 import {EmulationSidSource} from "./sid_emulated";
 import {readFileAsync} from "../helper";
 import {simulated} from "../init";
+import * as fs from "fs";
+import * as path from "path";
 
 export type SidFrame = Uint8Array;
 
 export interface SidSource {
     next_frame(): SidFrame;
+
     getTotalFrameCount(): number | null;
+
     getCurrentFrameCount(): number;
+
     isDone(): boolean;
 }
 
@@ -26,17 +31,18 @@ export function setSendingSID(newVal: boolean) {
     sending_sid = newVal;
 }
 
-export async function loadSidFile(file: File) {
+export async function loadSidFile(file: string) {
     const data = await readFileAsync(file);
-    const extension = file.name.substring(file.name.lastIndexOf(".")+1).toLowerCase();
-    w2ui['toolbar'].get('mnu_midi').text = 'SID-File: '+file.name;
+    const extension = path.extname(file).substr(1).toLowerCase();
+    const name = path.basename(file);
+    w2ui['toolbar'].get('mnu_midi').text = 'SID-File: ' + name;
     w2ui['toolbar'].refresh();
     media_state.currentFile = file;
-    if (extension=="dmp") {
+    if (extension == "dmp") {
         current_sid_source = new DumpSidSource(data);
-        media_state.title = file.name;
+        media_state.title = name;
         setMediaType(MediaFileType.sid_dmp);
-    } else if (extension=="sid") {
+    } else if (extension == "sid") {
         const source_emulated = new EmulationSidSource(data);
         current_sid_source = source_emulated;
         media_state.title = source_emulated.sid_info.title;
@@ -56,18 +62,14 @@ export function update() {
                 for (let i = 0; i < 2; ++i) {
                     const real_frame = current_sid_source.next_frame();
                     console.assert(real_frame.length == FRAME_LENGTH);
-                    const data = new Uint8Array(FRAME_LENGTH + 4);
+                    const data = new Buffer(FRAME_LENGTH + 4);
                     for (let j = 0; j < FRAME_LENGTH; ++j) {
                         data[j] = real_frame[j];
                     }
-                    for (let j = FRAME_LENGTH; j < data.length; ++j) {
+                    for (let j = FRAME_LENGTH; j < data.byteLength; ++j) {
                         data[j] = 0xFF;
                     }
-                    chrome.sockets.tcp.send(mediaSocket, data, () => {
-                        if (chrome.runtime.lastError) {
-                            console.log("Failed to send SID data: " + chrome.runtime.lastError.message);
-                        }
-                    });
+                    mediaSocket.write(data);
                 }
             }
             const totalFrames = current_sid_source.getTotalFrameCount();

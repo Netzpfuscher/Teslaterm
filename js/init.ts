@@ -117,8 +117,8 @@ export function init() {
                         '<aside>' +
                         '<div id="ontime">Ontime<br><br>' +
                         '<input type="range" id="slider" min="0" max="' + maxOntime + '" value="0" class="slider-gray" data-show-value="true">' +
-                        '<input type="checkbox" id="relativeSelect"><label for="relativeSelect">Relative</label>' +
-                        '<br><span id="total">0</span> µs (<span id="relative">100</span>% of <span id="absolute"><b>0</b></span> µs)</div>' +
+                        '<span id="total">0</span> µs (<span id="relative">100</span>% of <span id="absolute"><b>0</b></span> µs)' +
+                        '<br><input type="checkbox" id="relativeSelect"><label for="relativeSelect">Relative</label></div>' +
                         '<br><br>Offtime<br><br>' +
                         '<input type="range" id="slider1" min="20" max="' + maxBPS + '" value="1" class="slider-gray" data-show-value="true"><label id="slider1_disp">20 Hz</label>' +
                         '<br><br>Burst On<br><br>' +
@@ -147,7 +147,6 @@ export function init() {
         });
         terminal.decorate(document.querySelector('#terminal'));
         terminal.installKeyboard();
-        //telemetry.init();
 
         //chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
 
@@ -157,7 +156,7 @@ export function init() {
         scope.init();
         midi.init();
         //midi_server.init();
-        //setInterval(update, 20);
+        setInterval(update, 20);
     });
 }
 

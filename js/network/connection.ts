@@ -3,16 +3,15 @@ import {terminal} from '../gui/gui';
 import * as menu from '../gui/menu';
 import * as telemetry from "./telemetry";
 import * as commands from './commands';
-import {reconnect} from './commands';
 import {populateMIDISelects} from "../midi/midi_ui";
 import * as net from "net";
+import {ConnectionState} from "./telemetry";
 
 
 const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
 let wd_reset = 5;
-const wd_reset_msg = new Uint8Array([0xFF, 0xF1]);
 
 export let mainSocket: net.Socket | undefined;
 export let mediaSocket: net.Socket | undefined;
@@ -22,98 +21,61 @@ let ipaddr: string = '0.0.0.0';
 //previously int connected. 0->Unconnected, 2->Serial, 1->IP
 export let connState: telemetry.ConnectionState = telemetry.ConnectionState.UNCONNECTED;
 
-function connectSocket(port: number, desc: string, dataCallback: (data) => void) {
+function connectSocket(port: number, desc: string, dataCallback: (data: Buffer) => void) {
     const ret = net.createConnection({port: port, host: ipaddr}, () => {
         terminal.io.println("Connected socket " + desc);
     });
     ret.on('end', () => {
         terminal.io.println("Socket " + desc + " disconnected");
     });
-    ret.on('data', (data) => {
-        dataCallback(data);
+    ret.addListener('error', (e: Error) => {
+        terminal.io.println("Error on " + desc + " socket!");
+        console.error(e);
     });
+    ret.on('data', dataCallback);
     return ret;
 }
 
 function connect_ip() {
-    mainSocket = connectSocket(2323, "Main", telemetry.receive);
-    mediaSocket = net.createConnection({port: 2324, host: ipaddr});
+    if (mediaSocket) {
+        reconnect_midi();
+    } else {
+        createMedia();
+    }
+    if (mainSocket) {
+        reconnect_tel();
+    } else {
+        createMain();
+    }
+}
+
+function createMain(): void {
+    mainSocket = connectSocket(2323, "main", telemetry.receive_main);
+    mainSocket.addListener('close', (errored: boolean) => {
+        if (!errored) {
+            terminal.io.println("Disconnected");
+        }
+    });
+    mainSocket.addListener('connect', () => {
+        menu.onConnected();
+        connState = ConnectionState.CONNECTED_IP;
+        commands.startConf();
+        populateMIDISelects();
+    });
+}
+
+function createMedia(): void {
+    mediaSocket = connectSocket(2324, "media", telemetry.receive_media);
 }
 
 function reconnect_tel() {
-    chrome.sockets.tcp.disconnect(mainSocket, callback_dsk);
-}
-
-function callback_dsk() {
-    chrome.sockets.tcp.close(mainSocket, function clb() {
-        chrome.sockets.tcp.create({}, createInfo);
-    });
-
+    mainSocket.destroy();
+    createMain();
 }
 
 function reconnect_midi() {
-    chrome.sockets.tcp.disconnect(mediaSocket, callback_dsk_midi);
-}
-
-function callback_dsk_midi() {
-    chrome.sockets.tcp.close(mediaSocket, function clb() {
-        chrome.sockets.tcp.create({}, createInfo_midi);
-    });
-}
-
-function createInfo(info){
-    mainSocket = info.socketId;
-
-    console.log(ipaddr);
-
-    chrome.sockets.tcp.connect(mainSocket,ipaddr,2323, callback_sck);
-
-
-}
-
-function createInfo_midi(info) {
-    mediaSocket = info.socketId;
-    chrome.sockets.tcp.connect(mediaSocket, ipaddr, 2324, callback_sck_midi);
-
-}
-function callback_sck(result){
-    if (result >= 0) {
-        menu.onConnected();
-        connState = ConnectionState.CONNECTED_IP;
-        setTimeout(commands.startConf, 200);
-        populateMIDISelects();
-    } else {
-        terminal.io.print("Failed to connect main socket: ");
-        if (chrome.runtime.lastError) {
-            terminal.io.println(chrome.runtime.lastError.message);
-        } else {
-            terminal.io.println(result);
-        }
-    }
-}
-
-
-
-function callback_sck_midi(info) {
-    if (info < 0) {
-        terminal.io.print("Failed to connect MIDI socket: ");
-        if (chrome.runtime.lastError) {
-            terminal.io.println(chrome.runtime.lastError.message);
-        } else {
-            terminal.io.println(info);
-        }
-    }
-}
-
-function midi_socket_ckeck(info){
-    if(info.connected==false){
-        reconnect_midi();
-    }
-}
-function telnet_socket_ckeck(info){
-    if(info.connected==false){
-        reconnect_tel();
-    }
+    mediaSocket.destroy();
+    createMedia();
 }
 
 export function disconnect() {
@@ -122,12 +84,10 @@ export function disconnect() {
         if (connState == ConnectionState.CONNECTED_SERIAL)
             chrome.serial.disconnect(connid, () => gui.terminal.io.println('\r\nDisconnected'));
         else if (connState == ConnectionState.CONNECTED_IP) {
-            chrome.sockets.tcp.disconnect(mainSocket, () => {
-                chrome.sockets.tcp.close(mainSocket);
-                gui.terminal.io.println('\r\nDisconnected');
-            });
-            chrome.sockets.tcp.disconnect(mediaSocket, () =>
-                chrome.sockets.tcp.close(mediaSocket));
+            mainSocket.destroy();
+            mediaSocket.destroy();
+            mediaSocket = undefined;
+            mainSocket = undefined;
         }
         menu.onDisconnect();
         connState = ConnectionState.UNCONNECTED;
@@ -188,13 +148,12 @@ export function update() {
     if(connState!=ConnectionState.UNCONNECTED){
         response_timeout--;
 
-        if(response_timeout==0){
-            response_timeout=TIMEOUT;
+        if(response_timeout==0) {
+            response_timeout = TIMEOUT;
             terminal.io.println('Connection lost, reconnecting...');
 
-            reconnect();
-            chrome.sockets.tcp.getInfo(mediaSocket, midi_socket_ckeck);
-            chrome.sockets.tcp.getInfo(mainSocket, telnet_socket_ckeck);
+            reconnect_midi();
+            reconnect_tel();
         }
 
         wd_reset--;
