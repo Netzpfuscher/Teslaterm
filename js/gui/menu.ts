@@ -125,9 +125,9 @@ export function onCtrlMenuClick(event) {
 
 
 function connect(){
-    if(connection.connState!=ConnectionState.UNCONNECTED){
+    if (connection.connection) {
         connection.disconnect();
-    }else{
+    } else {
         const port = w2ui['toolbar'].get('port');
         connection.connect(port.value);
     }

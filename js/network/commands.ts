@@ -2,7 +2,7 @@ import {terminal} from "../gui/gui";
 import * as sliders from "../gui/sliders";
 import {ConnectionState} from "./telemetry";
 import * as helper from '../helper';
-import {connid, connState, mainSocket} from "./connection";
+import {connection} from "./connection";
 import {media_state} from "../midi/midi";
 import {isSID, MediaFileType} from "../media/media_player";
 
@@ -12,16 +12,7 @@ export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
 
 export function sendCommand(command: string) {
-    if (connState == ConnectionState.CONNECTED_SERIAL) {
-        chrome.serial.send(connid, helper.convertStringToArrayBuffer(command), () => {
-            if (chrome.runtime.lastError) {
-                terminal.io.println("Failed to send command over serial: " + chrome.runtime.lastError.message);
-            }
-        });
-    }
-    if (connState == ConnectionState.CONNECTED_IP) {
-        mainSocket.write(helper.convertStringToArrayBuffer(command));
-    }
+    connection.sendTelnet(new Buffer(command));
 }
 
 export function clear() {
@@ -109,6 +100,3 @@ export function setTransientEnabled(enable: boolean) {
     sendCommand('tr '+(enable?'start':'stop')+'\r');
 }
 
-export function resetWatchdog() {
-    sendCommand('\u0007');
-}

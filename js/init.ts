@@ -148,8 +148,6 @@ export function init() {
         terminal.decorate(document.querySelector('#terminal'));
         terminal.installKeyboard();
 
-        //chrome.serial.onReceiveError.addListener((info) => gui.terminal.io.println(info.error));
-
         gui.init();
         sliders.init();
 

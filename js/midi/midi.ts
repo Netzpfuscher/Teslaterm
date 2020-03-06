@@ -7,8 +7,7 @@ import * as sliders from '../gui/sliders';
 import {ontime, setBPS, setBurstOfftime, setBurstOntime} from '../gui/sliders';
 import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scope from '../gui/oscilloscope';
-import * as connection from '../network/connection';
-import {connState, mediaSocket} from '../network/connection';
+import {connection} from '../network/connection';
 import * as nano from '../nano';
 import * as midi_ui from "./midi_ui";
 import {populateMIDISelects} from "./midi_ui";
@@ -19,7 +18,8 @@ import {MediaFileType, PlayerState, PlayerActivity, checkTransientDisabled} from
 
 export interface MidiOutput {
     dest: string;
-    send(msg: ArrayBuffer|Uint8Array);
+
+    send(msg: Buffer);
 }
 export interface MidiInput {
     cancel: Function;
@@ -36,7 +36,7 @@ export let media_state: PlayerState = {
     title: null
 };
 
-export const kill_msg = new Uint8Array([0xB0,0x77,0x00]);
+export const kill_msg = new Buffer([0xB0, 0x77, 0x00]);
 
 export let midiOut: MidiOutput = {dest: "None", send: ()=>{}};
 
@@ -84,9 +84,9 @@ export const player = new MidiPlayer.Player(processMidiFromPlayer);
 
 
 function processMidiFromPlayer(event: MidiPlayer.Event){
-    if(playMidiEvent(event)){
-        media_state.progress=100-player.getSongPercentRemaining();
-    } else if(!simulated && connState==ConnectionState.UNCONNECTED) {
+    if (playMidiEvent(event)) {
+        media_state.progress = 100 - player.getSongPercentRemaining();
+    } else if (!simulated && !connection) {
         player.stop();
         media_state.state = PlayerActivity.idle;
         scripting.onMidiStopped();
@@ -196,8 +196,11 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
 }
 
 export function playMidiData(data: number[]|Uint8Array): boolean {
-    if ((simulated || connState!=ConnectionState.UNCONNECTED) && data[0] != 0x00) {
-        const msg=new Uint8Array(data);
+    if ((simulated || connection) && data[0] != 0x00) {
+        if (!(data instanceof Uint8Array)) {
+            data = new Uint8Array(data);
+        }
+        const msg = new Buffer(data);
         if (!midiServer.sendMidiData(msg)) {
             checkTransientDisabled();
             midiOut.send(msg);

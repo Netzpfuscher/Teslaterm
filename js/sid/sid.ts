@@ -1,7 +1,6 @@
 import {checkTransientDisabled, isSID, MediaFileType, PlayerActivity} from "../media/media_player";
 import * as connection from "../network/connection";
 import {ConnectionState} from "../network/telemetry";
-import {mediaSocket} from "../network/connection";
 import * as scope from "../gui/oscilloscope";
 import {media_state, setMediaType} from "../midi/midi";
 import {DumpSidSource} from "./sid_dump";
@@ -54,33 +53,29 @@ export async function loadSidFile(file: string) {
 }
 
 export function update() {
-    if(current_sid_source && media_state.state==PlayerActivity.playing && isSID(media_state.type)
-        && sending_sid){
-        if(simulated||connection.connState==ConnectionState.CONNECTED_IP){
-            checkTransientDisabled();
-            if (mediaSocket) {
-                for (let i = 0; i < 2; ++i) {
-                    const real_frame = current_sid_source.next_frame();
-                    console.assert(real_frame.length == FRAME_LENGTH);
-                    const data = new Buffer(FRAME_LENGTH + 4);
-                    for (let j = 0; j < FRAME_LENGTH; ++j) {
-                        data[j] = real_frame[j];
-                    }
-                    for (let j = FRAME_LENGTH; j < data.byteLength; ++j) {
-                        data[j] = 0xFF;
-                    }
-                    mediaSocket.write(data);
-                }
+    if (current_sid_source && media_state.state == PlayerActivity.playing && isSID(media_state.type)
+        && sending_sid) {
+        checkTransientDisabled();
+        if (connection.connection) {
+            const real_frame = current_sid_source.next_frame();
+            console.assert(real_frame.length == FRAME_LENGTH);
+            const data = new Buffer(FRAME_LENGTH + 4);
+            for (let j = 0; j < FRAME_LENGTH; ++j) {
+                data[j] = real_frame[j];
             }
-            const totalFrames = current_sid_source.getTotalFrameCount();
-            if (totalFrames) {
-                const currentFrames = current_sid_source.getCurrentFrameCount();
-                media_state.progress = Math.floor(100 * currentFrames / totalFrames);
+            for (let j = FRAME_LENGTH; j < data.byteLength; ++j) {
+                data[j] = 0xFF;
             }
-            if(current_sid_source.isDone()){
-                media_state.state = PlayerActivity.idle;
-            }
-            scope.redrawMediaInfo();
+            connection.connection.sendMedia(data);
         }
+        const totalFrames = current_sid_source.getTotalFrameCount();
+        if (totalFrames) {
+            const currentFrames = current_sid_source.getCurrentFrameCount();
+            media_state.progress = Math.floor(100 * currentFrames / totalFrames);
+        }
+        if (current_sid_source.isDone()) {
+            media_state.state = PlayerActivity.idle;
+        }
+        scope.redrawMediaInfo();
     }
 }

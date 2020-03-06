@@ -3,7 +3,7 @@ import {meters} from '../gui/gauges';
 import * as scope from '../gui/oscilloscope'
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import * as sid from "../sid/sid";
-import {mainSocket, mediaSocket, resetTimeout} from "./connection";
+import {resetTimeout} from "./connection";
 import * as menu from '../gui/menu';
 import {config} from '../init';
 import * as commands from '../network/commands';
@@ -13,6 +13,7 @@ export const enum ConnectionState {
     UNCONNECTED = 0,
     CONNECTED_SERIAL = 2,
     CONNECTED_IP = 1
+    //TODO non-min serial?
 }
 
 

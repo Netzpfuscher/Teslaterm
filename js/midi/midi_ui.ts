@@ -2,7 +2,6 @@ import {terminal} from "../gui/gui";
 import * as helper from '../helper';
 import * as ui_helper from '../gui/ui_helper';
 import {onMidiNetworkConnect} from "./midi_client";
-import {mediaSocket} from "../network/connection";
 import {
     midiAccess,
     midiIn,
@@ -51,9 +50,7 @@ export function populateMIDISelects() {
     onSelectMidiIn();
     selectMidiOut.options.length = 0;
     addElementKeepingSelected("None", "", midiOut.dest, selectMidiOut);
-    if (connection.connState==ConnectionState.CONNECTED_IP) {
-        addElementKeepingSelected("UD3 over Ethernet", "<Network>", midiOut.dest, selectMidiOut);
-    }
+    addElementKeepingSelected("UD3", "<Network>", midiOut.dest, selectMidiOut);
     for (let output of midiAccess.outputs.values()) {
         const str = output.name.toString();
         if (str.includes("nano")) {
@@ -106,7 +103,7 @@ function onSelectMidiOut() {
         stopMidiOutput();
         if (id == "<Network>") {
             setMidiOut({
-                send: (data) => mediaSocket.write(data),
+                send: (data) => connection.connection.sendMedia(data),
                 dest: id
             });
         } else if (id) {
