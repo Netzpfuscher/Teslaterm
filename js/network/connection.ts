@@ -9,7 +9,7 @@ import {createSerialConnection} from "./serial";
 import SerialPort = require("serialport");
 
 export interface UD3Connection {
-    sendTelnet(data: Buffer);
+    sendTelnet(data: Buffer): Promise<void>;
 
     sendMedia(data: Buffer);
 
@@ -31,15 +31,13 @@ let wd_reset = 5;
 
 let ipaddr: string = '0.0.0.0';
 
-export function disconnect() {
-    commands.stop();
-    setTimeout(() => {
-        if (connection) {
-            connection.disconnect();
-            connection = null;
-        }
-        menu.onDisconnect();
-    }, 200);
+export async function disconnect() {
+    await commands.stop();
+    if (connection) {
+        connection.disconnect();
+        connection = null;
+    }
+    menu.onDisconnect();
 }
 
 function connectSerial(port: string): UD3Connection {
@@ -64,11 +62,14 @@ export async function connect(port: string) {
         await connectionTemp.connect();
         connection = connectionTemp;
         menu.onConnected();
-        commands.startConf();
+        await commands.startConf();
         populateMIDISelects();
     } catch (x) {
         terminal.io.println("Failed to connect");
         console.log("While connecting: ", x);
+        if (connection) {
+            await disconnect();
+        }
     }
 }
 

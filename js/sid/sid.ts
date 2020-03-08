@@ -57,16 +57,18 @@ export function update() {
         && sending_sid) {
         checkTransientDisabled();
         if (connection.connection) {
-            const real_frame = current_sid_source.next_frame();
-            console.assert(real_frame.length == FRAME_LENGTH);
-            const data = new Buffer(FRAME_LENGTH + 4);
-            for (let j = 0; j < FRAME_LENGTH; ++j) {
-                data[j] = real_frame[j];
+            for (let i = 0; i < 2 && !current_sid_source.isDone(); ++i) {
+                const real_frame = current_sid_source.next_frame();
+                console.assert(real_frame.length == FRAME_LENGTH);
+                const data = new Buffer(FRAME_LENGTH + 4);
+                for (let j = 0; j < FRAME_LENGTH; ++j) {
+                    data[j] = real_frame[j];
+                }
+                for (let j = FRAME_LENGTH; j < data.byteLength; ++j) {
+                    data[j] = 0xFF;
+                }
+                connection.connection.sendMedia(data);
             }
-            for (let j = FRAME_LENGTH; j < data.byteLength; ++j) {
-                data[j] = 0xFF;
-            }
-            connection.connection.sendMedia(data);
         }
         const totalFrames = current_sid_source.getTotalFrameCount();
         if (totalFrames) {

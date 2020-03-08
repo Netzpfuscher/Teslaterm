@@ -23,13 +23,12 @@ class MinSerialConnection implements UD3Connection {
         return new Promise<void>((res, rej) => {
             this.serialPort = new SerialPort(this.port,
                 {
-                    baudRate: 19200
+                    baudRate: 500000
                 }, (e: Error | null) => {
                     if (e) {
                         rej(e);
                     } else {
                         this.minWrapper = new minprot();
-                        this.minWrapper.debug = true;
                         this.minWrapper.sendByte = (data) => {
                             this.serialPort.write(data, (err) => {
                                 if (err) {
@@ -38,7 +37,6 @@ class MinSerialConnection implements UD3Connection {
                             });
                         };
                         this.minWrapper.handler = (id, data) => {
-                            console.log("Received min data: ", id, data);
                             if (id == MIN_ID_TERM) {
                                 telemetry.receive_main(new Buffer(data));
                             } else if (id == MIN_ID_MEDIA) {
@@ -60,19 +58,20 @@ class MinSerialConnection implements UD3Connection {
 
     disconnect(): void {
         this.send_min_socket(false);
+        this.serialPort.close();
         this.serialPort.destroy();
     }
 
-    sendMedia(data: Buffer) {
-        this.minWrapper.min_queue_frame(MIN_ID_MEDIA, data);
+    async sendMedia(data: Buffer) {
+        await this.minWrapper.min_queue_frame(MIN_ID_MEDIA, data);
     }
 
-    sendTelnet(data: Buffer) {
-        this.minWrapper.min_queue_frame(MIN_ID_TERM, data);
+    async sendTelnet(data: Buffer) {
+        await this.minWrapper.min_queue_frame(MIN_ID_TERM, data);
     }
 
     resetWatchdog(): void {
-        this.minWrapper.min_queue_frame(MIN_ID_WD, []);
+        this.minWrapper.min_queue_frame(MIN_ID_WD, [MIN_ID_TERM]);
     }
 
     tick(): void {

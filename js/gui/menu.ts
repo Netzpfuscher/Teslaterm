@@ -7,16 +7,7 @@ import * as sliders from './sliders';
 import * as scripting from '../scripting';
 import * as midiServer from '../midi/midi_server';
 import * as ui_helper from './ui_helper';
-import {
-    kill_msg,
-    media_state,
-    midiOut,
-    startCurrentMidiFile,
-    stopMidiFile
-} from "../midi/midi";
-import {redrawMediaInfo} from "./oscilloscope";
 import * as media_player from "../media/media_player";
-import {loadSidFile, setSendingSID} from "../sid/sid";
 
 export function init() {
     const port = $('#toolbar #tb_toolbar_item_port');
@@ -34,6 +25,7 @@ export function onConnected() {
     terminal.io.println("connected");
     w2ui['toolbar'].get('connect').text = 'Disconnect';
     w2ui['toolbar'].refresh();
+    console.log("Updated menu");
 }
 
 export function onDisconnect() {

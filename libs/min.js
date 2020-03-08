@@ -15,7 +15,7 @@ module.exports = class minprot {
 			CRC_1: 'crc_1',
 			CRC_0: 'crc_0',
 			EOF: 'eof'
-		}
+		};
 
 		this.rx.magic = {
 			HEADER_BYTE: 0xaa,
@@ -23,7 +23,7 @@ module.exports = class minprot {
 			EOF_BYTE: 0x55,
 			ACK: 0xff,
 			RESET: 0xfe
-		}
+		};
 		this.rx.frame = [];
 		this.rx.frame.payload_bytes = 0;      // Length of payload received so far
 		this.rx.frame.id_control = 0;         // ID and control bit of frame being received
@@ -34,8 +34,8 @@ module.exports = class minprot {
 		this.tx = [];
 		this.tx.header_byte_countdown = 0;
 
-		this.rx_space = 512,
-			this.crc = 0;
+		this.rx_space = 512;
+		this.crc = 0;
 
 		this.rx.header_bytes_seen = 0;
 		this.rx.frame_state = this.rx.states.SOF;
@@ -256,6 +256,7 @@ module.exports = class minprot {
 					for (let i = 0; i < num_acked; i++) {
 						//transport_fifo_pop(self);
 						let last_pop = this.transport_fifo.frames.shift();
+						last_pop.resolve();
 						if (this.debug) console.log("Popping frame id=" + last_pop.min_id + " seq=" + last_pop.seq);
 					}
 					// Now retransmit the number of frames that were requested
@@ -411,7 +412,6 @@ module.exports = class minprot {
 		return p + 14;
 	}
 
-
 	min_poll(buf) {
 		if (typeof buf != 'undefined') {
 			for (let i = 0; i < buf.length; i++) {
@@ -429,7 +429,6 @@ module.exports = class minprot {
 			if (!remote_connected) this.min_transport_reset(true);
 
 			// This sends one new frame or resends one old frame
-
 
 			let window_size = this.transport_fifo.sn_max - this.transport_fifo.sn_min; // Window size
 			if ((window_size < this.TRANSPORT_MAX_WINDOW_SIZE) && (this.transport_fifo.frames.length > window_size)) {
@@ -504,32 +503,36 @@ module.exports = class minprot {
 		this.transport_fifo.last_sent_ack_time_ms = this.now;
 		this.transport_fifo.last_received_frame_ms = 0;
 
+		for (let frame of this.transport_fifo.frames) {
+			frame.reject("Resetting min FIFO");
+		}
 		this.transport_fifo.frames = [];
 	}
 
 	min_queue_frame(min_id, payload) {
-		// We are just queueing here: the poll() function puts the frame into the window and on to the wire
-		if (this.transport_fifo.frames.length < this.TRANSPORT_MAX_WINDOW_SIZE) {
-			// Copy frame details into frame slot, copy payload into ring buffer
-			//console.log(payload.length);
-			let frame = [];
-			frame.min_id = min_id & 0x3f;
-			frame.last_send = Date.now();
-			frame.payload = [];
-			for (let i = 0; i < payload.length; i++) {
-				frame.payload.push(payload[i]);
+		return new Promise((res, rej) => {
+			// We are just queueing here: the poll() function puts the frame into the window and on to the wire
+			if (this.transport_fifo.frames.length < this.TRANSPORT_MAX_WINDOW_SIZE) {
+				// Copy frame details into frame slot, copy payload into ring buffer
+				//console.log(payload.length);
+				let frame = [];
+				frame.min_id = min_id & 0x3f;
+				frame.last_send = Date.now();
+				frame.payload = [];
+				for (let i = 0; i < payload.length; i++) {
+					frame.payload.push(payload[i]);
+				}
+				frame.resolve = res;
+				frame.reject = rej;
+				this.transport_fifo.frames.push(frame);
+				if (this.debug) console.log("Queued ID=" + min_id + " len=" + payload.length);
+			} else {
+				this.transport_fifo.dropped_frames++;
+				rej("Max fifo size exceeded");
 			}
-			this.transport_fifo.frames.push(frame);
-			if (this.debug) console.log("Queued ID=" + min_id + " len=" + payload.length);
-			return true;
-		} else {
-			this.transport_fifo.dropped_frames++;
-			return false;
-		}
+		});
 	}
-
-
-}
+};
 
 
 

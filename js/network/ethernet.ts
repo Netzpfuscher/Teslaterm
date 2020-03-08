@@ -12,8 +12,10 @@ class EthernetConnection implements UD3Connection {
         this.ipaddr = ipaddr;
     }
 
-    sendTelnet(data: Buffer) {
-        this.mainSocket.write(data);
+    async sendTelnet(data: Buffer) {
+        return new Promise<void>((res, rej) => {
+            this.mainSocket.write(data, res);
+        });
     }
 
     sendMedia(data: Buffer) {

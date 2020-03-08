@@ -5,8 +5,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "tslint -c tslint.json -p tsconfig.json",
-    "start": "npm run build && electron dist/compiled/Launch.js",
-    "start_nobuild": "electron dist/compiled/Launch.js"
+    "start": "npm run build && npm run start_nobuild",
+    "start_nobuild": "electron dist/compiled/Launch.js --no-sandbox"
   },
   "main": "dist/compiled/Launch.js",
   "dependencies": {

@@ -188,27 +188,22 @@ export function receive_main(data: Buffer) {
                 break;
 
             case TT_STATE_FRAME:
-                buffer[DATA_LEN]=buf[i];
-                bytes_done=0;
-                term_state=TT_STATE_COLLECT;
+                buffer[DATA_LEN] = buf[i];
+                bytes_done = 0;
+                term_state = TT_STATE_COLLECT;
                 break;
-
             case TT_STATE_COLLECT:
-                if(bytes_done==0){
+                if (bytes_done == 0) {
                     buffer[0] = buf[i];
                     bytes_done++;
-                    break;
-                }else{
-
-                    if(bytes_done<buffer[DATA_LEN]-1){
-                        buffer[bytes_done+1]=buf[i]
-                        bytes_done++;
-                    }else{
-                        buffer[bytes_done+1]=buf[i];
-                        bytes_done=0;
-                        term_state=TT_STATE_IDLE;
+                } else {
+                    buffer[bytes_done + 1] = buf[i];
+                    bytes_done++;
+                    if (bytes_done == buffer[DATA_LEN]) {
+                        bytes_done = 0;
+                        term_state = TT_STATE_IDLE;
                         compute(buffer);
-                        buffer=[];
+                        buffer = [];
                     }
                 }
                 break;
