@@ -1,3 +1,4 @@
+import 'electron';
 import * as cmd from '../network/commands';
 import * as scripting from '../scripting';
 import {setScript} from "./menu";

@@ -1,7 +1,7 @@
 import {UD3Connection} from "./connection";
 import SerialPort = require("serialport");
 // @ts-ignore
-import minprot = require('../../../libs/min');
+import minprot = require('../../libs/min');
 import * as telemetry from "./telemetry";
 
 const MIN_ID_WD = 10;
