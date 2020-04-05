@@ -28,7 +28,6 @@ export class Meter {
 
     value(value: number): void {
         this.meter_buf = value;
-        this.gauge.refresh(value);
     }
 
     text(text: string): void {
