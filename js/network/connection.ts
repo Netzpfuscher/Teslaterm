@@ -27,7 +27,7 @@ export let connection: UD3Connection | null = null;
 const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
-let wd_reset = 5;
+let wd_reset = WD_TIMEOUT;
 
 let ipaddr: string = '0.0.0.0';
 

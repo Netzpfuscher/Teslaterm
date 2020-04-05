@@ -23,7 +23,7 @@ class MinSerialConnection implements UD3Connection {
         return new Promise<void>((res, rej) => {
             this.serialPort = new SerialPort(this.port,
                 {
-                    baudRate: 500000
+                    baudRate: 500_000
                 }, (e: Error | null) => {
                     if (e) {
                         rej(e);
@@ -52,7 +52,6 @@ class MinSerialConnection implements UD3Connection {
                         res();
                     }
                 });
-
         });
     }
 
@@ -71,7 +70,7 @@ class MinSerialConnection implements UD3Connection {
     }
 
     resetWatchdog(): void {
-        this.minWrapper.min_queue_frame(MIN_ID_WD, [MIN_ID_TERM]);
+        this.minWrapper.min_queue_frame(MIN_ID_WD, []);
     }
 
     tick(): void {
@@ -79,14 +78,11 @@ class MinSerialConnection implements UD3Connection {
     }
 
     send_min_socket(connect: boolean) {
-        let connect_int: number;
-        if (connect == true) {
-            connect_int = 1;
-        } else {
-            connect_int = 0;
-        }
         let infoBuffer = Buffer.from(
-            String.fromCharCode(MIN_ID_TERM) + String.fromCharCode(connect_int) + "TT socket" + String.fromCharCode(0),
+            String.fromCharCode(MIN_ID_TERM) +
+            String.fromCharCode(connect ? 1 : 0) +
+            "TT socket" +
+            String.fromCharCode(0),
             'utf-8');
         this.minWrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
     }

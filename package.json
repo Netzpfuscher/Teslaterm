@@ -1,7 +1,6 @@
 {
   "name": "teslaterm",
   "version": "0.1.0",
-  "arch": "win33",
   "scripts": {
     "build": "cross-var tsc",
     "watch": "cross-var tsc -w",
