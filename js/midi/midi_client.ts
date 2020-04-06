@@ -14,8 +14,8 @@ export function onMidiNetworkConnect(status, ip, port, socketId, filter) {
             // info.data is an arrayBuffer.
             const name = helper.convertArrayBufferToString(info.data);
             chrome.sockets.tcp.onReceive.removeListener(connectListener);
-            const data = name+";"+JSON.stringify(filter);
-            chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer(data), s=> {
+            const data = name + ";" + JSON.stringify(filter);
+            chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer(data), s => {
                 if (chrome.runtime.lastError) {
                     console.log("Error in midi connect: ", chrome.runtime.lastError.message);
                 }

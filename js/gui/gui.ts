@@ -4,6 +4,8 @@ import * as scripting from '../scripting';
 import {setScript} from "./menu";
 import * as gauges from './gauges';
 import * as media_player from '../media/media_player';
+import {loadSidFile} from "../sid/sid";
+import {loadCyacd} from "../network/bootloader";
 
 export function init(): void {
     document.getElementById('layout').addEventListener("drop", ondrop);
@@ -47,6 +49,8 @@ async function ondrop(e: DragEvent): Promise<void> {
                     terminal.io.println("Failed to load script: " + err);
                     console.log(err);
                 });
+        } else if (extension=="cyacd") {
+            loadCyacd(file);
         } else {
             await media_player.loadMediaFile(file.path);
         }
