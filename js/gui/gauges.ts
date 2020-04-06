@@ -22,7 +22,8 @@ export class Meter {
     refresh(): void {
         if(this.meter_buf!=this.meter_buf_old){
             this.gauge.refresh(this.meter_buf);
-            this.meter_buf_old=this.meter_buf;
+            console.log("Updating value from ", this.meter_buf_old, " to ", this.meter_buf);
+            this.meter_buf_old = this.meter_buf;
         }
     }
 
@@ -51,8 +52,8 @@ export function init(): void {
 }
 
 export function refresh_all(): void {
-    for(var i=0;i<this.num_meters;i++){
-        meters[i].refresh();
+    for (let meter of meters) {
+        meter.refresh();
     }
 }
 
