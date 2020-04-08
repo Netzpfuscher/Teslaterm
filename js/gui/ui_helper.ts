@@ -1,20 +1,25 @@
-
 type BothConsumer = (ip: string, port: number) => any;
 type IPConsumer = (ip: string) => any;
 type PortConsumer = (port: number) => any;
 type IpPortConsumer = BothConsumer | IPConsumer | PortConsumer;
 
-function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort: boolean, defIp: string = undefined,
-                            defPort: number = undefined): Promise<IpPortConsumer> {
-    let resolve: (value?: (PromiseLike<IpPortConsumer> | IpPortConsumer)) => void = ()=>{};
-    let reject: ()=>any = ()=>{};
-    if (title == null) title = w2utils.lang('Notification');
+function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort: boolean, defIp?: string,
+                            defPort?: number): Promise<IpPortConsumer> {
+    let resolve: (value?: (PromiseLike<IpPortConsumer> | IpPortConsumer)) => void = () => {
+        // NOP
+    };
+    let reject: () => any = () => {
+        // NOP
+    };
+    if (title === null) {
+        title = w2utils.lang("Notification");
+    }
     let bodyHtml: string = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg;
     if (reqIp) {
         if (!defIp) {
             defIp = "localhost";
         }
-        bodyHtml += '<br>IP: <input id="ipIn" placeholder="'+defIp+'">';
+        bodyHtml += '<br>IP: <input id="ipIn" placeholder="' + defIp + '">';
     }
     if (reqPort) {
         let defPortString: string;
@@ -23,14 +28,14 @@ function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort:
         } else {
             defPortString = defPort.toString();
         }
-        bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="'+defPortString+'">';
+        bodyHtml += '<br>Port: <input id="portIn" type="number" max="65535" min="0" value="' + defPortString + '">';
     }
     bodyHtml += "</div>";
-    const process = function (success) {
+    const process = (success) => {
         if (success) {
             let ip: string;
             if (reqIp) {
-                ip = (<HTMLInputElement>$('#w2ui-popup .w2ui-box .w2ui-popup-body #ipIn')[0]).value;
+                ip = ($("#w2ui-popup .w2ui-box .w2ui-popup-body #ipIn")[0] as HTMLInputElement).value;
                 if (!ip) {
                     ip = defIp;
                 }
@@ -40,11 +45,11 @@ function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort:
 
             let port: number;
             if (reqPort) {
-                port = Number((<HTMLInputElement>$('#w2ui-popup .w2ui-box .w2ui-popup-body #portIn')[0]).value);
+                port = Number(($("#w2ui-popup .w2ui-box .w2ui-popup-body #portIn")[0] as HTMLInputElement).value);
             } else {
                 port = null;
             }
-            if (ip&&port) {
+            if (ip && port) {
                 setTimeout(resolve, 10, ip, port);
             } else if (ip) {
                 setTimeout(resolve, 10, ip, undefined);
@@ -55,122 +60,128 @@ function inputIpAddressImpl(msg: string, title: string, reqIp: boolean, reqPort:
             setTimeout(reject, 10);
         }
     };
-    if ($('#w2ui-popup').length > 0 && w2popup.status != 'closing') {
+    if ($("#w2ui-popup").length > 0 && w2popup.status !== "closing") {
         w2popup.message({
-            width   : 400,
-            height  : 170,
-            body    : bodyHtml,
-            buttons : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+            body: bodyHtml,
+            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang("Ok") + "</button>",
+            height: 170,
+            onKeydown: this.keyDownListener,
             onOpen: () => setTimeout(() => {
-                const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+                const btn = $("#w2ui-popup .w2ui-popup-btn")[0];
                 btn.onclick = () => {
                     process(true);
                     w2popup.message({});
                 };
-                btn.onabort = () =>process(false);
+                btn.onabort = () => process(false);
             }, 10),
-            onKeydown: this.keyDownListener
+            width: 400,
         });
     } else {
         w2popup.open({
-            width     : 450,
-            height    : 220,
-            showMax   : false,
-            showClose : false,
-            title     : title,
-            body      : bodyHtml,
-            buttons   : '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+            body: bodyHtml,
+            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang("Ok") + "</button>",
+            height: 220,
+            onKeydown: this.keyDownListener,
             onOpen: () => setTimeout(() => {
-                const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+                const btn = $("#w2ui-popup .w2ui-popup-btn")[0];
                 btn.onclick = () => {
                     process(true);
                     w2popup.close();
                 };
-                btn.onabort = () =>process(false);
+                btn.onabort = () => process(false);
             }, 10),
-            onKeydown: this.keyDownListener
+            showClose: false,
+            showMax: false,
+            title,
+            width: 450,
         });
     }
-    return new Promise<IpPortConsumer>((res, rej)=>{
+    return new Promise<IpPortConsumer>((res, rej) => {
         resolve = res;
         reject = rej;
     });
 }
 
-export function inputIpAndPort(msg: string, title: string, defIp: string = undefined, defPort: number = undefined): Promise<BothConsumer> {
-    return <Promise<BothConsumer>>inputIpAddressImpl(msg, title, true, true, defIp, defPort);
+export function inputIpAndPort(msg: string, title: string, defIp?: string, defPort?: number): Promise<BothConsumer> {
+    return inputIpAddressImpl(msg, title, true, true, defIp, defPort) as Promise<BothConsumer>;
 }
 
-export function inputPort(msg: string, title: string, defPort: number = undefined): Promise<PortConsumer> {
-    return <Promise<PortConsumer>>inputIpAddressImpl(msg, title, false, true, undefined, defPort);
+export function inputPort(msg: string, title: string, defPort?: number): Promise<PortConsumer> {
+    return inputIpAddressImpl(msg, title, false, true, undefined, defPort) as Promise<PortConsumer>;
 }
 
 export function inputStrings(msg, title, checkValid, names) {
     const $ = jQuery;
-    if (title == null) title = w2utils.lang('Notification');
-    let bodyHtml:string = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg + '<br>';
-    for (let i = 0; i < names.length; i++) {
-        bodyHtml += '<br>' + names[i] + ': <input id="input' + i + '">';
+    if (title === null) {
+        title = w2utils.lang("Notification");
     }
-    let resolve = ()=>{};
-    let reject = ()=>{};
-    let onOk = () => {
-        let input = [];
-        let inputFields = [];
+    let bodyHtml: string = '<div class="w2ui-centered w2ui-alert-msg" style="font-size: 13px;"><br>' + msg + "<br>";
+    for (let i = 0; i < names.length; i++) {
+        bodyHtml += "<br>" + names[i] + ': <input id="input' + i + '">';
+    }
+    let resolve = () => {
+        // NOP
+    };
+    let reject = () => {
+        // NOP
+    };
+    const onOk = () => {
+        const input = [];
+        const inputFields = [];
         for (let i = 0; i < names.length; i++) {
-            inputFields.push($('#w2ui-popup .w2ui-box .w2ui-popup-body #input' + i)[0]);
+            inputFields.push($("#w2ui-popup .w2ui-box .w2ui-popup-body #input" + i)[0]);
             input.push(inputFields[i].value);
         }
         const failedId = checkValid(...input);
         if (failedId >= 0) {
             inputFields[failedId].style.backgroundColor = "red";
             inputFields[failedId].trigger("focus");
-            setTimeout(()=>inputFields[failedId].style.backgroundColor = "white", 750);
+            setTimeout(() => inputFields[failedId].style.backgroundColor = "white", 750);
             return false;
         } else {
-            setTimeout(resolve, 10, input.length==1?input[0]:input);
+            setTimeout(resolve, 10, input.length === 1 ? input[0] : input);
             return true;
         }
     };
-    if ($('#w2ui-popup').length > 0 && w2popup.status != 'closing') {
+    if ($("#w2ui-popup").length > 0 && w2popup.status !== "closing") {
         w2popup.message({
-            width: 400,
-            height: 170,
             body: bodyHtml,
-            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang("Ok") + "</button>",
+            height: 170,
             onKeydown: this.keyDownListener,
             onOpen: () => setTimeout(() => {
-                const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+                const btn = $("#w2ui-popup .w2ui-popup-btn")[0];
                 btn.onclick = () => {
                     if (onOk()) {
                         w2popup.message({});
                     }
                 };
-                btn.onabort = ()=>setTimeout(reject, 10);
-            }, 10)
+                btn.onabort = () => setTimeout(reject, 10);
+            }, 10),
+            width: 400,
         });
     } else {
         w2popup.open({
-            width: 450,
-            height: 220,
-            showMax: false,
-            showClose: false,
-            title: title,
             body: bodyHtml,
-            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang('Ok') + '</button>',
+            buttons: '<button class="w2ui-popup-btn w2ui-btn">' + w2utils.lang("Ok") + "</button>",
+            height: 220,
             onKeydown: this.keyDownListener,
             onOpen: () => setTimeout(() => {
-                const btn = $('#w2ui-popup .w2ui-popup-btn')[0];
+                const btn = $("#w2ui-popup .w2ui-popup-btn")[0];
                 btn.onclick = () => {
                     if (onOk()) {
                         w2popup.close();
                     }
                 };
-                btn.onabort = ()=>setTimeout(reject, 10);
-            }, 10)
+                btn.onabort = () => setTimeout(reject, 10);
+            }, 10),
+            showClose: false,
+            showMax: false,
+            title,
+            width: 450,
         });
     }
-    return new Promise((res, rej)=> {
+    return new Promise((res, rej) => {
         resolve = res;
         reject = rej;
     });
@@ -179,17 +190,17 @@ export function inputStrings(msg, title, checkValid, names) {
 
 function keyDownListener(event: W2UI.KeyDownListener) {
     // if there are no messages
-    if ($('#w2ui-popup .w2ui-message').length === 0) {
-        const btn = <HTMLButtonElement>($('#w2ui-popup .w2ui-popup-btn')[0]);
+    if ($("#w2ui-popup .w2ui-message").length === 0) {
+        const btn = ($("#w2ui-popup .w2ui-popup-btn")[0]) as HTMLButtonElement;
         switch (event.originalEvent.code) {
             case "Enter":
                 btn.focus();
-                btn.classList.add('clicked'); // no need fo click as enter will do click
+                btn.classList.add("clicked"); // no need fo click as enter will do click
                 break;
             case "Escape":
                 // Don't click Ok when the user pressed escape
                 if (btn.onabort) {
-                    btn.onabort(new UIEvent('abort'));
+                    btn.onabort(new UIEvent("abort"));
                 }
                 w2popup.close();
                 break;

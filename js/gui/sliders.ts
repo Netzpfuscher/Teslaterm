@@ -1,20 +1,34 @@
-import {busActive, busControllable, transientActive} from "../network/telemetry";
 import * as $ from "jquery";
-import {terminal} from "./gui";
-import * as commands from '../network/commands';
-import * as midiServer from '../midi/midi_server';
+import * as midiServer from "../midi/midi_server";
+import * as commands from "../network/commands";
+import {busActive, busControllable, transientActive} from "../network/telemetry";
+import {terminal} from "./constants";
 
 export class OntimeUI {
-    slider: HTMLInputElement;
-    relativeSelect: HTMLInputElement;
-    total: HTMLSpanElement;
-    relative: HTMLSpanElement;
-    absolute: HTMLSpanElement;
-    absoluteVal: number = 0;
-    relativeVal: number = 100;
-    totalVal: number = 0;
+    get relativeVal(): number {
+        return this.relativeValInt;
+    }
 
-    setRelativeAllowed(allow:boolean) {
+    private readonly slider: HTMLInputElement;
+    private relativeSelect: HTMLInputElement;
+    private total: HTMLSpanElement;
+    private relative: HTMLSpanElement;
+    private absolute: HTMLSpanElement;
+    private absoluteVal: number = 0;
+    private relativeValInt: number = 100;
+    private totalVal: number = 0;
+
+    public constructor() {
+        this.slider = ($(".w2ui-panel-content .scopeview #ontime #slider")[0] as HTMLInputElement);
+        this.relativeSelect = ($(".w2ui-panel-content .scopeview #ontime #relativeSelect")[0] as HTMLInputElement);
+        this.total = $(".w2ui-panel-content .scopeview #ontime #total")[0];
+        this.relative = $(".w2ui-panel-content .scopeview #ontime #relative")[0];
+        this.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
+        this.slider.addEventListener("input", () => ontime.onSliderMoved());
+        this.relativeSelect.onclick = () => ontime.onRelativeOntimeSelect();
+    }
+
+    public setRelativeAllowed(allow: boolean) {
         if (allow) {
             this.relativeSelect.disabled = false;
         } else {
@@ -24,7 +38,7 @@ export class OntimeUI {
         }
     }
 
-    setToZero() {
+    public setToZero() {
         if (this.relativeSelect.checked) {
             this.setRelativeOntime(0);
         } else {
@@ -32,7 +46,7 @@ export class OntimeUI {
         }
     }
 
-    setAbsoluteOntime(time: number) {
+    public setAbsoluteOntime(time: number) {
         if (!this.relativeSelect.checked) {
             setSliderValue(null, time, this.slider);
         }
@@ -42,33 +56,33 @@ export class OntimeUI {
         this.ontimeChanged();
     }
 
-    setRelativeOntime(percentage: number) {
+    public setRelativeOntime(percentage: number) {
         console.log(this);
         if (this.relativeSelect.checked) {
             setSliderValue(null, percentage, this.slider);
         }
         percentage = Math.min(100, Math.max(0, percentage));
-        this.relativeVal = percentage;
-        this.relative.textContent =this.relativeVal.toString();
-        midiServer.sendRelativeOntime(this.relativeVal);
+        this.relativeValInt = percentage;
+        this.relative.textContent = this.relativeValInt.toString();
+        midiServer.sendRelativeOntime(this.relativeValInt);
         this.ontimeChanged();
     }
 
-    updateOntimeLabels() {
+    public updateOntimeLabels() {
         if (this.relativeSelect.checked) {
-            this.relative.innerHTML = "<b>"+this.relativeVal+"</b>";
+            this.relative.innerHTML = "<b>" + this.relativeValInt + "</b>";
             this.absolute.innerHTML = this.absoluteVal.toFixed();
         } else {
-            this.absolute.innerHTML = "<b>"+this.absoluteVal+"</b>";
-            this.relative.innerHTML = this.relativeVal.toFixed();
+            this.absolute.innerHTML = "<b>" + this.absoluteVal + "</b>";
+            this.relative.innerHTML = this.relativeValInt.toFixed();
         }
         this.total.innerHTML = this.totalVal.toFixed();
     }
 
-    onRelativeOntimeSelect() {
+    public onRelativeOntimeSelect() {
         if (this.relativeSelect.checked) {
-            this.slider.max = '100';
-            this.slider.value = this.relativeVal.toFixed();
+            this.slider.max = "100";
+            this.slider.value = this.relativeValInt.toFixed();
         } else {
             this.slider.max = commands.maxOntime.toFixed();
             this.slider.value = this.absoluteVal.toFixed();
@@ -76,106 +90,103 @@ export class OntimeUI {
         this.updateOntimeLabels();
     }
 
-    onSliderMoved(){
+    public onSliderMoved() {
         if (this.relativeSelect.checked) {
-            this.setRelativeOntime(parseInt(this.slider.value));
+            this.setRelativeOntime(parseInt(this.slider.value, 10));
         } else {
-            this.setAbsoluteOntime(parseInt(this.slider.value));
+            this.setAbsoluteOntime(parseInt(this.slider.value, 10));
         }
     }
 
-    ontimeChanged() {
-        this.totalVal = Math.round(this.absoluteVal*this.relativeVal/100.);
+    public ontimeChanged() {
+        this.totalVal = Math.round(this.absoluteVal * this.relativeValInt / 100.);
         commands.setOntime(this.totalVal);
         this.updateOntimeLabels();
     }
+
+    public markEnabled(enabled: boolean) {
+        ontime.slider.className = enabled ? "slider" : "slider-gray";
+    }
 }
 
-export const ontime = new OntimeUI();
+export let ontime: OntimeUI;
 
 export function updateSliderAvailability() {
     const busMaybeActive = busActive || !busControllable;
     const offDisable = !(transientActive && busMaybeActive);
     for (let i = 1; i <= 3; ++i) {
         const slider = $(".w2ui-panel-content .scopeview #slider" + i)[0];
-        slider.className = offDisable?"slider-gray":"slider";
+        slider.className = offDisable ? "slider-gray" : "slider";
     }
-    const onDisable = !busMaybeActive;
-    ontime.slider.className = onDisable?"slider-gray":"slider";
+    ontime.markEnabled(busMaybeActive);
 }
 
 export function init() {
-    ontime.slider =<HTMLInputElement> $(".w2ui-panel-content .scopeview #ontime #slider")[0];
-    ontime.relativeSelect =<HTMLInputElement> $(".w2ui-panel-content .scopeview #ontime #relativeSelect")[0];
-    ontime.total = $(".w2ui-panel-content .scopeview #ontime #total")[0];
-    ontime.relative = $(".w2ui-panel-content .scopeview #ontime #relative")[0];
-    ontime.absolute = $(".w2ui-panel-content .scopeview #ontime #absolute")[0];
-    ontime.slider.addEventListener("input", ()=>ontime.onSliderMoved());
-    ontime.relativeSelect.onclick = ()=>ontime.onRelativeOntimeSelect();
-    $('#slider1')[0].addEventListener("input", slider1);
-    $('#slider2')[0].addEventListener("input", slider2);
-    $('#slider3')[0].addEventListener("input", slider3);
+    $("#slider1")[0].addEventListener("input", slider1);
+    $("#slider2")[0].addEventListener("input", slider2);
+    $("#slider3")[0].addEventListener("input", slider3);
+    ontime = new OntimeUI();
 }
 
-function setSliderValue(name, value, slider = undefined) {
+function setSliderValue(name, value, slider?) {
     if (!slider) {
         slider = document.getElementById(name);
     }
-    if (value<slider.min||value>slider.max) {
-        terminal.io.println("Tried to set slider \""+slider.id+"\" out of range (To "+value+")!");
+    if (value < slider.min || value > slider.max) {
+        terminal.io.println("Tried to set slider \"" + slider.id + "\" out of range (To " + value + ")!");
         value = Math.min(slider.max, Math.max(slider.min, value));
     }
     slider.value = value;
 }
 
-function slider1(){
-    const slider = <HTMLInputElement>document.getElementById('slider1');
-    const slider_disp = document.getElementById('slider1_disp');
-    slider_disp.innerHTML = slider.value + ' Hz';
+function slider1() {
+    const slider = document.getElementById("slider1") as HTMLInputElement;
+    const slider_disp = document.getElementById("slider1_disp");
+    slider_disp.innerHTML = slider.value + " Hz";
     commands.setBPS(Number(slider.value));
 }
 
-export function setBPS(bps){
+export function setBPS(bps) {
     setSliderValue("slider1", bps);
     slider1();
 }
 
 export function getBPS(): number {
-    const slider = <HTMLInputElement>document.getElementById("slider1");
+    const slider = document.getElementById("slider1") as HTMLInputElement;
     return Number(slider.value);
 }
 
-function slider2(){
-    const slider: HTMLInputElement = <HTMLInputElement>document.getElementById('slider2');
-    const slider_disp = document.getElementById('slider2_disp');
-    slider_disp.innerHTML = slider.value + ' ms';
+function slider2() {
+    const slider: HTMLInputElement = document.getElementById("slider2") as HTMLInputElement;
+    const slider_disp = document.getElementById("slider2_disp");
+    slider_disp.innerHTML = slider.value + " ms";
     commands.setBurstOntime(Number(slider.value));
 }
 
-export function setBurstOntime(time){
+export function setBurstOntime(time) {
     setSliderValue("slider2", time);
     slider2();
 }
 
 export function getBurstOntime(): number {
-    const slider = <HTMLInputElement>document.getElementById("slider2");
+    const slider = document.getElementById("slider2") as HTMLInputElement;
     return Number(slider.value);
 }
 
-function slider3(){
-    const slider = <HTMLInputElement>document.getElementById('slider3');
-    const slider_disp = document.getElementById('slider3_disp');
-    slider_disp.innerHTML = slider.value + ' ms';
-    commands.setBurstOfftime(Number(slider.value))
+function slider3() {
+    const slider = document.getElementById("slider3") as HTMLInputElement;
+    const slider_disp = document.getElementById("slider3_disp");
+    slider_disp.innerHTML = slider.value + " ms";
+    commands.setBurstOfftime(Number(slider.value));
 }
 
-export function setBurstOfftime(time){
+export function setBurstOfftime(time) {
     setSliderValue("slider3", time);
     slider3();
 }
 
 export function getBurstOfftime(): number {
-    const slider = <HTMLInputElement>document.getElementById("slider3");
+    const slider = document.getElementById("slider3") as HTMLInputElement;
     return Number(slider.value);
 }
 

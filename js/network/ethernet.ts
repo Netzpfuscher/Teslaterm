@@ -1,35 +1,43 @@
-import {UD3Connection} from "./connection";
 import * as net from "net";
+import {terminal} from "../gui/constants";
+import {IUD3Connection} from "./IUD3Connection";
 import * as telemetry from "./telemetry";
-import {terminal} from "../gui/gui";
 
-class EthernetConnection implements UD3Connection {
-    mainSocket: net.Socket | undefined;
-    mediaSocket: net.Socket | undefined;
-    ipaddr: string;
+class EthernetConnection implements IUD3Connection {
+    public mainSocket: net.Socket | undefined;
+    public mediaSocket: net.Socket | undefined;
+    public ipaddr: string;
 
     constructor(ipaddr: string) {
         this.ipaddr = ipaddr;
     }
 
-    async sendTelnet(data: Buffer) {
+    public async sendTelnet(data: Buffer) {
         return new Promise<void>((res, rej) => {
             this.mainSocket.write(data, res);
         });
     }
 
-    sendMedia(data: Buffer) {
+    public sendMedia(data: Buffer) {
         this.mediaSocket.write(data);
     }
 
-    async connect(): Promise<void> {
+    public async connect(): Promise<void> {
         await this.createMain();
         await this.createMedia();
     }
 
-    disconnect(): void {
+    public disconnect(): void {
         this.mainSocket.destroy();
         this.mediaSocket.destroy();
+    }
+
+    public resetWatchdog(): void {
+        this.sendTelnet(new Buffer([7]));
+    }
+
+    public tick(): void {
+        // NOP
     }
 
     private async createMain(): Promise<void> {
@@ -39,25 +47,22 @@ class EthernetConnection implements UD3Connection {
     private async createMedia(): Promise<void> {
         this.mediaSocket = await connectSocket(this.ipaddr, 2323, "media", telemetry.receive_media);
     }
-
-    resetWatchdog(): void {
-        this.sendTelnet(new Buffer([7]));
-    }
-
-    tick(): void {
-        //NOP
-    }
 }
 
-export function createEthernetConnection(ip: string): UD3Connection {
+export function createEthernetConnection(ip: string): IUD3Connection {
     return new EthernetConnection(ip);
 }
 
 
-function connectSocket(ipaddr: string, port: number, desc: string, dataCallback: (data: Buffer) => void): Promise<net.Socket> {
+function connectSocket(
+    ipaddr: string,
+    port: number,
+    desc: string,
+    dataCallback: (data: Buffer) => void,
+): Promise<net.Socket> {
     return new Promise<net.Socket>((res, rej) => {
         let connected: boolean = false;
-        const ret = net.createConnection({port: port, host: ipaddr}, () => {
+        const ret = net.createConnection({port, host: ipaddr}, () => {
             terminal.io.println("Connected socket " + desc);
         });
         ret.on('end', () => {

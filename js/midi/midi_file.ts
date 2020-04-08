@@ -1,8 +1,8 @@
-import {media_state, player, setMediaType} from "./midi";
-import * as scope from "../gui/oscilloscope";
-import {MediaFileType} from "../media/media_player";
-import * as helper from '../helper';
 import * as path from "path";
+import * as scope from "../gui/oscilloscope/oscilloscope";
+import * as helper from '../helper';
+import {media_state, MediaFileType, setMediaType} from "../media/media_player";
+import {player} from "./midi";
 
 async function readmidi(file: string) {
     const content = await helper.readFileAsync(file);
@@ -11,8 +11,8 @@ async function readmidi(file: string) {
 
 export async function loadMidiFile(file: string) {
     const name = path.basename(file);
-    w2ui['toolbar'].get('mnu_midi').text = 'MIDI-File: ' + name;
-    w2ui['toolbar'].refresh();
+    w2ui.toolbar.get('mnu_midi').text = 'MIDI-File: ' + name;
+    w2ui.toolbar.refresh();
     media_state.currentFile = file;
     media_state.title = name;
     setMediaType(MediaFileType.midi);

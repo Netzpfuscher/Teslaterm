@@ -1,27 +1,28 @@
-import {FRAME_LENGTH, SidFrame, SidSource} from "./sid";
+import {FRAME_LENGTH, ISidSource, SidFrame} from "./sid_api";
 
-export class DumpSidSource implements SidSource {
-    sid_file: Uint8Array;
-    processedFrames: number = 0;
+export class DumpSidSource implements ISidSource {
+    private sid_file: Uint8Array;
+    private processedFrames: number = 0;
+
     constructor(data: Uint8Array) {
         this.sid_file = data;
     }
 
-    next_frame(): SidFrame {
-        const ret = this.sid_file.slice(FRAME_LENGTH*this.processedFrames, FRAME_LENGTH*(this.processedFrames+1));
+    public next_frame(): SidFrame {
+        const ret = this.sid_file.slice(FRAME_LENGTH * this.processedFrames, FRAME_LENGTH * (this.processedFrames + 1));
         this.processedFrames++;
         return ret;
     }
 
-    getTotalFrameCount(): number | null {
-        return this.sid_file.byteLength/FRAME_LENGTH;
+    public getTotalFrameCount(): number | null {
+        return this.sid_file.byteLength / FRAME_LENGTH;
     }
 
-    getCurrentFrameCount(): number {
+    public getCurrentFrameCount(): number {
         return this.processedFrames;
     }
 
-    isDone(): boolean {
-        return this.processedFrames*FRAME_LENGTH>=this.sid_file.byteLength;
+    public isDone(): boolean {
+        return this.processedFrames * FRAME_LENGTH >= this.sid_file.byteLength;
     }
 }

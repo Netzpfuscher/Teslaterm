@@ -1,10 +1,7 @@
-import {terminal} from "../gui/gui";
+import {terminal} from "../gui/constants";
 import * as sliders from "../gui/sliders";
-import {ConnectionState} from "./telemetry";
-import * as helper from '../helper';
+import {isSID, media_state, MediaFileType} from "../media/media_player";
 import {connection} from "./connection";
-import {media_state} from "../midi/midi";
-import {isSID, MediaFileType} from "../media/media_player";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;
@@ -78,8 +75,8 @@ export async function setBurstOfftime(offtime: number) {
     await sendCommand('set boff ' + offtime + '\r');
 }
 
-export async function setOfftime(number: number) {
-    await sendCommand('set pwd ' + number + '\r');
+export async function setOfftime(offtime: number) {
+    await sendCommand('set pwd ' + offtime + '\r');
 }
 
 export async function setBPS(bps: number) {
@@ -95,7 +92,7 @@ export async function setSynth(type: MediaFileType) {
     let synth_id: number;
     if (isSID(type)) {
         synth_id = 2;
-    } else if (type == MediaFileType.midi) {
+    } else if (type === MediaFileType.midi) {
         synth_id = 1;
     } else {
         synth_id = 0;

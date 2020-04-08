@@ -1,28 +1,13 @@
-import {terminal} from '../gui/gui';
-import * as menu from '../gui/menu';
-import * as telemetry from "./telemetry";
-import {ConnectionState} from "./telemetry";
-import * as commands from './commands';
-import {populateMIDISelects} from "../midi/midi_ui";
-import {createEthernetConnection} from "./ethernet";
-import {createSerialConnection} from "./serial";
 import SerialPort = require("serialport");
+import {terminal} from '../gui/constants';
+import * as menu from '../gui/menu';
+import {populateMIDISelects} from "../midi/midi_ui";
+import * as commands from './commands';
+import {createEthernetConnection} from "./ethernet";
+import {IUD3Connection} from "./IUD3Connection";
+import {createSerialConnection} from "./serial";
 
-export interface UD3Connection {
-    sendTelnet(data: Buffer): Promise<void>;
-
-    sendMedia(data: Buffer);
-
-    connect(): Promise<void>;
-
-    disconnect(): void;
-
-    resetWatchdog(): void;
-
-    tick(): void;
-}
-
-export let connection: UD3Connection | null = null;
+export let connection: IUD3Connection | null = null;
 
 const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
@@ -40,19 +25,19 @@ export async function disconnect() {
     menu.onDisconnect();
 }
 
-function connectSerial(port: string): UD3Connection {
+function connectSerial(port: string): IUD3Connection {
     return createSerialConnection(port);
 }
 
 export async function connect(port: string) {
-    let connectionTemp: UD3Connection;
+    let connectionTemp: IUD3Connection;
     if (port.indexOf(".") >= 0) {
         ipaddr = port;
         terminal.io.println("\r\nConnect: " + ipaddr);
         connectionTemp = createEthernetConnection(port);
     } else {
         terminal.io.println("\r\nConnect: Serial");
-        if (port != "") {
+        if (port !== "") {
             connectionTemp = connectSerial(port);
         } else {
             connectionTemp = await autoConnectSerial();
@@ -73,13 +58,13 @@ export async function connect(port: string) {
     }
 }
 
-async function autoConnectSerial(): Promise<UD3Connection> {
+async function autoConnectSerial(): Promise<IUD3Connection> {
     const all = await SerialPort.list();
-    //TODO config
+    // TODO config
     const expectedProduct = "62002";
     const expectedVendor = "1204";
     for (const port of all) {
-        if (port.vendorId == expectedVendor && port.productId == expectedProduct) {
+        if (port.vendorId === expectedVendor && port.productId === expectedProduct) {
             return connectSerial(port.path);
         }
     }
@@ -93,15 +78,15 @@ export function update() {
     if (connection) {
         response_timeout--;
 
-        if (response_timeout == 0) {
+        if (response_timeout === 0) {
             response_timeout = TIMEOUT;
-            //terminal.io.println('Connection lost, reconnecting...');
+            // terminal.io.println('Connection lost, reconnecting...');
 
-            //TODO: Implement reconnect logic, probably type-specific
+            // TODO: Implement reconnect logic, probably type-specific
         }
 
         wd_reset--;
-        if(wd_reset==0){
+        if (wd_reset === 0) {
             wd_reset = WD_TIMEOUT;
             connection.resetWatchdog();
         }

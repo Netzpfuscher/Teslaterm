@@ -1,22 +1,22 @@
-import * as $ from 'jquery';
-import * as scope from './gui/oscilloscope';
-import * as gui from './gui/gui';
-import {terminal} from './gui/gui';
-import * as sliders from './gui/sliders';
-import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
-import * as connection from "./network/connection";
-import {connect} from "./network/connection";
-import * as midi from "./midi/midi";
-import * as midi_server from "./midi/midi_server";
-import * as sid from "./sid/sid";
-import * as menu from './gui/menu';
-import * as telemetry from './network/telemetry';
-import * as gauges from "./gui/gauges";
-import {NUM_GAUGES} from "./gui/gauges";
-import * as nano from "./nano";
 import * as fs from "fs";
+import * as $ from 'jquery';
+import {terminal} from './gui/constants';
+import {NUM_GAUGES} from "./gui/gauges";
+import * as gauges from "./gui/gauges";
+import * as gui from './gui/gui';
+import * as menu from './gui/menu';
+import * as scope from './gui/oscilloscope/oscilloscope';
+import * as sliders from './gui/sliders';
 import ErrnoException = NodeJS.ErrnoException;
 import {convertArrayBufferToString} from "./helper";
+import * as midi from "./midi/midi";
+import * as midi_server from "./midi/midi_server";
+import * as nano from "./nano";
+import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
+import {connect} from "./network/connection";
+import * as connection from "./network/connection";
+import * as telemetry from './network/telemetry';
+import * as sid from "./sid/sid";
 
 export let config: SimpleIni;
 export const simulated = true;
@@ -25,29 +25,21 @@ export function init() {
     document.addEventListener('DOMContentLoaded', () => {
         readini("config.ini");
 
-        $(function () {
+        $(() => {
             $('#toolbar').w2toolbar({
-                name: 'toolbar',
                 items: [
                     {
-                        type: 'menu', id: 'mnu_command', text: 'Commands', icon: 'fa fa-table', items: [
+                        icon: 'fa fa-table', id: 'mnu_command', items: [
                             {text: 'TR Start', icon: 'fa fa-bolt', id: 'transient'},
                             {text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
                             {text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
-                            { text: 'Settings', id: 'settings', icon: 'fa fa-table'},
-                            {text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'}
-                        ]
+                            {text: 'Settings', id: 'settings', icon: 'fa fa-table'},
+                            {text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'},
+                        ], text: 'Commands', type: 'menu',
                     },
 
                     {
-                        type: 'menu-radio', id: 'trigger_radio', icon: 'fa fa-star',
-                        text: function (item) {
-                            let el = this.get('trigger_radio:' + item.selected);
-                            const triggerId = item.selected.substr(7);
-                            scope.setTrigger(Number(triggerId));
-                            return 'Trigger: ' + el.text;
-                        },
-                        selected: 'waveoff-1',
+                        icon: 'fa fa-star', id: 'trigger_radio',
                         items: [
                             {id: 'waveoff-1', text: 'Off'},
                             {id: 'waveoid0', text: 'Wave 0'},
@@ -55,60 +47,73 @@ export function init() {
                             {id: 'waveoid2', text: 'Wave 2'},
                             {id: 'waveoid3', text: 'Wave 3'},
                             {id: 'waveoid4', text: 'Wave 4'},
-                            {id: 'waveoid5', text: 'Wave 5'}
-                        ]
+                            {id: 'waveoid5', text: 'Wave 5'},
+                        ],
+                        selected: 'waveoff-1',
+                        type: 'menu-radio',
+                        text(item) {
+                            const el = this.get('trigger_radio:' + item.selected);
+                            const triggerId = item.selected.substr(7);
+                            scope.setTrigger(Number(triggerId));
+                            return 'Trigger: ' + el.text;
+                        },
                     },
                     {
-                        type: 'menu', id: 'mnu_midi', text: 'MIDI-File: none', icon: 'fa fa-table', items: [
+                        icon: 'fa fa-table', id: 'mnu_midi', items: [
                             {text: 'Play', icon: 'fa fa-bolt'},
-                            {text: 'Stop', icon: 'fa fa-bolt'}
-                        ]
+                            {text: 'Stop', icon: 'fa fa-bolt'},
+                        ],
+                        text: 'MIDI-File: none', type: 'menu',
                     },
 
                     {
-                        type: 'menu', id: 'mnu_script', text: 'Script: none', icon: 'fa fa-table', items: [
+                        icon: 'fa fa-table', id: 'mnu_script', items: [
                             {text: 'Start', icon: 'fa fa-bolt'},
-                            {text: 'Stop', icon: 'fa fa-bolt'}
-                        ]
+                            {text: 'Stop', icon: 'fa fa-bolt'},
+                        ], text: 'Script: none', type: 'menu',
                     },
                     {type: 'spacer'},
                     {type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off'},
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
                     {
-                        type: 'html', id: 'port',
-                        html: function (item) {
+                        html(item) {
                             return '<div style="padding: 3px 10px;">' +
                                 ' Port:' +
-                                '    <input size="20" placeholder="COM1" onchange="let el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
-                                '         style="padding: 3px; border-radius: 2px; border: 1px solid silver" value="' + (item.value || '') + '"/>' +
+                                '    <input size="20" placeholder="COM1" ' +
+                                '    onchange="let el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
+                                '   style="padding: 3px; border-radius: 2px; border: 1px solid silver" ' +
+                                '   value="' + (item.value || '') + '"/>' +
                                 '</div>';
-                        }
-                     },
+                        },
+                        id: 'port', type: 'html',
+                    },
                     {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
-                    {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'}
+                    {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'},
                 ],
-                onClick: menu.onCtrlMenuClick
+                name: 'toolbar',
+                onClick: menu.onCtrlMenuClick,
             });
             console.log("Done toolbar");
-            //menu.init();
+            // menu.init();
         });
 
         let html_gauges = '';
         for (let i = 0; i < NUM_GAUGES; i++) {
-            html_gauges += '<div id="gauge' + i + '" style= "width: 100px; height: 100px"></div>'
+            html_gauges += '<div id="gauge' + i + '" style= "width: 100px; height: 100px"></div>';
         }
 
 
-        let pstyle = 'background-color: #F5F6F7;  padding: 5px;';
+        const pstyle = 'background-color: #F5F6F7;  padding: 5px;';
         $('#layout').w2layout({
             name: 'layout',
             panels: [
                 {
-                    type: 'top', size: 50, overflow: "hidden", resizable: false, style: pstyle, content:
-                        '<div id="toolbar" style="padding: 4px; border: 1px solid #dfdfdf; border-radius: 3px"></div>'
+                    content:
+                        '<div id="toolbar" style="padding: 4px; border: 1px solid #dfdfdf; border-radius: 3px"></div>',
+                    overflow: "hidden", resizable: false, size: 50, style: pstyle, type: 'top',
                 },
                 {
-                    type: 'main', style: pstyle, content:
+                    content:
                         '<div class="scopeview">' +
                         '<article>' +
                         '<canvas id="backCanvas" style= "position: absolute; left: 0; top: 0; width: 75%; background: black; z-index: 0;"></canvas>' +
@@ -128,21 +133,22 @@ export function init() {
                         '<br><br>MIDI Input: <select id="midiIn"></select>' +
                         '<br>MIDI Output: <select id="midiOut"></select>' +
                         '</aside>' +
-                        '</div>'
+                        '</div>',
+                    style: pstyle, type: 'main',
                 },
                 {
-                    type: 'right', size: 120, resizable: false, style: pstyle, content:
-                        (html_gauges)
+                    content: html_gauges, resizable: false, size: 120, style: pstyle, type: 'right',
                 },
 
                 {
-                    type: 'preview', size: '50%', resizable: true, style: pstyle, content:
-                        '<div id="terminal" style="position:relative; width:100%; height:100%"></div>'
+                    content:
+                        '<div id="terminal" style="position:relative; width:100%; height:100%"></div>',
+                    resizable: true, size: '50%', style: pstyle, type: 'preview',
                 },
 
-            ]
+            ],
         });
-        w2ui['layout'].on({type: 'resize', execute: 'after'}, function () {
+        w2ui.layout.on({type: 'resize', execute: 'after'}, () => {
             scope.onResize();
         });
         terminal.decorate(document.querySelector('#terminal'));
@@ -153,7 +159,7 @@ export function init() {
 
         scope.init();
         midi.init();
-        //midi_server.init();
+        // midi_server.init();
         setInterval(update, 20);
     });
 }
@@ -166,22 +172,22 @@ function readini(file: string) {
         }
         const data_string = convertArrayBufferToString(data);
         console.log(data_string);
-        config = new SimpleIni(function () {
+        config = new SimpleIni(() => {
             return data_string;
         });
 
         if (config.general.port) {
-            w2ui['toolbar'].get('port').value = config.general.port;
-            w2ui['toolbar'].refresh();
+            w2ui.toolbar.get('port').value = config.general.port;
+            w2ui.toolbar.refresh();
         }
-        if (config.general.autoconnect == "true") {
+        if (config.general.autoconnect === "true") {
             connect(config.general.port);
         }
     });
 }
 
-//Called every 20 ms
-function update(){
+// Called every 20 ms
+function update() {
     connection.update();
 
     nano.update();

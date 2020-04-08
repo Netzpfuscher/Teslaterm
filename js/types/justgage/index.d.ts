@@ -3,7 +3,9 @@ declare interface Config {
 }
 
 declare interface JustGage {
-    new (options: any): JustGage;
+    new(options: any): JustGage;
+
     refresh(val: any, max?: any, config?: any);
+
     txtLabel: JQuery;
 }

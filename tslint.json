@@ -1,5 +1,8 @@
 {
-  "extends": "tslint:recommended",
+  "extends": [
+    "tslint-no-circular-imports",
+    "tslint:recommended"
+  ],
   "rules": {
     "max-line-length": {
       "options": [
@@ -8,9 +11,25 @@
     },
     "new-parens": true,
     "no-arg": true,
-    "no-bitwise": true,
+    "no-bitwise": false,
     "no-conditional-assignment": true,
-    "no-consecutive-blank-lines": false
+    "no-consecutive-blank-lines": false,
+    "no-console": false,
+    "variable-name": {
+      "options": [
+        "check-format",
+        "allow-snake-case",
+        "ban-keywords"
+      ]
+    },
+    "quotemark": false,
+    "no-empty": false
+  },
+  "linterOptions": {
+    "exclude": [
+      "js/types/**",
+      "js/sid/sid_emulated.ts"
+    ]
   },
   "jsRules": {
     "max-line-length": {

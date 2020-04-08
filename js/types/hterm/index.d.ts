@@ -3,6 +3,7 @@ declare namespace lib.Storage {
 
     }
 }
+
 declare class TerminalIO {
     push(): TerminalIO;
 

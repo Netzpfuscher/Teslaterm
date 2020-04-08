@@ -1,5 +1,5 @@
 //Based on https://github.com/og2t/jsSID/blob/master/source/jsSID.js
-import {SidFrame, SidSource} from "./sid";
+import {SidFrame, ISidSource} from "./sid_api";
 import {convertArrayBufferToString} from "../helper";
 
 enum CPUStatus {
@@ -48,8 +48,8 @@ const PAL_FRAMERATE = 50;
 const CYCLES_PER_FRAME = C64_PAL_CPUCLK / PAL_FRAMERATE;
 const SID_BASE_ADDR = 0xD400;
 
-export class EmulationSidSource implements SidSource {
-    memory: Uint8Array = new Uint8Array(1<<16);
+export class EmulationSidSource implements ISidSource {
+    memory: Uint8Array = new Uint8Array(1 << 16);
     cpu_time: number;
     sid_info: SidFileInfo;
     subtune: number;
@@ -87,20 +87,21 @@ export class EmulationSidSource implements SidSource {
         while (this.cpu_time <= CYCLES_PER_FRAME) {
             const prev_pc = this.PC;
             const instr_result = this.run_single_instruction();
-            if (instr_result.status!=CPUStatus.running) {
+            if (instr_result.status !== CPUStatus.running) {
                 finished = true;
                 break;
-            } else
+            } else {
                 this.cpu_time += instr_result.num_cycles;
-            if ((this.memory[1] & 3) > 1 && prev_pc < 0xE000 && (this.PC == 0xEA31 || this.PC == 0xEA81)) {
+            }
+            if ((this.memory[1] & 3) > 1 && prev_pc < 0xE000 && (this.PC === 0xEA31 || this.PC === 0xEA81)) {
                 finished = true;
                 break;
             }
         }
         this.cpu_time -= CYCLES_PER_FRAME;
         let data: SidFrame = new Uint8Array(25);
-        for (let i = 0;i<data.byteLength;++i) {
-            data[i] = this.memory[SID_BASE_ADDR+i];
+        for (let i = 0; i < data.byteLength; ++i) {
+            data[i] = this.memory[SID_BASE_ADDR + i];
         }
         ++this.current_frame;
         return data;
@@ -124,24 +125,27 @@ export class EmulationSidSource implements SidSource {
         }
         strend = 1;
         for (let i = 0; i < 32; i++) {
-            if (strend != 0)
+            if (strend !== 0) {
                 strend = sidTitle[i] = filedata[0x16 + i];
-            else
+            } else {
                 strend = sidTitle[i] = 0;
+            }
         }
         strend = 1;
         for (let i = 0; i < 32; i++) {
-            if (strend != 0)
+            if (strend !== 0) {
                 strend = sidAuthor[i] = filedata[0x36 + i];
-            else
+            } else {
                 strend = sidAuthor[i] = 0;
+            }
         }
         strend = 1;
         for (let i = 0; i < 32; i++) {
-            if (strend != 0)
+            if (strend !== 0) {
                 strend = sidInfo[i] = filedata[0x56 + i];
-            else
+            } else {
                 strend = sidInfo[i] = 0;
+            }
         }
         const initaddr = filedata[0xA] + filedata[0xB] ? filedata[0xA] * 256 + filedata[0xB] : loadaddr;
         const playaddr = filedata[0xC] * 256 + filedata[0xD];
@@ -163,16 +167,18 @@ export class EmulationSidSource implements SidSource {
         this.memory[1] = 0x37;
         this.memory[0xDC05] = 0;
         for (let timeout = 100000; timeout >= 0; timeout--) {
-            if (this.run_single_instruction().status!=CPUStatus.running)
+            if (this.run_single_instruction().status !== CPUStatus.running) {
                 break;
+            }
         }
-        if ((info.timermodes[this.subtune] || this.memory[0xDC05])&&!this.memory[0xDC05]) {
+        if ((info.timermodes[this.subtune] || this.memory[0xDC05]) && !this.memory[0xDC05]) {
             this.memory[0xDC04] = 0x24;
             this.memory[0xDC05] = 0x40;
         }
 
-        if (info.playAddr >= 0xE000 && this.memory[1] == 0x37)
+        if (info.playAddr >= 0xE000 && this.memory[1] === 0x37) {
             this.memory[1] = 0x35;
+        }
         //player under KERNAL (Crystal Kingdom Dizzy)
         this.initCPU(info.playAddr);
         this.cpu_time = 0;
@@ -301,22 +307,22 @@ export class EmulationSidSource implements SidSource {
                     this.A = this.memory[addr];
                     this.ST &= 125;
                     this.ST |= Number(!this.A) << 1 | (this.A & 128);
-                    if ((IR & 3) == 3)
+                    if ((IR & 3) === 3) {
                         this.X = this.A;
+                    }
                     break;
                 //LDA / LAX (illegal, used by my 1 rasterline player)
                 case 0x80:
-                    this.memory[addr] = this.A & (((IR & 3) == 3) ? this.X : 0xFF);
+                    this.memory[addr] = this.A & (((IR & 3) === 3) ? this.X : 0xFF);
                     storadd = addr;
                 //this.STA / SAX (illegal)
             }
-        }
-        else if (IR & 2) {
+        } else if (IR & 2) {
             //nybble2:  2:illegal/LDX, 6:this.A/this.X/INC/DEC, this.A:Accu-shift/reg.transfer/NOP, E:shift/this.X/INC/DEC
             switch (IR & 0x1F) {
                 //addressing modes
                 case 0x1E:
-                    addr = this.memory[++this.PC] + this.memory[++this.PC] * 256 + (((IR & 0xC0) != 0x80) ? this.X : this.Y);
+                    addr = this.memory[++this.PC] + this.memory[++this.PC] * 256 + (((IR & 0xC0) !== 0x80) ? this.X : this.Y);
                     cycles = 5;
                     break;
                 //abs,x / abs,y
@@ -326,7 +332,7 @@ export class EmulationSidSource implements SidSource {
                     break;
                 //abs
                 case 0x16:
-                    addr = this.memory[++this.PC] + (((IR & 0xC0) != 0x80) ? this.X : this.Y);
+                    addr = this.memory[++this.PC] + (((IR & 0xC0) !== 0x80) ? this.X : this.Y);
                     cycles = 4;
                     break;
                 //zp,x / zp,y
@@ -345,7 +351,7 @@ export class EmulationSidSource implements SidSource {
                 case 0x00:
                     this.ST &= 0xFE;
                 case 0x20:
-                    if ((IR & 0xF) == 0xA) {
+                    if ((IR & 0xF) === 0xA) {
                         this.A = (this.A << 1) + (this.ST & 1);
                         this.ST &= 60;
                         this.ST |= (this.A & 128) | Number(this.A > 255);
@@ -367,7 +373,7 @@ export class EmulationSidSource implements SidSource {
                 case 0x40:
                     this.ST &= 0xFE;
                 case 0x60:
-                    if ((IR & 0xF) == 0xA) {
+                    if ((IR & 0xF) === 0xA) {
                         this.T = this.A;
                         this.A = (this.A >> 1) + (this.ST & 1) * 128;
                         this.ST &= 60;
@@ -405,13 +411,14 @@ export class EmulationSidSource implements SidSource {
                     break;
                 //DEX
                 case 0xA0:
-                    if ((IR & 0xF) != 0xA)
+                    if ((IR & 0xF) !== 0xA) {
                         this.X = this.memory[addr];
-                    else if (IR & 0x10) {
+                    } else if (IR & 0x10) {
                         this.X = this.SP;
                         break;
-                    } else
+                    } else {
                         this.X = this.A;
+                    }
                     this.ST &= 125;
                     this.ST |= Number(!this.X) << 1 | (this.X & 128);
                     break;
@@ -439,8 +446,7 @@ export class EmulationSidSource implements SidSource {
                     }
                 //INC/NOP
             }
-        }
-        else if ((IR & 0xC) == 8) {
+        } else if ((IR & 0xC) === 8) {
             //nybble2:  8:register/status
             switch (IR & 0xF0) {
                 case 0x60:
@@ -507,20 +513,21 @@ export class EmulationSidSource implements SidSource {
                     break;
                 //TAY
                 default:
-                    if (flagsw[IR >> 5] & 0x20)
+                    if (flagsw[IR >> 5] & 0x20) {
                         this.ST |= (flagsw[IR >> 5] & 0xDF);
-                    else
+                    } else {
                         this.ST &= 255 - (flagsw[IR >> 5] & 0xDF);
+                    }
                 //CLC/SEC/CLI/SEI/CLV/CLD/SED
             }
-        }
-        else {
+        } else {
             //nybble2:  0: control/branch/this.Y/compare  4: this.Y/compare  C:this.Y/compare/JMP
-            if ((IR & 0x1F) == 0x10) {
+            if ((IR & 0x1F) === 0x10) {
                 this.PC++;
                 this.T = this.memory[this.PC];
-                if (this.T & 0x80)
+                if (this.T & 0x80) {
                     this.T -= 0x100;
+                }
                 //BPL/BMI/BVC/BVS/BCC/BCS/BNE/BEQ  relative branch
                 if (IR & 0x20) {
                     if (this.ST & branchflag[IR >> 6]) {
@@ -533,8 +540,7 @@ export class EmulationSidSource implements SidSource {
                         cycles = 3;
                     }
                 }
-            }
-            else {
+            } else {
                 //nybble2:  0:this.Y/control/this.Y/compare  4:this.Y/compare  C:this.Y/compare/JMP
                 switch (IR & 0x1F) {
                     //addressing modes
