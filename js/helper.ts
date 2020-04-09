@@ -1,5 +1,10 @@
 import * as fs from "fs";
 
+export enum Endianness {
+    LITTLE_ENDIAN,
+    BIG_ENDIAN,
+}
+
 export function bytes_to_signed(lsb: number, msb: number): number {
     const sign = msb & (1 << 7);
     const x = (((msb & 0xFF) << 8) | (lsb & 0xFF));
@@ -10,13 +15,32 @@ export function bytes_to_signed(lsb: number, msb: number): number {
     }
 }
 
-export function to_32_bit_bytes(num: number): number[] {
-    return [
+export function to_ud3_time(time_us: number, end: Endianness): number[] {
+    const us_per_tick = 3.125;
+    const time_ticks = Math.floor(time_us / us_per_tick);
+    const time_for_ud = 0x100000000 - (time_ticks & 0xFFFFFFFF);
+    return to_32_bit_bytes(time_for_ud, end);
+}
+
+export function to_32_bit_bytes(num: number, end: Endianness): number[] {
+    const bigEndian = [
         (num >> 24) & 0xff,
         (num >> 16) & 0xff,
         (num >> 8) & 0xff,
         (num >> 0) & 0xff,
     ];
+    if (end === Endianness.LITTLE_ENDIAN) {
+        return bigEndian.reverse();
+    } else {
+        return bigEndian;
+    }
+}
+
+export function from_32_bit_bytes(bytes: number[], end: Endianness): number {
+    if (end === Endianness.BIG_ENDIAN) {
+        bytes = bytes.reverse();
+    }
+    return bytes[3] << 24 | bytes[2] << 16 | bytes[1] << 8 | bytes[0];
 }
 
 export function convertArrayBufferToString(buf: number[] | Buffer | Uint8Array, uri: boolean = true): string {

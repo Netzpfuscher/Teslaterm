@@ -69,10 +69,10 @@ function playMediaBlocking(): Promise<any> {
             resolve();
         };
         interrupt = () => {
-            media_player.stopPlaying();
+            media_player.media_state.stopPlaying();
             reject("Canceled");
         };
-        media_player.startPlaying();
+        media_player.media_state.startPlaying();
     });
 }
 
@@ -96,7 +96,7 @@ export async function loadScript(file: fs.PathLike): Promise<Array<() => Promise
         // calls for the queue
         delay: wrapForSandbox(timeoutSafe),
         loadMediaFile: wrapForSandbox(media_player.loadMediaFile),
-        playMediaAsync: wrapForSandboxNonPromise(media_player.startPlaying),
+        playMediaAsync: wrapForSandboxNonPromise(media_player.media_state.startPlaying),
         playMediaBlocking: wrapForSandbox(playMediaBlocking),
         println: wrapForSandbox((s) => terminal.io.println(s)),
         setBPS: wrapForSandboxNonPromise(sliders.setBPS),
@@ -104,7 +104,7 @@ export async function loadScript(file: fs.PathLike): Promise<Array<() => Promise
         setBurstOntime: wrapForSandboxNonPromise(sliders.setBurstOntime),
         setOntime: wrapForSandboxNonPromise((s) => sliders.ontime.setRelativeOntime(s)),
         setTransientMode: wrapForSandboxNonPromise(commands.setTransientEnabled),
-        stopMedia: wrapForSandboxNonPromise(media_player.stopPlaying),
+        stopMedia: wrapForSandboxNonPromise(media_player.media_state.stopPlaying),
         waitForConfirmation: wrapForSandbox(waitForConfirmation),
     });
     vm.runInContext(code, sandbox, {timeout: 1000});

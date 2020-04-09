@@ -1,14 +1,8 @@
+import * as microtime from "microtime";
 import * as path from "path";
 import * as scope from "../gui/oscilloscope/oscilloscope";
-import {readFileAsync} from "../helper";
-import {
-    checkTransientDisabled,
-    isSID,
-    media_state,
-    MediaFileType,
-    PlayerActivity,
-    setMediaType,
-} from "../media/media_player";
+import {Endianness, readFileAsync, to_ud3_time} from "../helper";
+import {checkTransientDisabled, isSID, media_state, MediaFileType, PlayerActivity} from "../media/media_player";
 import * as connection from "../network/connection";
 import {FRAME_LENGTH, ISidSource} from "./sid_api";
 import {DumpSidSource} from "./sid_dump";
@@ -21,22 +15,37 @@ export function setSendingSID(newVal: boolean) {
     sending_sid = newVal;
 }
 
+let lastFrameTime: number;
+
+async function startPlayingSID() {
+    lastFrameTime = microtime.now();
+    await connection.connection.flushSynth();
+}
+
+async function stopPlayingSID() {
+    setSendingSID(true);
+    await loadSidFile(this.currentFile);
+}
+
 export async function loadSidFile(file: string) {
     const data = await readFileAsync(file);
     const extension = path.extname(file).substr(1).toLowerCase();
     const name = path.basename(file);
     w2ui.toolbar.get("mnu_midi").text = "SID-File: " + name;
     w2ui.toolbar.refresh();
-    media_state.currentFile = file;
     if (extension === "dmp") {
         current_sid_source = new DumpSidSource(data);
-        media_state.title = name;
-        setMediaType(MediaFileType.sid_dmp);
+        media_state.loadFile(file, MediaFileType.sid_dmp, name, startPlayingSID, stopPlayingSID);
     } else if (extension === "sid") {
         const source_emulated = new EmulationSidSource(data);
         current_sid_source = source_emulated;
-        media_state.title = source_emulated.sid_info.title;
-        setMediaType(MediaFileType.sid_emulated);
+        media_state.loadFile(
+            file,
+            MediaFileType.sid_emulated,
+            source_emulated.sid_info.title,
+            startPlayingSID,
+            stopPlayingSID,
+        );
     } else {
         throw new Error("Unknown extension " + extension);
     }
@@ -55,13 +64,16 @@ export function update() {
                 for (let j = 0; j < FRAME_LENGTH; ++j) {
                     data[j] = real_frame[j];
                 }
-                for (let j = FRAME_LENGTH; j < FRAME_LENGTH + 4; ++j) {
-                    data[j] = 0xFF;
+                lastFrameTime += 50e3;
+                // Why did you decide to mix big and little endian, Jens???
+                const ud_time = to_ud3_time(lastFrameTime, Endianness.LITTLE_ENDIAN);
+                for (let j = 0; j < 4; ++j) {
+                    data[j + FRAME_LENGTH] = ud_time[j];
                 }
                 for (let j = FRAME_LENGTH + 4; j < FRAME_LENGTH + 8; ++j) {
-                    // TODO replace with timestamp
                     data[j] = 0xFF;
                 }
+                console.log(data);
                 connection.connection.sendMedia(data);
             }
         }
@@ -71,7 +83,7 @@ export function update() {
             media_state.progress = Math.floor(100 * currentFrames / totalFrames);
         }
         if (current_sid_source.isDone()) {
-            media_state.state = PlayerActivity.idle;
+            media_state.stopPlaying();
         }
         scope.redrawMediaInfo();
     }

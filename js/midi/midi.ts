@@ -5,13 +5,11 @@ import * as sliders from "../gui/sliders";
 import {ontime, setBPS, setBurstOfftime, setBurstOntime} from "../gui/sliders";
 import * as helper from "../helper";
 import {config, simulated} from "../init";
-import {checkTransientDisabled, media_state, MediaFileType, PlayerActivity, PlayerState} from "../media/media_player";
+import {checkTransientDisabled, media_state} from "../media/media_player";
 import * as nano from "../nano";
 import * as commands from "../network/commands";
 import {connection} from "../network/connection";
-import {ConnectionState, transientActive} from "../network/telemetry";
 import * as scripting from "../scripting";
-import {onMIDIoverIP} from "./midi_client";
 import * as midiServer from "./midi_server";
 import * as midi_ui from "./midi_ui";
 import {populateMIDISelects} from "./midi_ui";
@@ -79,8 +77,7 @@ function processMidiFromPlayer(event: MidiPlayer.Event) {
     if (playMidiEvent(event)) {
         media_state.progress = 100 - player.getSongPercentRemaining();
     } else if (!simulated && !connection) {
-        player.stop();
-        media_state.state = PlayerActivity.idle;
+        media_state.stopPlaying();
         scripting.onMidiStopped();
     }
     scope.redrawMediaInfo();
@@ -114,14 +111,10 @@ export function midiMessageReceived(ev) {
 
             switch (String(noteNumber)) {
                 case config.nano.play:
-                    nano.setLedState(config.nano.play, 1);
-                    nano.setLedState(config.nano.stop, 0);
-                    player.play();
-                    media_state.state = PlayerActivity.playing;
-                    scope.drawChart();
+                    media_state.startPlaying();
                     break;
                 case config.nano.stop:
-                    stopMidiFile();
+                    media_state.stopPlaying();
                     break;
                 case config.nano.killset:
                     nano.setCoilHot(false);
@@ -209,8 +202,6 @@ export function playMidiData(data: number[] | Uint8Array): boolean {
 export function init() {
     if (navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess().then(midiInit, onMIDISystemError);
-        media_state.progress = 0;
-        // chrome.sockets.tcp.onReceive.addListener(onMIDIoverIP);
     } else {
         alert("No MIDI support in your browser.");
     }

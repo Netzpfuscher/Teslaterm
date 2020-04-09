@@ -1,16 +1,21 @@
 import * as microtime from "microtime";
+import {Endianness, to_ud3_time} from "../helper";
+import {BootloadableConnection} from "./bootloadable_connection";
+import {IUD3Connection, SynthType} from "./IUD3Connection";
+import * as telemetry from "./telemetry";
 import SerialPort = require("serialport");
 import minprot = require('../../libs/min');
-import {to_32_bit_bytes} from "../helper";
-import {BootloadableConnection} from "./bootloadable_connection";
-import {IUD3Connection} from "./IUD3Connection";
-import * as telemetry from "./telemetry";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
 const MIN_ID_TERM = 0;
 const MIN_ID_SOCKET = 13;
+const MIN_ID_SYNTH = 14;
 
+const SYNTH_CMD_FLUSH = 0x01;
+const SYNTH_CMD_SID = 0x02;
+const SYNTH_CMD_MIDI = 0x03;
+const SYNTH_CMD_OFF = 0x04;
 
 class MinSerialConnection extends BootloadableConnection implements IUD3Connection {
     public port: string;
@@ -93,11 +98,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
 
     public resetWatchdog(): void {
         if (this.min_wrapper) {
-            const us_per_tick = 3.125;
-            const time_us = microtime.now();
-            const time_ticks = Math.floor(time_us / us_per_tick);
-            const time_for_ud = 0x100000000 - (time_ticks & 0xFFFFFFFF);
-            this.min_wrapper.min_queue_frame(MIN_ID_WD, to_32_bit_bytes(time_for_ud));
+            this.min_wrapper.min_queue_frame(MIN_ID_WD, to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN));
         }
     }
 
@@ -139,6 +140,18 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             }
         };
         this.send_min_socket(true);
+    }
+
+    public async flushSynth(): Promise<void> {
+        if (this.min_wrapper) {
+            await this.min_wrapper.min_queue_frame(MIN_ID_SYNTH, [SYNTH_CMD_FLUSH]);
+        }
+    }
+
+    public async setSynth(type: SynthType): Promise<void> {
+        if (this.min_wrapper) {
+            await this.min_wrapper.min_queue_frame(MIN_ID_SYNTH, [type]);
+        }
     }
 }
 

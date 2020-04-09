@@ -1,8 +1,9 @@
 import * as net from "net";
 import {terminal} from "../gui/constants";
-import {IUD3Connection} from "./IUD3Connection";
+import {IUD3Connection, SynthType} from "./IUD3Connection";
 import * as telemetry from "./telemetry";
 
+// TODO remove?
 class EthernetConnection implements IUD3Connection {
     public mainSocket: net.Socket | undefined;
     public mediaSocket: net.Socket | undefined;
@@ -38,6 +39,28 @@ class EthernetConnection implements IUD3Connection {
 
     public tick(): void {
         // NOP
+    }
+
+    public async flushSynth(): Promise<void> {
+        // NOP
+        // TODO
+    }
+
+    public async setSynth(type: SynthType): Promise<void> {
+        let id: number;
+        switch (type) {
+            case SynthType.NONE:
+                id = 0;
+                break;
+            case SynthType.MIDI:
+                id = 1;
+                break;
+            case SynthType.SID:
+                id = 2;
+                break;
+
+        }
+        return this.sendTelnet(new Buffer("synth " + id.toString(10) + "\r"));
     }
 
     private async createMain(): Promise<void> {

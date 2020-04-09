@@ -83,10 +83,10 @@ export function onCtrlMenuClick(event) {
                 commands.eepromSave);
             break;
         case "mnu_midi:Play":
-            media_player.startPlaying();
+            media_player.media_state.startPlaying();
             break;
         case "mnu_midi:Stop":
-            media_player.stopPlaying();
+            media_player.media_state.stopPlaying();
             break;
         case "mnu_script:Start":
             if (currentScript === null) {
