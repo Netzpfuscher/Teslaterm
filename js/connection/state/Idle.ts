@@ -1,5 +1,6 @@
 import {type} from "os";
 import {terminal} from "../../gui/constants";
+import {config} from "../../init";
 import {populateMIDISelects} from "../../midi/midi_ui";
 import * as commands from "../../network/commands";
 import {createEthernetConnection} from "../ethernet";
@@ -49,15 +50,13 @@ export class Idle implements IConnectionState {
 
     private static async autoConnectSerial(): Promise<IUD3Connection | undefined> {
         const all = await SerialPort.list();
-        // TODO config
-        const expectedProduct = "62002";
-        const expectedVendor = "1204";
         for (const port of all) {
-            if (port.vendorId === expectedVendor && port.productId === expectedProduct) {
+            if (port.vendorId === config.vendorID && port.productId === config.productID) {
                 terminal.io.println("Auto connecting to " + port.path);
                 return createSerialConnection(port.path);
             }
         }
+        terminal.io.println("Did not find port to auto-connect to");
         return undefined;
     }
 }

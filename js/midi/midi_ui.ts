@@ -3,7 +3,6 @@ import * as ui_helper from '../gui/ui_helper';
 import * as helper from '../helper';
 import * as nano from "../nano";
 import * as connection from "../connection/connection";
-import {ConnectionState} from "../network/telemetry";
 import {
     midiAccess,
     midiIn,
@@ -16,7 +15,6 @@ import {
 } from "./midi";
 import {onMidiNetworkConnect} from "./midi_client";
 import * as midiServer from "./midi_server";
-
 
 let selectMidiIn: HTMLSelectElement;
 let selectMidiOut: HTMLSelectElement;

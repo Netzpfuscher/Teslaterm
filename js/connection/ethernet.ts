@@ -1,5 +1,6 @@
 import * as net from "net";
 import {terminal} from "../gui/constants";
+import {config} from "../init";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
 
@@ -64,11 +65,11 @@ class EthernetConnection implements IUD3Connection {
     }
 
     private async createMain(): Promise<void> {
-        this.mainSocket = await connectSocket(this.ipaddr, 2323, "main", telemetry.receive_main);
+        this.mainSocket = await connectSocket(this.ipaddr, config.telnetPort, "main", telemetry.receive_main);
     }
 
     private async createMedia(): Promise<void> {
-        this.mediaSocket = await connectSocket(this.ipaddr, 2323, "media", telemetry.receive_media);
+        this.mediaSocket = await connectSocket(this.ipaddr, config.mediaPort, "media", telemetry.receive_media);
     }
 }
 

@@ -2,6 +2,7 @@ import * as microtime from "microtime";
 import SerialPort = require("serialport");
 import minprot = require('../../libs/min');
 import {Endianness, to_ud3_time} from "../helper";
+import {config} from "../init";
 import {BootloadableConnection} from "../network/bootloader/bootloadable_connection";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
@@ -31,8 +32,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         return new Promise<void>((res, rej) => {
             this.serialPort = new SerialPort(this.port,
                 {
-                    // TODO config
-                    baudRate: 460_800,
+                    baudRate: config.baudrate,
                 }, (e: Error | null) => {
                     if (e) {
                         console.log("Not connecting, ", e);

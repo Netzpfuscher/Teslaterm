@@ -5,3 +5,4 @@
 js/**/*.js
 node_modules/**
 dist/**
+config.ini

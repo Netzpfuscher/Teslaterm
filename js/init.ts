@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as $ from 'jquery';
+import {TTConfig} from "./TTConfig";
 import {terminal} from './gui/constants';
 import {NUM_GAUGES} from "./gui/gauges";
 import * as gauges from "./gui/gauges";
@@ -7,22 +8,16 @@ import * as gui from './gui/gui';
 import * as menu from './gui/menu';
 import * as scope from './gui/oscilloscope/oscilloscope';
 import * as sliders from './gui/sliders';
-import ErrnoException = NodeJS.ErrnoException;
-import {convertArrayBufferToString} from "./helper";
 import * as midi from "./midi/midi";
-import * as midi_server from "./midi/midi_server";
-import * as nano from "./nano";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
 import * as connection from "./connection/connection";
-import * as telemetry from './network/telemetry';
 import * as sid from "./sid/sid";
 
-export let config: SimpleIni;
+export let config: TTConfig;
 export const simulated = true;
 
 export function init() {
     document.addEventListener('DOMContentLoaded', () => {
-        readini("config.ini");
 
         $(() => {
             $('#toolbar').w2toolbar({
@@ -93,14 +88,13 @@ export function init() {
                 onClick: menu.onCtrlMenuClick,
             });
             console.log("Done toolbar");
-            // menu.init();
+            readConfig("config.ini");
         });
 
         let html_gauges = '';
         for (let i = 0; i < NUM_GAUGES; i++) {
             html_gauges += '<div id="gauge' + i + '" style= "width: 100px; height: 100px"></div>';
         }
-
 
         const pstyle = 'background-color: #F5F6F7;  padding: 5px;';
         $('#layout').w2layout({
@@ -163,26 +157,17 @@ export function init() {
     });
 }
 
-function readini(file: string) {
-    fs.readFile(file, (err: ErrnoException | null, data: Buffer) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        const data_string = convertArrayBufferToString(data);
-        console.log(data_string);
-        config = new SimpleIni(() => {
-            return data_string;
-        });
+function readConfig(file: string) {
+    config = new TTConfig(file);
 
-        if (config.general.port) {
-            w2ui.toolbar.get('port').value = config.general.port;
-            w2ui.toolbar.refresh();
-        }
-        if (config.general.autoconnect === "true") {
-            connection.pressButton(config.general.port);
-        }
-    });
+    if (config.port) {
+        w2ui.toolbar.get('port').value = config.port;
+        w2ui.toolbar.refresh();
+    }
+    console.log("Autoconnect: ", config.autoconnect);
+    if (config.autoconnect) {
+        connection.pressButton(config.port);
+    }
 }
 
 // Called every 20 ms
@@ -195,7 +180,7 @@ function update() {
         );
     }
 
-    nano.update();
+    // TODO nano.update();
     gauges.refresh_all();
 
     sid.update();

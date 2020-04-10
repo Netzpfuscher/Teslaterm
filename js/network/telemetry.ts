@@ -32,13 +32,6 @@ import {
     TYPE_UNSIGNED,
 } from "../connection/constants";
 
-export const enum ConnectionState {
-    UNCONNECTED = 0,
-    CONNECTED_SERIAL = 2,
-    CONNECTED_IP = 1,
-    // TODO non-min serial?
-}
-
 
 export let busActive: boolean = false;
 export let busControllable: boolean = false;
@@ -206,9 +199,9 @@ export function ud_settings(uconfig) {
     const trecords = [];
     // console.log(udconfig);
     for (const data of uconfig) {
-        let inipage: string = config.get('config.' + data[0]);
+        let inipage: number = config.udConfigPages[data[0]];
         if (!inipage) {
-            inipage = '0';
+            inipage = 0;
         }
         switch (parseInt(data[2], 10)) {
             case TYPE_CHAR:
