@@ -2,7 +2,7 @@ import * as helper from "../helper";
 import * as media_player from "../media/media_player";
 import * as midiServer from "../midi/midi_server";
 import * as commands from "../network/commands";
-import * as connection from "../network/connection";
+import * as connection from "../connection/connection";
 import {busActive, busControllable, transientActive} from "../network/telemetry";
 import * as scripting from "../scripting";
 import {terminal} from "./constants";
@@ -19,18 +19,6 @@ export function init() {
             w2ui.toolbar.click("connect");
         }
     });
-}
-
-export function onConnected() {
-    terminal.io.println("connected");
-    w2ui.toolbar.get("connect").text = "Disconnect";
-    w2ui.toolbar.refresh();
-    console.log("Updated menu");
-}
-
-export function onDisconnect() {
-    w2ui.toolbar.get("connect").text = "Connect";
-    w2ui.toolbar.refresh();
 }
 
 let currentScript: Array<() => Promise<any>> = null;
@@ -117,12 +105,8 @@ export function onCtrlMenuClick(event) {
 
 
 function connect() {
-    if (connection.connection) {
-        connection.disconnect();
-    } else {
-        const port = w2ui.toolbar.get("port");
-        connection.connect(port.value);
-    }
+    const port = w2ui.toolbar.get("port");
+    connection.pressButton(port.value);
 }
 
 export function updateBusActive() {
@@ -146,3 +130,11 @@ export function updateBusControllable() {
 
     sliders.updateSliderAvailability();
 }
+
+export function updateConnectionButton(buttonText: string, buttonTooltip: string) {
+    const button = w2ui.toolbar.get("connect");
+    button.text = buttonText;
+    button.tooltip = buttonTooltip;
+    w2ui.toolbar.refresh();
+}
+

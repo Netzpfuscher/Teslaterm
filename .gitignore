@@ -1,4 +1,6 @@
 .idea
+.cache
+**/*.swp
 **/*.js.map
 js/**/*.js
 node_modules/**

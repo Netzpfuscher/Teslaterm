@@ -503,6 +503,7 @@ module.exports = class minprot {
 		this.transport_fifo.last_sent_ack_time_ms = this.now;
 		this.transport_fifo.last_received_frame_ms = 0;
 
+		console.log("Resetting min FIFO")
 		for (let frame of this.transport_fifo.frames) {
 			frame.reject("Resetting min FIFO");
 		}

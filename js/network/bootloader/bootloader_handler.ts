@@ -1,7 +1,6 @@
 // TODO rename file
-import {promisify} from "util";
 import {terminal} from "../../gui/constants";
-import {BootloadableConnection} from "../bootloadable_connection";
+import {BootloadableConnection} from "./bootloadable_connection";
 import {sendCommand} from "../commands";
 import {Bootloader} from "./bootloader";
 
@@ -17,9 +16,9 @@ export async function loadCyacd(file: File, active_connection: BootloadableConne
     active_connection.enterBootloaderMode((data) => {
         ldr.on_read(data);
     });
-    console.log("Sent command, waiting");
-    await sleep(1000);
-    console.log("Wait done");
+    terminal.io.println("Waiting for bootloader to start...");
+    await sleep(3000);
+    terminal.io.println("Connecting to bootloader...");
     ldr.set_info_cb((str: string) => terminal.io.println(str));
     ldr.set_progress_cb((percentage) => {
         terminal.io.print('\x1B[2K');

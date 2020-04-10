@@ -1,10 +1,10 @@
 import * as microtime from "microtime";
-import {Endianness, to_ud3_time} from "../helper";
-import {BootloadableConnection} from "./bootloadable_connection";
-import {IUD3Connection, SynthType} from "./IUD3Connection";
-import * as telemetry from "./telemetry";
 import SerialPort = require("serialport");
 import minprot = require('../../libs/min');
+import {Endianness, to_ud3_time} from "../helper";
+import {BootloadableConnection} from "../network/bootloader/bootloadable_connection";
+import {IUD3Connection, SynthType} from "./IUD3Connection";
+import * as telemetry from "../network/telemetry";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
@@ -35,13 +35,11 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
                     baudRate: 460_800,
                 }, (e: Error | null) => {
                     if (e) {
+                        console.log("Not connecting, ", e);
                         rej(e);
                     } else {
-                        this.init_min_wrapper();
                         this.serialPort.on('data', (data) => {
                             if (this.isBootloading()) {
-                                console.log("Received data: ", data);
-                                console.log("Passing data to bootloader");
                                 this.bootloaderCallback(data);
                             } else {
                                 this.min_wrapper.min_poll(data);
@@ -50,7 +48,14 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
                         res();
                     }
                 });
-        });
+        })
+            .then(() => this.init_min_wrapper())
+            .catch((e) => {
+                if (this.serialPort.isOpen) {
+                    this.serialPort.close();
+                }
+                throw e;
+            });
     }
 
     public disconnect(): void {
@@ -73,9 +78,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     }
 
     public sendBootloaderData(data: Buffer): Promise<void> {
-        console.log("Sending bootloader data: ", data);
         return new Promise<void>((res, rej) => {
-            console.log("This: ", this, ", serialport: ", this.serialPort);
             this.serialPort.write(data, (err) => {
                 if (err) {
                     rej(err);
@@ -89,6 +92,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     public enterBootloaderMode(dataCallback: (data: Buffer) => void): void {
         super.enterBootloaderMode(dataCallback);
         this.min_wrapper = undefined;
+        this.serialPort.flush();
     }
 
     public leaveBootloaderMode(): void {
@@ -108,17 +112,17 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         }
     }
 
-    public send_min_socket(connect: boolean) {
+    public async send_min_socket(connect: boolean) {
         const infoBuffer = Buffer.from(
             String.fromCharCode(MIN_ID_TERM) +
             String.fromCharCode(connect ? 1 : 0) +
             "TT socket" +
             String.fromCharCode(0),
             'utf-8');
-        this.min_wrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
+        await this.min_wrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
     }
 
-    public init_min_wrapper(): void {
+    public async init_min_wrapper(): Promise<void> {
         this.min_wrapper = new minprot();
         this.min_wrapper.sendByte = (data) => {
             if (this.isBootloading()) {
@@ -139,7 +143,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
                 console.warn("Unexpected ID in min: " + id);
             }
         };
-        this.send_min_socket(true);
+        await this.send_min_socket(true);
     }
 
     public async flushSynth(): Promise<void> {

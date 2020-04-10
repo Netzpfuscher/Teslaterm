@@ -1,8 +1,8 @@
 import {terminal} from "../gui/constants";
 import * as sliders from "../gui/sliders";
 import {media_state, MediaFileType} from "../media/media_player";
-import {connection} from "./connection";
-import {SynthType} from "./IUD3Connection";
+import {getUD3Connection, hasUD3Connection} from "../connection/connection";
+import {SynthType} from "../connection/IUD3Connection";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;
@@ -10,7 +10,10 @@ export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
 
 export async function sendCommand(command: string) {
-    await connection.sendTelnet(new Buffer(command));
+    if (hasUD3Connection()) {
+        // TODO will this be cleared to early when disconnecting?
+        await getUD3Connection().sendTelnet(new Buffer(command));
+    }
 }
 
 export async function clear() {
@@ -90,20 +93,22 @@ export async function setParam(param: string, value: string) {
 }
 
 export async function setSynth(type: MediaFileType) {
-    let ud3Type: SynthType;
-    switch (type) {
-        case MediaFileType.none:
-            ud3Type = SynthType.NONE;
-            break;
-        case MediaFileType.midi:
-            ud3Type = SynthType.MIDI;
-            break;
-        case MediaFileType.sid_dmp:
-        case MediaFileType.sid_emulated:
-            ud3Type = SynthType.SID;
-            break;
+    if (hasUD3Connection()) {
+        let ud3Type: SynthType;
+        switch (type) {
+            case MediaFileType.none:
+                ud3Type = SynthType.NONE;
+                break;
+            case MediaFileType.midi:
+                ud3Type = SynthType.MIDI;
+                break;
+            case MediaFileType.sid_dmp:
+            case MediaFileType.sid_emulated:
+                ud3Type = SynthType.SID;
+                break;
+        }
+        await getUD3Connection().setSynth(ud3Type);
     }
-    await connection.setSynth(ud3Type);
 }
 
 export async function setTransientEnabled(enable: boolean) {

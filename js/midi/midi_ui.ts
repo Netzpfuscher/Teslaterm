@@ -2,7 +2,7 @@ import {terminal} from "../gui/constants";
 import * as ui_helper from '../gui/ui_helper';
 import * as helper from '../helper';
 import * as nano from "../nano";
-import * as connection from "../network/connection";
+import * as connection from "../connection/connection";
 import {ConnectionState} from "../network/telemetry";
 import {
     midiAccess,
@@ -106,7 +106,7 @@ function onSelectMidiOut() {
         if (id === "<Network>") {
             setMidiOut({
                 dest: id,
-                send: (data) => connection.connection.sendMedia(data),
+                send: (data) => connection.getUD3Connection().sendMedia(data),
             });
         } else if (id) {
             const midiSink = midiAccess.outputs.get(id);

@@ -8,7 +8,7 @@ import {config, simulated} from "../init";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import * as nano from "../nano";
 import * as commands from "../network/commands";
-import {connection} from "../network/connection";
+import {hasUD3Connection, getUD3Connection} from "../connection/connection";
 import * as scripting from "../scripting";
 import * as midiServer from "./midi_server";
 import * as midi_ui from "./midi_ui";
@@ -76,7 +76,7 @@ export const player = new MidiPlayer.Player(processMidiFromPlayer);
 function processMidiFromPlayer(event: MidiPlayer.Event) {
     if (playMidiEvent(event)) {
         media_state.progress = 100 - player.getSongPercentRemaining();
-    } else if (!simulated && !connection) {
+    } else if (!simulated && !hasUD3Connection()) {
         media_state.stopPlaying();
         scripting.onMidiStopped();
     }
@@ -184,7 +184,7 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
 }
 
 export function playMidiData(data: number[] | Uint8Array): boolean {
-    if ((simulated || connection) && data[0] !== 0x00) {
+    if ((simulated || hasUD3Connection()) && data[0] !== 0x00) {
         if (!(data instanceof Uint8Array)) {
             data = new Uint8Array(data);
         }

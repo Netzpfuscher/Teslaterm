@@ -1,5 +1,5 @@
 import {bytes_to_signed, convertArrayBufferToString} from "../../helper";
-import {UNITS} from "../../network/constants";
+import {UNITS} from "../../connection/constants";
 import {INFO_SPACE, MEAS_POSITION, MEAS_SPACE, TOP_SPACE} from "../constants";
 import {TraceStats} from "./trace_stats";
 

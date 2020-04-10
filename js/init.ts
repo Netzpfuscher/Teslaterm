@@ -13,8 +13,7 @@ import * as midi from "./midi/midi";
 import * as midi_server from "./midi/midi_server";
 import * as nano from "./nano";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
-import {connect} from "./network/connection";
-import * as connection from "./network/connection";
+import * as connection from "./connection/connection";
 import * as telemetry from './network/telemetry';
 import * as sid from "./sid/sid";
 
@@ -181,14 +180,20 @@ function readini(file: string) {
             w2ui.toolbar.refresh();
         }
         if (config.general.autoconnect === "true") {
-            connect(config.general.port);
+            connection.pressButton(config.general.port);
         }
     });
 }
 
 // Called every 20 ms
 function update() {
-    connection.update();
+    const updateButton = connection.update();
+    if (updateButton) {
+        menu.updateConnectionButton(
+            connection.connectionState.getButtonText(),
+            connection.connectionState.getButtonTooltip()
+        );
+    }
 
     nano.update();
     gauges.refresh_all();

@@ -3,7 +3,7 @@ import * as path from "path";
 import * as scope from "../gui/oscilloscope/oscilloscope";
 import {Endianness, readFileAsync, to_ud3_time} from "../helper";
 import {checkTransientDisabled, isSID, media_state, MediaFileType, PlayerActivity} from "../media/media_player";
-import * as connection from "../network/connection";
+import * as connection from "../connection/connection";
 import {FRAME_LENGTH, ISidSource} from "./sid_api";
 import {DumpSidSource} from "./sid_dump";
 import {EmulationSidSource} from "./sid_emulated";
@@ -19,7 +19,7 @@ let lastFrameTime: number;
 
 async function startPlayingSID() {
     lastFrameTime = microtime.now();
-    await connection.connection.flushSynth();
+    await connection.getUD3Connection().flushSynth();
 }
 
 async function stopPlayingSID() {
@@ -56,7 +56,7 @@ export function update() {
     if (current_sid_source && media_state.state === PlayerActivity.playing && isSID(media_state.type)
         && sending_sid) {
         checkTransientDisabled();
-        if (connection.connection) {
+        if (connection.hasUD3Connection()) {
             for (let i = 0; i < 2 && !current_sid_source.isDone(); ++i) {
                 const real_frame = current_sid_source.next_frame();
                 console.assert(real_frame.length === FRAME_LENGTH);
@@ -74,7 +74,7 @@ export function update() {
                     data[j] = 0xFF;
                 }
                 console.log(data);
-                connection.connection.sendMedia(data);
+                connection.getUD3Connection().sendMedia(data);
             }
         }
         const totalFrames = current_sid_source.getTotalFrameCount();

@@ -1,4 +1,5 @@
 import * as $ from 'jquery';
+import {resetResponseTimeout} from "../connection/state/Connected";
 import {terminal} from '../gui/constants';
 import {meters} from '../gui/gauges';
 import * as menu from '../gui/menu';
@@ -7,7 +8,6 @@ import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import {config} from '../init';
 import * as commands from '../network/commands';
 import * as sid from "../sid/sid";
-import {resetTimeout} from "./connection";
 import {
     DATA_LEN,
     DATA_NUM,
@@ -30,7 +30,7 @@ import {
     TYPE_FLOAT,
     TYPE_SIGNED, TYPE_STRING,
     TYPE_UNSIGNED,
-} from "./constants";
+} from "../connection/constants";
 
 export const enum ConnectionState {
     UNCONNECTED = 0,
@@ -164,7 +164,7 @@ export function receive_media(data: Buffer) {
 
 export function receive_main(data: Buffer) {
     const buf = new Uint8Array(data);
-    resetTimeout();
+    resetResponseTimeout();
 
     for (const byte of buf) {
         switch (term_state) {

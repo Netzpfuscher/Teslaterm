@@ -44,7 +44,7 @@ export class Bootloader {
         this.progress_cb = null;
         this.receive_buffer = [];
         this.byte_pos = 0;
-        this.chunk_size = 128; // TODO less?
+        this.chunk_size = 128;
     }
 
     public async on_read(data: Uint8Array) {
@@ -58,7 +58,6 @@ export class Bootloader {
                     switch (last_command.id) {
                         case ENTER_BOOTLOADER:
                             this.boot_decode_enter(buf);
-                            console.log(this.chip_id);
                             break;
                         case PROGRAM:
                             if (buf[1] !== 0) {
@@ -148,8 +147,6 @@ export class Bootloader {
         let cnt = 0;
         this.send_info('INFO: Cyacd loaded, found chip-ID: ' + this.cyacd_chip_id);
 
-        console.log('ID: ' + this.chip_id);
-
         if (this.cyacd_chip_id === this.chip_id) {
             this.send_info('INFO: Chip-ID matches, start programming of flash');
         } else {
@@ -159,7 +156,7 @@ export class Bootloader {
 
 
         for (const line of this.cyacd_file) {
-            if (line !== '') {
+            if (line.startsWith(":")) {
                 this.cyacd_arr.array_id[cnt] = parseInt(line.substr(1, 2), 16);
                 this.cyacd_arr.row[cnt] = parseInt(line.substr(3, 4), 16);
                 this.cyacd_arr.size[cnt] = parseInt(line.substr(7, 4), 16);
@@ -176,9 +173,8 @@ export class Bootloader {
                     cnt_byte++;
                 }
                 this.cyacd_arr.byte[cnt] = byte_arr;
-
+                cnt++;
             }
-            cnt++;
         }
         this.pc = 0;
         await this.protmr();

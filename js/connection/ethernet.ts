@@ -1,7 +1,7 @@
 import * as net from "net";
 import {terminal} from "../gui/constants";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
-import * as telemetry from "./telemetry";
+import * as telemetry from "../network/telemetry";
 
 // TODO remove?
 class EthernetConnection implements IUD3Connection {
