@@ -2,8 +2,8 @@ declare interface Config {
     title: string;
 }
 
-declare interface JustGage {
-    new(options: any): JustGage;
+declare class JustGage {
+    constructor(options: any);
 
     refresh(val: any, max?: any, config?: any);
 

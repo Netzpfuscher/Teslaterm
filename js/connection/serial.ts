@@ -51,7 +51,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         })
             .then(() => this.init_min_wrapper())
             .catch((e) => {
-                if (this.serialPort.isOpen) {
+                if (this.serialPort && this.serialPort.isOpen) {
                     this.serialPort.close();
                 }
                 throw e;

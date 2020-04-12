@@ -158,6 +158,7 @@ export function init() {
 }
 
 function readConfig(file: string) {
+    //TODO wait until config is loaded?
     config = new TTConfig(file);
 
     if (config.port) {

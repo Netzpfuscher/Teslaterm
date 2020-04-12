@@ -9,7 +9,6 @@ export class Meter {
     constructor(id: number) {
         this.meter_buf_old = 255;
         this.meter_buf = 0;
-        // @ts-ignore TODO figure out how to properly fix this
         this.gauge = new JustGage({
             id: ("gauge" + id),
             value: 0,
@@ -23,7 +22,6 @@ export class Meter {
     public refresh(): void {
         if (this.meter_buf !== this.meter_buf_old) {
             this.gauge.refresh(this.meter_buf);
-            console.log("Updating value from ", this.meter_buf_old, " to ", this.meter_buf);
             this.meter_buf_old = this.meter_buf;
         }
     }

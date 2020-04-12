@@ -47,14 +47,10 @@ export let midiAccess: WebMidi.MIDIAccess;
 
 export function startCurrentMidiFile() {
     player.play();
-    nano.setLedState(config.nano.play, 1);
-    nano.setLedState(config.nano.stop, 0);
     scope.redrawMediaInfo();
 }
 
 export function stopMidiFile() {
-    nano.setLedState(config.nano.play, 0);
-    nano.setLedState(config.nano.stop, 1);
     player.stop();
     scope.drawChart();
     stopMidiOutput();
@@ -107,7 +103,6 @@ export function midiMessageReceived(ev) {
         } else if (cmd === 9) {
             // note on
             // noteOn( noteNumber, velocity/127.0);
-
 
             switch (String(noteNumber)) {
                 case config.nano.play:

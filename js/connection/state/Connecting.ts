@@ -9,6 +9,7 @@ import {Idle} from "./Idle";
 enum State {
     waiting_for_ud_connection,
     connecting,
+    initializing,
     connected,
     failed,
 }
@@ -24,6 +25,7 @@ export class Connecting implements IConnectionState {
                 this.state = State.connecting;
                 try {
                     await c.connect();
+                    this.state = State.initializing;
                     await startConf();
                     populateMIDISelects();
                     this.state = State.connected;
@@ -39,7 +41,11 @@ export class Connecting implements IConnectionState {
     }
 
     public getActiveConnection(): IUD3Connection | undefined {
-        return undefined;
+        if (this.state === State.initializing || this.state === State.connected) {
+            return this.connection;
+        } else {
+            return undefined;
+        }
     }
 
     public getButtonText(): string {
@@ -60,12 +66,15 @@ export class Connecting implements IConnectionState {
             case State.waiting_for_ud_connection:
                 return this;
             case State.connecting:
+            case State.initializing:
                 this.connection.tick();
                 return this;
             case State.connected:
                 return new Connected(this.connection);
             case State.failed:
                 return new Idle();
+            default:
+                throw new Error("Unexpected state: " + this.state);
         }
     }
 }

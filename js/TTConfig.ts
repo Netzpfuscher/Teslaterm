@@ -111,7 +111,11 @@ export class TTConfig {
         changed: { val: boolean }
     ): T {
         if (config.hasOwnProperty(key)) {
-            return config[key] as T;
+            const ret = config[key];
+            if (typeof (defaultValue) === "number" && typeof (ret) === "string") {
+                return parseInt(ret) as unknown as T;
+            }
+            return ret as T;
         } else {
             config[key] = defaultValue;
             changed.val = true;

@@ -1,5 +1,4 @@
 export const TT_GAUGE = 1;
-
 export const TT_GAUGE_CONF = 2;
 export const TT_CHART = 3;
 export const TT_CHART_DRAW = 4;

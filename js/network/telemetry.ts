@@ -197,7 +197,6 @@ export function receive_main(data: Buffer) {
 export function ud_settings(uconfig) {
     const tfields = [];
     const trecords = [];
-    // console.log(udconfig);
     for (const data of uconfig) {
         let inipage: number = config.udConfigPages[data[0]];
         if (!inipage) {

@@ -49,10 +49,9 @@ export function populateMIDISelects() {
     }
     onSelectMidiIn();
     selectMidiOut.options.length = 0;
-    addElementKeepingSelected("None", "", midiOut.dest, selectMidiOut);
     addElementKeepingSelected("UD3", "<Network>", midiOut.dest, selectMidiOut);
     for (const output of midiAccess.outputs.values()) {
-        const str = output.name.toString();
+        const str = output.name;
         if (str.includes("nano")) {
             nano.setNanoOut(output);
             nano.init();
@@ -153,7 +152,7 @@ function onSelectMidiIn() {
     }
 }
 
-function addElementKeepingSelected(name, id, oldId, selector, forceSelect = false) {
+function addElementKeepingSelected(name: string, id: string, oldId: string, selector: HTMLSelectElement, forceSelect: boolean = false) {
     const preferred = forceSelect || id === oldId;
     selector.appendChild(new Option(name, id, preferred, preferred));
 }

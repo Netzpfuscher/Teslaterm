@@ -31,7 +31,6 @@ export async function reconnect() {
     await sendCommand('tterm start\r');
 }
 
-
 export async function startConf() {
     await sendCommand('\r');
     sliders.ontime.setToZero();
@@ -40,7 +39,9 @@ export async function startConf() {
     await setBurstOntime(sliders.getBurstOntime());
     await setBurstOfftime(sliders.getBurstOfftime());
     await setSynth(media_state.type);
-    await sendCommand('kill reset\rtterm start\rcls\r');
+    await sendCommand('kill reset\r');
+    await sendCommand('tterm start\r');
+    await sendCommand('cls\r');
 }
 
 export async function busOff() {
