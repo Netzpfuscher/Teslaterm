@@ -1,7 +1,6 @@
 import {terminal} from "../gui/constants";
 import * as ui_helper from '../gui/ui_helper';
 import * as helper from '../helper';
-import * as nano from "../nano";
 import * as connection from "../connection/connection";
 import {
     midiAccess,
@@ -41,10 +40,6 @@ export function populateMIDISelects() {
         const str = input.name.toString();
         const preferred = !midiIn.isActive() &&
             ((str.indexOf("Tesla") !== -1) || (str.toLowerCase().indexOf("keyboard") !== -1));
-        if (str.includes("nano")) {
-            input.onmidimessage = midiMessageReceived;
-            nano.setNano(input);
-        }
         addElementKeepingSelected(input.name, input.id, midiIn.source, selectMidiIn, preferred);
     }
     onSelectMidiIn();
@@ -52,12 +47,7 @@ export function populateMIDISelects() {
     addElementKeepingSelected("UD3", "<Network>", midiOut.dest, selectMidiOut);
     for (const output of midiAccess.outputs.values()) {
         const str = output.name;
-        if (str.includes("nano")) {
-            nano.setNanoOut(output);
-            nano.init();
-        } else {
-            addElementKeepingSelected(str, output.id, midiOut.dest, selectMidiOut, str.indexOf("UD3") >= 0);
-        }
+        addElementKeepingSelected(str, output.id, midiOut.dest, selectMidiOut, str.indexOf("UD3") >= 0);
     }
     onSelectMidiOut();
 }

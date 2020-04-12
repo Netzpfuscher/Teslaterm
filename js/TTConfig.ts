@@ -56,7 +56,6 @@ export class TTConfig {
     public vendorID: string;
 
     public udConfigPages: { [option: string]: number };
-    public nano: { [option: string]: any }; // TODO
 
     public constructor(filename: string) {
         let contents: string = "";

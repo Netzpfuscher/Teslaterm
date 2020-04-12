@@ -6,7 +6,6 @@ import {ontime, setBPS, setBurstOfftime, setBurstOntime} from "../gui/sliders";
 import * as helper from "../helper";
 import {config, simulated} from "../init";
 import {checkTransientDisabled, media_state} from "../media/media_player";
-import * as nano from "../nano";
 import * as commands from "../network/commands";
 import {hasUD3Connection, getUD3Connection} from "../connection/connection";
 import * as scripting from "../scripting";
@@ -84,72 +83,7 @@ export function stop() {
 }
 
 export function midiMessageReceived(ev) {
-    if (!ev.currentTarget.name.includes("nano")) {
-        playMidiData(ev.data);
-    } else {
-        const cmd = ev.data[0] >> 4;
-        const channel = ev.data[0] & 0xf;
-        const noteNumber = ev.data[1];
-        const velocity = ev.data[2];
-        if (channel === 9) {
-            return;
-        }
-
-        // with MIDI, note on with velocity zero is the same as note off
-        if (cmd === 8 || ((cmd === 9) && (velocity === 0))) {
-            // note off
-            // noteOff( noteNumber );
-
-        } else if (cmd === 9) {
-            // note on
-            // noteOn( noteNumber, velocity/127.0);
-
-            switch (String(noteNumber)) {
-                case config.nano.play:
-                    media_state.startPlaying();
-                    break;
-                case config.nano.stop:
-                    media_state.stopPlaying();
-                    break;
-                case config.nano.killset:
-                    nano.setCoilHot(false);
-                    nano.setLedState(config.nano.killset, 1);
-                    nano.setLedState(config.nano.killreset, 0);
-                    commands.setKill();
-                    break;
-                case config.nano.killreset:
-                    nano.setCoilHot(true);
-                    nano.setLedState(config.nano.killset, 0);
-                    nano.setLedState(config.nano.killreset, 1);
-                    commands.resetKill();
-                    break;
-            }
-        } else if (cmd === 11) {
-            // controller( noteNumber, velocity/127.0);
-            switch (String(noteNumber)) {
-                case config.nano.slider0:
-                    ontime.setAbsoluteOntime(commands.maxOntime * velocity / 127.0);
-                    break;
-                case config.nano.slider1:
-                    setBPS(commands.maxBPS * velocity / 127.0);
-                    break;
-                case config.nano.slider2:
-                    setBurstOntime(commands.maxBurstOntime * velocity / 127.0);
-                    break;
-                case config.nano.slider3:
-                    setBurstOfftime(commands.maxBurstOfftime * velocity / 127.0);
-                    break;
-            }
-
-        } else if (cmd === 14) {
-            // pitch wheel
-            // pitchWheel( ((velocity * 128.0 + noteNumber)-8192)/8192.0 );
-        } else if (cmd === 10) {  // poly aftertouch
-            // polyPressure(noteNumber,velocity/127)
-        } else {
-            console.log("" + ev.data[0] + " " + ev.data[1] + " " + ev.data[2]);
-        }
-    }
+    playMidiData(ev.data);
 }
 
 const expectedByteCounts = {

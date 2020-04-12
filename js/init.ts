@@ -181,7 +181,6 @@ function update() {
         );
     }
 
-    // TODO nano.update();
     gauges.refresh_all();
 
     sid.update();
