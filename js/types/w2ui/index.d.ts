@@ -17,6 +17,22 @@ declare namespace W2UI {
     export interface KeyDownListener {
         originalEvent: KeyboardEvent;
     }
+
+    export interface ChangeEvent {
+        target: string;
+        value_new: { id: string, text: string };
+        value_old: { id: string, text: string } | "";
+    }
+
+    export interface W2Field {
+        data(type: string, options: Object): W2Field;
+    }
+}
+
+interface JQuery {
+    w2render(to_render: string): void;
+
+    w2field(type: string, options: Object): W2UI.W2Field;
 }
 
 declare interface ConfirmationHandler {

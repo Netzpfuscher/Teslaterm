@@ -5,6 +5,7 @@ import * as commands from "../network/commands";
 import * as connection from "../connection/connection";
 import {busActive, busControllable, transientActive} from "../network/telemetry";
 import * as scripting from "../scripting";
+import {connection_type, openUI} from "./ConnectionUI";
 import {terminal} from "./constants";
 import * as sliders from "./sliders";
 import * as ui_helper from "./ui_helper";
@@ -104,9 +105,8 @@ export function onCtrlMenuClick(event) {
 }
 
 
-function connect() {
-    const port = w2ui.toolbar.get("port");
-    connection.pressButton(port.value);
+async function connect() {
+    connection.pressButton();
 }
 
 export function updateBusActive() {

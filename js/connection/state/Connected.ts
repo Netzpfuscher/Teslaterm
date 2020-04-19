@@ -32,7 +32,7 @@ export class Connected implements IConnectionState {
         return "Click to disconnect";
     }
 
-    public pressButton(text: string): IConnectionState {
+    public pressButton(): IConnectionState {
         console.log("Disconnecting");
         this.disconnectInternal().then(() => {
             // NOP

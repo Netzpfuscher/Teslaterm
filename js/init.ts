@@ -31,7 +31,6 @@ export function init() {
                             {text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'},
                         ], text: 'Commands', type: 'menu',
                     },
-
                     {
                         icon: 'fa fa-star', id: 'trigger_radio',
                         items: [
@@ -67,27 +66,14 @@ export function init() {
                         ], text: 'Script: none', type: 'menu',
                     },
                     {type: 'spacer'},
+                    {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
                     {type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off'},
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
-                    {
-                        html(item) {
-                            return '<div style="padding: 3px 10px;">' +
-                                ' Port:' +
-                                '    <input size="20" placeholder="COM1" ' +
-                                '    onchange="let el = w2ui.toolbar.set(\'port\', { value: this.value });" ' +
-                                '   style="padding: 3px; border-radius: 2px; border: 1px solid silver" ' +
-                                '   value="' + (item.value || '') + '"/>' +
-                                '</div>';
-                        },
-                        id: 'port', type: 'html',
-                    },
-                    {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
                     {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'},
                 ],
                 name: 'toolbar',
                 onClick: menu.onCtrlMenuClick,
             });
-            console.log("Done toolbar");
             readConfig("config.ini");
         });
 
@@ -161,14 +147,10 @@ function readConfig(file: string) {
     //TODO wait until config is loaded?
     config = new TTConfig(file);
 
-    if (config.port) {
-        w2ui.toolbar.get('port').value = config.port;
-        w2ui.toolbar.refresh();
-    }
-    console.log("Autoconnect: ", config.autoconnect);
-    if (config.autoconnect) {
-        connection.pressButton(config.port);
-    }
+    //TODO reimplement
+    //if (config.autoconnect) {
+    //    connection.pressButton(config.port);
+    //}
 }
 
 // Called every 20 ms

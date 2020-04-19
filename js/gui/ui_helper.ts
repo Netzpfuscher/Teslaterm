@@ -207,3 +207,12 @@ function keyDownListener(event: W2UI.KeyDownListener) {
         }
     }
 }
+
+export function openPopup(options: Object): Promise<void> {
+    return new Promise<void>((res, rej) => {
+        options["onOpen"] = (event) => {
+            event.onComplete = res;
+        };
+        w2popup.open(options);
+    });
+}

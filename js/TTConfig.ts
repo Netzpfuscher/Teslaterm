@@ -45,11 +45,13 @@ const defaultUDConfigPages: { [prop: string]: number } = {
 };
 
 export class TTConfig {
-    public port: string;
+    public serial_port: string;
+    public remote_ip: string;
     public autoconnect: boolean;
     // Ethernet
     public telnetPort: number;
     public mediaPort: number;
+    public commandPort: number;
     // Serial
     public baudrate: number;
     public productID: string;
@@ -66,33 +68,40 @@ export class TTConfig {
         iniObj = ini.parse(contents);
         let changed: { val: boolean } = {val: false};
 
-        let general = TTConfig.getOrCreateSection("general", iniObj);
-        this.port = TTConfig.getOrWrite("port", "/dev/ttyUSB0", general, changed);
-        this.autoconnect = TTConfig.getOrWrite("autoconnect", true, general, changed);
-
-        let ethernet = TTConfig.getOrCreateSection("ethernet", iniObj);
-        this.mediaPort = TTConfig.getOrWrite("mediaport", 2324, ethernet, changed);
-        this.telnetPort = TTConfig.getOrWrite("telnetport", 2323, ethernet, changed);
-
-        let serial = TTConfig.getOrCreateSection("serial", iniObj);
-        this.baudrate = TTConfig.getOrWrite("baudrate", 460_800, serial, changed);
-        this.vendorID = TTConfig.getOrWrite("vendor_id", "1a86", serial, changed);
-        this.productID = TTConfig.getOrWrite("product_id", "7523", serial, changed);
-
-        let udconfig = TTConfig.getOrCreateSection("udconfig", iniObj);
-        const allNames = Object.keys(defaultUDConfigPages).concat(Object.keys(udconfig));
-        this.udConfigPages = {};
-        for (const name of allNames) {
-            this.udConfigPages[name] = TTConfig.getOrWrite(name, defaultUDConfigPages[name], udconfig, changed);
+        {
+            let general = TTConfig.getOrCreateSection("general", iniObj);
+            this.autoconnect = TTConfig.getOrWrite("autoconnect", true, general, changed);
         }
-        if (changed.val) {
-            fs.writeFile(filename, ini.stringify(iniObj), (err) => {
-                if (err) {
-                    terminal.io.println("Failed to write new config!");
-                } else {
-                    terminal.io.println("Successfully updated config");
-                }
-            });
+        {
+            let ethernet = TTConfig.getOrCreateSection("ethernet", iniObj);
+            this.remote_ip = TTConfig.getOrWrite("remote_ip", "localhost", ethernet, changed);
+            this.mediaPort = TTConfig.getOrWrite("mediaport", 12001, ethernet, changed);
+            this.telnetPort = TTConfig.getOrWrite("telnetport", 2321, ethernet, changed);
+            this.commandPort = TTConfig.getOrWrite("commandport", 13001, ethernet, changed);
+        }
+        {
+            let serial = TTConfig.getOrCreateSection("serial", iniObj);
+            this.serial_port = TTConfig.getOrWrite("port", "/dev/ttyUSB0", serial, changed);
+            this.baudrate = TTConfig.getOrWrite("baudrate", 460_800, serial, changed);
+            this.vendorID = TTConfig.getOrWrite("vendor_id", "1a86", serial, changed);
+            this.productID = TTConfig.getOrWrite("product_id", "7523", serial, changed);
+        }
+        {
+            let udconfig = TTConfig.getOrCreateSection("udconfig", iniObj);
+            const allNames = Object.keys(defaultUDConfigPages).concat(Object.keys(udconfig));
+            this.udConfigPages = {};
+            for (const name of allNames) {
+                this.udConfigPages[name] = TTConfig.getOrWrite(name, defaultUDConfigPages[name], udconfig, changed);
+            }
+            if (changed.val) {
+                fs.writeFile(filename, ini.stringify(iniObj), (err) => {
+                    if (err) {
+                        terminal.io.println("Failed to write new config!");
+                    } else {
+                        terminal.io.println("Successfully updated config");
+                    }
+                });
+            }
         }
     }
 

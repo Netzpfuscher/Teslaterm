@@ -73,7 +73,6 @@ export function update() {
                 for (let j = FRAME_LENGTH + 4; j < FRAME_LENGTH + 8; ++j) {
                     data[j] = 0xFF;
                 }
-                console.log(data);
                 connection.getUD3Connection().sendMedia(data);
             }
         }

@@ -56,7 +56,7 @@ export class Connecting implements IConnectionState {
         return "Click to abort";
     }
 
-    public pressButton(text: string): IConnectionState {
+    public pressButton(): IConnectionState {
         console.log("Aborting connection");
         return new Idle();
     }

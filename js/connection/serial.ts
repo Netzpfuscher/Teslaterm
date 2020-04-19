@@ -19,20 +19,22 @@ const SYNTH_CMD_MIDI = 0x03;
 const SYNTH_CMD_OFF = 0x04;
 
 class MinSerialConnection extends BootloadableConnection implements IUD3Connection {
-    public port: string;
-    public serialPort: SerialPort;
-    public min_wrapper: minprot | undefined;
+    public readonly port: string;
+    public readonly baudrate: number;
+    private serialPort: SerialPort;
+    private min_wrapper: minprot | undefined;
 
-    constructor(port: string) {
+    constructor(port: string, baud: number) {
         super();
         this.port = port;
+        this.baudrate = baud;
     }
 
     public async connect(): Promise<void> {
         return new Promise<void>((res, rej) => {
             this.serialPort = new SerialPort(this.port,
                 {
-                    baudRate: config.baudrate,
+                    baudRate: this.baudrate,
                 }, (e: Error | null) => {
                     if (e) {
                         console.log("Not connecting, ", e);
@@ -159,7 +161,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     }
 }
 
-export function createSerialConnection(port: string): IUD3Connection {
-    return new MinSerialConnection(port);
+export function createSerialConnection(port: string, baudrate: number): IUD3Connection {
+    return new MinSerialConnection(port, baudrate);
 }
 

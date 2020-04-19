@@ -5,8 +5,8 @@ import {Idle} from "./state/Idle";
 // TODO move to some other file?
 export let connectionState: IConnectionState = new Idle();
 
-export function pressButton(port: string) {
-    connectionState = connectionState.pressButton(port);
+export function pressButton() {
+    connectionState = connectionState.pressButton();
 }
 
 let lastButtonText: string;

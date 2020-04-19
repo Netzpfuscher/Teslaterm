@@ -5,7 +5,7 @@ export interface IConnectionState {
 
     getButtonTooltip(): string;
 
-    pressButton(text: string): IConnectionState;
+    pressButton(): IConnectionState;
 
     getActiveConnection(): IUD3Connection | undefined;
 
