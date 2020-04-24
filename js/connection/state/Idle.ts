@@ -15,7 +15,8 @@ import {populateMIDISelects} from "../../midi/midi_ui";
 import * as commands from "../../network/commands";
 import {createEthernetConnection} from "../ethernet";
 import {IUD3Connection} from "../IUD3Connection";
-import {createSerialConnection} from "../serial";
+import {createMinSerialConnection} from "../serial_min";
+import {createPlainSerialConnection} from "../serial_plain";
 import {Connecting} from "./Connecting";
 import {IConnectionState} from "./IConnectionState";
 import SerialPort = require("serialport");
@@ -41,27 +42,35 @@ export class Idle implements IConnectionState {
         const options = await openUI();
         const type = options[connection_type];
         switch (type.id) {
+            case serial_plain:
+                return this.connectSerial(options, createPlainSerialConnection);
             case serial_min:
-                if (options[serial_port]) {
-                    return createSerialConnection(options[serial_port], options[baudrate]);
-                } else {
-                    return this.autoConnectSerial(options[baudrate]);
-                }
+                return this.connectSerial(options, createMinSerialConnection);
             case eth_node:
                 return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
-            case serial_plain:
             default:
                 terminal.io.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");
                 return undefined;
         }
     }
 
-    private static async autoConnectSerial(baudrate: number): Promise<IUD3Connection | undefined> {
+    private static async connectSerial(options: any, create: (port: string, baudrate: number) => IUD3Connection)
+        : Promise<IUD3Connection | undefined> {
+        if (options[serial_port]) {
+            return create(options[serial_port], options[baudrate]);
+        } else {
+            return this.autoConnectSerial(options[baudrate], create);
+        }
+    }
+
+    private static async autoConnectSerial(baudrate: number,
+                                           create: (port: string, baudrate: number) => IUD3Connection)
+        : Promise<IUD3Connection | undefined> {
         const all = await SerialPort.list();
         for (const port of all) {
             if (port.vendorId === config.vendorID && port.productId === config.productID) {
                 terminal.io.println("Auto connecting to " + port.path);
-                return createSerialConnection(port.path, baudrate);
+                return create(port.path, baudrate);
             }
         }
         terminal.io.println("Did not find port to auto-connect to");

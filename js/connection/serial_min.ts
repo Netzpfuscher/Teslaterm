@@ -182,7 +182,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     }
 }
 
-export function createSerialConnection(port: string, baudrate: number): IUD3Connection {
+export function createMinSerialConnection(port: string, baudrate: number): IUD3Connection {
     return new MinSerialConnection(port, baudrate);
 }
 
