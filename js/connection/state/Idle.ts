@@ -1,8 +1,8 @@
 import {type} from "os";
 import {
-    baudrate, command_port,
+    baudrate, sid_port,
     connection_type,
-    eth_node, media_port,
+    eth_node, midi_port,
     openUI, remote_ip,
     serial_min,
     serial_plain,
@@ -26,11 +26,7 @@ export class Idle implements IConnectionState {
     }
 
     public getButtonText(): string {
-        return "Not connected";
-    }
-
-    public getButtonTooltip(): string {
-        return "Click to connect";
+        return "Connect";
     }
 
     public pressButton(): IConnectionState {
@@ -52,7 +48,7 @@ export class Idle implements IConnectionState {
                     return this.autoConnectSerial(options[baudrate]);
                 }
             case eth_node:
-                return createEthernetConnection(options[remote_ip], options[telnet_port], options[media_port], options[command_port]);
+                return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
             case serial_plain:
             default:
                 terminal.io.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");

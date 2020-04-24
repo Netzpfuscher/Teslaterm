@@ -1,3 +1,5 @@
+import {ISidConnection} from "../sid/ISidConnection";
+
 export enum SynthType {
     NONE = 0x04,
     MIDI = 0x03,
@@ -7,7 +9,9 @@ export enum SynthType {
 export interface IUD3Connection {
     sendTelnet(data: Buffer): Promise<void>;
 
-    sendMedia(data: Buffer);
+    sendMidi(data: Buffer): Promise<void>;
+
+    getSidConnection(): ISidConnection;
 
     connect(): Promise<void>;
 
@@ -16,8 +20,6 @@ export interface IUD3Connection {
     resetWatchdog(): void;
 
     tick(): void;
-
-    flushSynth(): Promise<void>;
 
     setSynth(type: SynthType): Promise<void>;
 }

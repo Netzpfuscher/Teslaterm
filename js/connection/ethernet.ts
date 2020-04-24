@@ -1,23 +1,26 @@
 import * as net from "net";
 import * as dgram from "dgram";
 import {terminal} from "../gui/constants";
+import {ISidConnection} from "../sid/ISidConnection";
+import {NetworkSIDClient} from "../sid/NetworkSIDClient";
+import {connectTCPSocket} from "./tcp_helper";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
 
 class EthernetConnection implements IUD3Connection {
     private telnetSocket: net.Socket | undefined;
-    private mediaSocket: dgram.Socket | undefined;
-    private commandSocket: dgram.Socket | undefined;
+    private sidClient: NetworkSIDClient;
+    private midiSocket: dgram.Socket | undefined;
     private readonly remoteIp: string;
     private readonly telnetPort: number;
-    private readonly mediaPort: number;
-    private readonly commandPort: number;
+    private readonly midiPort: number;
+    private readonly sidPort: number;
 
-    constructor(ipaddr: string, telnet: number, media: number, command: number) {
+    constructor(ipaddr: string, telnet: number, midi: number, sid: number) {
         this.remoteIp = ipaddr;
         this.telnetPort = telnet;
-        this.mediaPort = media;
-        this.commandPort = command;
+        this.midiPort = midi;
+        this.sidPort = sid;
     }
 
     public async sendTelnet(data: Buffer) {
@@ -26,25 +29,21 @@ class EthernetConnection implements IUD3Connection {
         });
     }
 
-    public sendMedia(data: Buffer) {
-        this.mediaSocket.send(data, this.mediaPort, this.remoteIp);
+    async sendMidi(data: Buffer) {
+        this.midiSocket.send(data, this.midiPort, this.remoteIp);
     }
 
     public async connect(): Promise<void> {
         this.telnetSocket = await connectTCPSocket(this.remoteIp, this.telnetPort, "main", telemetry.receive_main);
-        this.mediaSocket = await createUDPSocket("media", d => {
-            console.log("Received Media data: ", d);
-            telemetry.receive_media(d);
+        this.midiSocket = await createUDPSocket("media", d => {
+            console.error("Received unexpected data on MIDI socket: ", d);
         });
-        this.commandSocket = await createUDPSocket("command", d => {
-            //NOP
-        });
+        this.sidClient = await NetworkSIDClient.create(this.remoteIp, this.sidPort);
     }
 
     public disconnect(): void {
         this.telnetSocket.destroy();
-        this.mediaSocket.close();
-        this.commandSocket.close();
+        this.midiSocket.close();
     }
 
     public resetWatchdog(): void {
@@ -52,10 +51,6 @@ class EthernetConnection implements IUD3Connection {
     }
 
     public tick(): void {
-    }
-
-    public async flushSynth(): Promise<void> {
-        this.sendCommand("flush midi");
     }
 
     public async setSynth(type: SynthType): Promise<void> {
@@ -74,15 +69,14 @@ class EthernetConnection implements IUD3Connection {
         return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
     }
 
-    private sendCommand(cmd: string) {
-        this.commandSocket.send(cmd, this.commandPort, this.remoteIp);
+    getSidConnection(): ISidConnection {
+        return this.sidClient;
     }
 }
 
-export function createEthernetConnection(ip: string, telnetPort: number, mediaPort: number, commandPort: number): IUD3Connection {
-    return new EthernetConnection(ip, telnetPort, mediaPort, commandPort);
+export function createEthernetConnection(ip: string, telnetPort: number, midiPort: number, sidPort: number): IUD3Connection {
+    return new EthernetConnection(ip, telnetPort, midiPort, sidPort);
 }
-
 
 function createUDPSocket(
     desc: string,
@@ -97,36 +91,6 @@ function createUDPSocket(
         ret.on('error', rej);
         ret.on('data', dataCallback);
         ret.bind();
-    });
-}
-
-
-function connectTCPSocket(
-    ipaddr: string,
-    port: number,
-    desc: string,
-    dataCallback: (data: Buffer) => void,
-): Promise<net.Socket> {
-    return new Promise<net.Socket>((res, rej) => {
-        let connected: boolean = false;
-        const ret = net.createConnection({port, host: ipaddr}, () => {
-            terminal.io.println("Connected socket " + desc);
-        });
-        ret.on('end', () => {
-            terminal.io.println("Socket " + desc + " disconnected");
-        });
-        ret.addListener('error', (e: Error) => {
-            terminal.io.println("Error on " + desc + " socket!");
-            console.error(e);
-            if (!connected) {
-                rej();
-            }
-        });
-        ret.on('data', dataCallback);
-        ret.on('connect', () => {
-            connected = true;
-            res(ret);
-        });
     });
 }
 

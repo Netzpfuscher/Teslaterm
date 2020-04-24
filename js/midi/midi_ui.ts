@@ -93,7 +93,7 @@ function onSelectMidiOut() {
         if (id === "<Network>") {
             setMidiOut({
                 dest: id,
-                send: (data) => connection.getUD3Connection().sendMedia(data),
+                send: (data) => connection.getUD3Connection().sendMidi(data),
             });
         } else if (id) {
             const midiSink = midiAccess.outputs.get(id);

@@ -50,8 +50,8 @@ export class TTConfig {
     public autoconnect: boolean;
     // Ethernet
     public telnetPort: number;
-    public mediaPort: number;
-    public commandPort: number;
+    public midiPort: number;
+    public sidPort: number;
     // Serial
     public baudrate: number;
     public productID: string;
@@ -75,9 +75,9 @@ export class TTConfig {
         {
             let ethernet = TTConfig.getOrCreateSection("ethernet", iniObj);
             this.remote_ip = TTConfig.getOrWrite("remote_ip", "localhost", ethernet, changed);
-            this.mediaPort = TTConfig.getOrWrite("mediaport", 12001, ethernet, changed);
+            this.midiPort = TTConfig.getOrWrite("midiport", 12001, ethernet, changed);
             this.telnetPort = TTConfig.getOrWrite("telnetport", 2321, ethernet, changed);
-            this.commandPort = TTConfig.getOrWrite("commandport", 13001, ethernet, changed);
+            this.sidPort = TTConfig.getOrWrite("sidport", 6581, ethernet, changed);
         }
         {
             let serial = TTConfig.getOrCreateSection("serial", iniObj);

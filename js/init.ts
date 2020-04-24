@@ -157,10 +157,7 @@ function readConfig(file: string) {
 function update() {
     const updateButton = connection.update();
     if (updateButton) {
-        menu.updateConnectionButton(
-            connection.connectionState.getButtonText(),
-            connection.connectionState.getButtonTooltip()
-        );
+        menu.updateConnectionButton(connection.connectionState.getButtonText());
     }
 
     gauges.refresh_all();

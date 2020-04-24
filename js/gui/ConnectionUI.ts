@@ -10,8 +10,8 @@ export const serial_port = "serial_port";
 export const baudrate = "baudrate";
 export const remote_ip = "remote_ip";
 export const telnet_port = "telnet_port";
-export const media_port = "media_port";
-export const command_port = "command_port";
+export const midi_port = "midi_port";
+export const sid_port = "sid_port";
 
 // Connection types
 export const eth_node = "eth";
@@ -41,8 +41,8 @@ function recreateForm(selected_type: { id: string, text: string }, initial: bool
         baudrate: config.baudrate,
         remote_ip: config.remote_ip,
         telnet_port: config.telnetPort,
-        media_port: config.mediaPort,
-        command_port: config.commandPort
+        midi_port: config.midiPort,
+        sid_port: config.sidPort
     };
     console.log(defaultValues);
     if (w2ui.connection_ui) {
@@ -70,8 +70,8 @@ function recreateForm(selected_type: { id: string, text: string }, initial: bool
         case eth_node:
             addField(fields, remote_ip, "Remote IP");
             addField(fields, telnet_port, "Telnet port", "int");
-            addField(fields, media_port, "Media port", "int");
-            addField(fields, command_port, "Command port", "int");
+            addField(fields, midi_port, "MIDI port", "int");
+            addField(fields, sid_port, "SID port", "int");
             break;
         default:
             throw new Error("Unknown connection type: " + selected_type);

@@ -146,16 +146,6 @@ function drawString(dat: number[], center: boolean) {
 let buffer: number[] = [];
 let bytes_done: number = 0;
 
-export function receive_media(data: Buffer) {
-    const buf = new Uint8Array(data);
-    if (buf[0] === 0x78) {
-        sid.setSendingSID(false);
-    }
-    if (buf[0] === 0x6f) {
-        sid.setSendingSID(true);
-    }
-}
-
 export function receive_main(data: Buffer) {
     const buf = new Uint8Array(data);
     resetResponseTimeout();

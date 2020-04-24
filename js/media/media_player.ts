@@ -44,7 +44,7 @@ export class PlayerState {
     public progress: number;
     private currentFileInt: string | undefined;
     private typeInt: MediaFileType;
-    private startCallback: (() => void) | undefined = undefined;
+    private startCallback: (() => Promise<void>) | undefined = undefined;
     private stopCallback: (() => void) | undefined = undefined;
     private titleInt: string | undefined;
     private stateInt: PlayerActivity = PlayerActivity.idle;
@@ -56,11 +56,11 @@ export class PlayerState {
         this.titleInt = undefined;
     }
 
-    public loadFile(
+    public async loadFile(
         filepath: string,
         type: MediaFileType,
         title: string,
-        startCallback?: () => void,
+        startCallback?: () => Promise<void>,
         stopCallback?: () => void,
     ) {
         this.titleInt = title;
@@ -69,10 +69,10 @@ export class PlayerState {
         this.startCallback = startCallback;
         this.stopCallback = stopCallback;
         this.progress = 0;
-        commands.setSynth(type);
+        await commands.setSynth(type);
     }
 
-    public startPlaying(): void {
+    public async startPlaying(): Promise<void> {
         if (this.currentFile === null) {
             terminal.io.println("Please select a media file using drag&drop");
             return;
@@ -81,10 +81,10 @@ export class PlayerState {
             terminal.io.println("A media file is currently playing, stop it before starting it again");
             return;
         }
-        this.stateInt = PlayerActivity.playing;
         if (this.startCallback) {
-            this.startCallback();
+            await this.startCallback();
         }
+        this.stateInt = PlayerActivity.playing;
     }
 
     public stopPlaying(): void {

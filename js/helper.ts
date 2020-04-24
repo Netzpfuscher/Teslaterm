@@ -15,11 +15,15 @@ export function bytes_to_signed(lsb: number, msb: number): number {
     }
 }
 
-export function to_ud3_time(time_us: number, end: Endianness): number[] {
+export function to_ud3_time_number(time_us: number): number {
+    const activeBits = 0xFF_FF_FF_FF;
     const us_per_tick = 3.125;
     const time_ticks = Math.floor(time_us / us_per_tick);
-    const time_for_ud = 0x100000000 - (time_ticks & 0xFFFFFFFF);
-    return to_32_bit_bytes(time_for_ud, end);
+    return (0x1_00_00_00_00 - (time_ticks & activeBits)) & activeBits;
+}
+
+export function to_ud3_time(time_us: number, end: Endianness): number[] {
+    return to_32_bit_bytes(to_ud3_time_number(time_us), end);
 }
 
 export function to_32_bit_bytes(num: number, end: Endianness): number[] {
@@ -146,5 +150,12 @@ export async function readFileAsync(file: fs.PathLike): Promise<Uint8Array> {
                 res(data);
             }
         });
+    });
+}
+
+export async function withTimeout<T>(base: Promise<T>, timeout: number): Promise<T> {
+    return new Promise<T>((res, rej) => {
+        setTimeout(rej, timeout);
+        base.then(res);
     });
 }

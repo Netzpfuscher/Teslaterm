@@ -8,23 +8,16 @@ import {FRAME_LENGTH, ISidSource} from "./sid_api";
 import {DumpSidSource} from "./sid_dump";
 import {EmulationSidSource} from "./sid_emulated";
 
-export let current_sid_source: ISidSource | null = null;
-export let sending_sid: boolean = true;
-
-export function setSendingSID(newVal: boolean) {
-    sending_sid = newVal;
-}
-
-let lastFrameTime: number;
+let current_sid_source: ISidSource | null = null;
 
 async function startPlayingSID() {
-    lastFrameTime = microtime.now();
-    await connection.getUD3Connection().flushSynth();
+    const sidConnection = connection.getUD3Connection().getSidConnection();
+    await sidConnection.flush();
+    sidConnection.onStart();
 }
 
 async function stopPlayingSID() {
-    setSendingSID(true);
-    await loadSidFile(this.currentFile);
+    await loadSidFile(media_state.currentFile);
 }
 
 export async function loadSidFile(file: string) {
@@ -35,11 +28,11 @@ export async function loadSidFile(file: string) {
     w2ui.toolbar.refresh();
     if (extension === "dmp") {
         current_sid_source = new DumpSidSource(data);
-        media_state.loadFile(file, MediaFileType.sid_dmp, name, startPlayingSID, stopPlayingSID);
+        await media_state.loadFile(file, MediaFileType.sid_dmp, name, startPlayingSID, stopPlayingSID);
     } else if (extension === "sid") {
         const source_emulated = new EmulationSidSource(data);
         current_sid_source = source_emulated;
-        media_state.loadFile(
+        await media_state.loadFile(
             file,
             MediaFileType.sid_emulated,
             source_emulated.sid_info.title,
@@ -53,27 +46,17 @@ export async function loadSidFile(file: string) {
 }
 
 export function update() {
+    if (!connection.hasUD3Connection()) {
+        return;
+    }
+    const sidConnection = connection.getUD3Connection().getSidConnection();
     if (current_sid_source && media_state.state === PlayerActivity.playing && isSID(media_state.type)
-        && sending_sid) {
+        && !sidConnection.isBusy()) {
         checkTransientDisabled();
         if (connection.hasUD3Connection()) {
             for (let i = 0; i < 2 && !current_sid_source.isDone(); ++i) {
                 const real_frame = current_sid_source.next_frame();
-                console.assert(real_frame.length === FRAME_LENGTH);
-                const data = new Buffer(FRAME_LENGTH + 4 + 4);
-                for (let j = 0; j < FRAME_LENGTH; ++j) {
-                    data[j] = real_frame[j];
-                }
-                lastFrameTime += 50e3;
-                // Why did you decide to mix big and little endian, Jens???
-                const ud_time = to_ud3_time(lastFrameTime, Endianness.LITTLE_ENDIAN);
-                for (let j = 0; j < 4; ++j) {
-                    data[j + FRAME_LENGTH] = ud_time[j];
-                }
-                for (let j = FRAME_LENGTH + 4; j < FRAME_LENGTH + 8; ++j) {
-                    data[j] = 0xFF;
-                }
-                connection.getUD3Connection().sendMedia(data);
+                sidConnection.processFrame(real_frame, 5e4);
             }
         }
         const totalFrames = current_sid_source.getTotalFrameCount();

@@ -131,10 +131,9 @@ export function updateBusControllable() {
     sliders.updateSliderAvailability();
 }
 
-export function updateConnectionButton(buttonText: string, buttonTooltip: string) {
+export function updateConnectionButton(buttonText: string) {
     const button = w2ui.toolbar.get("connect");
     button.text = buttonText;
-    button.tooltip = buttonTooltip;
     w2ui.toolbar.refresh();
 }
 

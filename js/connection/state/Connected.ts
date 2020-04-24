@@ -25,11 +25,7 @@ export class Connected implements IConnectionState {
     }
 
     public getButtonText(): string {
-        return "Connected";
-    }
-
-    public getButtonTooltip(): string {
-        return "Click to disconnect";
+        return "Disconnect";
     }
 
     public pressButton(): IConnectionState {
@@ -41,6 +37,7 @@ export class Connected implements IConnectionState {
     }
 
     public tick(): IConnectionState {
+        this.active_connection.tick();
         response_timeout--;
 
         if (response_timeout === 0) {
@@ -55,7 +52,6 @@ export class Connected implements IConnectionState {
             wd_reset = WD_TIMEOUT;
             this.active_connection.resetWatchdog();
         }
-        this.active_connection.tick();
         return this;
     }
 

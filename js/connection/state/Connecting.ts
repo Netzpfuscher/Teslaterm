@@ -49,11 +49,7 @@ export class Connecting implements IConnectionState {
     }
 
     public getButtonText(): string {
-        return "Connecting";
-    }
-
-    public getButtonTooltip(): string {
-        return "Click to abort";
+        return "Abort connection";
     }
 
     public pressButton(): IConnectionState {

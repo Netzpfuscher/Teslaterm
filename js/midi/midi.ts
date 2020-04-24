@@ -44,7 +44,7 @@ export const midiNone: IMidiInput = {
 export let midiIn: IMidiInput = midiNone;
 export let midiAccess: WebMidi.MIDIAccess;
 
-export function startCurrentMidiFile() {
+export async function startCurrentMidiFile() {
     player.play();
     scope.redrawMediaInfo();
 }

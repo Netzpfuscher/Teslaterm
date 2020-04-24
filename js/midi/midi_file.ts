@@ -13,7 +13,7 @@ export async function loadMidiFile(file: string) {
     const name = path.basename(file);
     w2ui.toolbar.get('mnu_midi').text = 'MIDI-File: ' + name;
     w2ui.toolbar.refresh();
-    media_state.loadFile(
+    await media_state.loadFile(
         file,
         MediaFileType.midi,
         name,

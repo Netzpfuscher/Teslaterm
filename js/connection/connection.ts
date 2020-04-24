@@ -2,23 +2,19 @@ import {IUD3Connection} from "./IUD3Connection";
 import {IConnectionState} from "./state/IConnectionState";
 import {Idle} from "./state/Idle";
 
-// TODO move to some other file?
 export let connectionState: IConnectionState = new Idle();
 
 export function pressButton() {
     connectionState = connectionState.pressButton();
 }
 
-let lastButtonText: string;
-let lastButtonTooltip: string;
+let lastButton: string;
 
 export function update(): boolean {
     connectionState = connectionState.tick();
-    const newText = connectionState.getButtonText();
-    const newTooltip = connectionState.getButtonTooltip();
-    const ret = newText !== lastButtonText || newTooltip !== lastButtonTooltip;
-    lastButtonText = newText;
-    lastButtonTooltip = newTooltip;
+    const newButton = connectionState.getButtonText();
+    const ret = newButton !== lastButton;
+    lastButton = newButton;
     return ret;
 }
 

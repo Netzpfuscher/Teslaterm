@@ -72,8 +72,7 @@ module.exports = class minprot {
 		this.serial_buffer = [];
 
 		this.now = Date.now();
-		this.debug = 0;
-
+		this.debug = false;
 	}
 
 	crc32_init_context() {

@@ -1,9 +1,10 @@
 import * as microtime from "microtime";
 import SerialPort = require("serialport");
 import minprot = require('../../libs/min');
-import {Endianness, to_ud3_time} from "../helper";
-import {config} from "../init";
+import {Endianness, to_ud3_time, withTimeout} from "../helper";
 import {BootloadableConnection} from "../network/bootloader/bootloadable_connection";
+import {ISidConnection} from "../sid/ISidConnection";
+import {UD3FormattedConnection} from "../sid/UD3FormattedConnection";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
 
@@ -23,11 +24,16 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     public readonly baudrate: number;
     private serialPort: SerialPort;
     private min_wrapper: minprot | undefined;
+    private sidConnection: UD3FormattedConnection;
 
     constructor(port: string, baud: number) {
         super();
         this.port = port;
         this.baudrate = baud;
+        this.sidConnection = new UD3FormattedConnection(
+            () => this.flushSynth(),
+            (data) => this.sendMedia(data)
+        );
     }
 
     public async connect(): Promise<void> {
@@ -60,17 +66,26 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             });
     }
 
-    public disconnect(): void {
-        this.send_min_socket(false);
+    public async disconnect() {
+        try {
+            await withTimeout(this.send_min_socket(false), 500);
+        } catch (e) {
+            console.error("Failed to disconnect cleanly", e);
+        }
         this.serialPort.close();
         this.serialPort.destroy();
-        console.log("Disconnected!");
     }
 
-    public async sendMedia(data: Buffer) {
+    async sendMedia(data: Buffer) {
         if (this.min_wrapper) {
             await this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, data);
         }
+    }
+
+    sendMidi = this.sendMedia;
+
+    getSidConnection(): ISidConnection {
+        return this.sidConnection;
     }
 
     public async sendTelnet(data: Buffer) {
@@ -140,7 +155,13 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             if (id === MIN_ID_TERM) {
                 telemetry.receive_main(new Buffer(data));
             } else if (id === MIN_ID_MEDIA) {
-                telemetry.receive_media(new Buffer(data));
+                if (data[0] === 0x78) {
+                    this.sidConnection.setBusy(true);
+                } else if (data[0] === 0x6f) {
+                    this.sidConnection.setBusy(false);
+                } else {
+                    console.error("Unexpected MEDIA MIN message");
+                }
             } else {
                 console.warn("Unexpected ID in min: " + id);
             }
