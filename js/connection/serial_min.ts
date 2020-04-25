@@ -1,4 +1,4 @@
-import * as microtime from "microtime";
+import * as microtime from "../microtime";
 import SerialPort = require("serialport");
 import minprot = require('../../libs/min');
 import {Endianness, to_ud3_time, withTimeout} from "../helper";

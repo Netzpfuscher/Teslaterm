@@ -1,7 +1,7 @@
 import {Endianness, to_ud3_time, to_ud3_time_number} from "../helper";
 import {ISidConnection} from "./ISidConnection";
 import {FRAME_LENGTH} from "./sid_api";
-import * as microtime from "microtime";
+import * as microtime from "../microtime";
 
 export class UD3FormattedConnection implements ISidConnection {
     private readonly flushCallback: () => Promise<void>;

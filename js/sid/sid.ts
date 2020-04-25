@@ -1,4 +1,3 @@
-import * as microtime from "microtime";
 import * as path from "path";
 import * as scope from "../gui/oscilloscope/oscilloscope";
 import {Endianness, readFileAsync, to_ud3_time} from "../helper";
