@@ -45,14 +45,15 @@ const defaultUDConfigPages: { [prop: string]: number } = {
 };
 
 export class TTConfig {
-    public serial_port: string;
-    public remote_ip: string;
-    public autoconnect: boolean;
+    // The type of connection to use for autoconnect: none, eth, min or serial
+    public autoconnect: string;
     // Ethernet
+    public remote_ip: string;
     public telnetPort: number;
     public midiPort: number;
     public sidPort: number;
     // Serial
+    public serial_port: string;
     public baudrate: number;
     public productID: string;
     public vendorID: string;
@@ -70,7 +71,7 @@ export class TTConfig {
 
         {
             let general = TTConfig.getOrCreateSection("general", iniObj);
-            this.autoconnect = TTConfig.getOrWrite("autoconnect", true, general, changed);
+            this.autoconnect = TTConfig.getOrWrite("autoconnect", "none", general, changed);
         }
         {
             let ethernet = TTConfig.getOrCreateSection("ethernet", iniObj);
@@ -93,15 +94,15 @@ export class TTConfig {
             for (const name of allNames) {
                 this.udConfigPages[name] = TTConfig.getOrWrite(name, defaultUDConfigPages[name], udconfig, changed);
             }
-            if (changed.val) {
-                fs.writeFile(filename, ini.stringify(iniObj), (err) => {
-                    if (err) {
-                        terminal.io.println("Failed to write new config!");
-                    } else {
-                        terminal.io.println("Successfully updated config");
-                    }
-                });
-            }
+        }
+        if (changed.val) {
+            fs.writeFile(filename, ini.stringify(iniObj), (err) => {
+                if (err) {
+                    terminal.io.println("Failed to write new config!");
+                } else {
+                    terminal.io.println("Successfully updated config");
+                }
+            });
         }
     }
 

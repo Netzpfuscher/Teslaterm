@@ -143,14 +143,9 @@ export function init() {
     });
 }
 
-function readConfig(file: string) {
-    //TODO wait until config is loaded?
+async function readConfig(file: string) {
     config = new TTConfig(file);
-
-    //TODO reimplement
-    //if (config.autoconnect) {
-    //    connection.pressButton(config.port);
-    //}
+    connection.autoConnect();
 }
 
 // Called every 20 ms

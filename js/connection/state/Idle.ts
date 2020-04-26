@@ -38,8 +38,7 @@ export class Idle implements IConnectionState {
         return this;
     }
 
-    private static async connectInternal(): Promise<IUD3Connection | undefined> {
-        const options = await openUI();
+    public static async connectWithOptions(options: any): Promise<IUD3Connection | undefined> {
         const type = options[connection_type];
         switch (type.id) {
             case serial_plain:
@@ -52,6 +51,11 @@ export class Idle implements IConnectionState {
                 terminal.io.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");
                 return undefined;
         }
+    }
+
+    private static async connectInternal(): Promise<IUD3Connection | undefined> {
+        const options = await openUI();
+        return Idle.connectWithOptions(options);
     }
 
     private static async connectSerial(options: any, create: (port: string, baudrate: number) => IUD3Connection)

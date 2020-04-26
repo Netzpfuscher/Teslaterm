@@ -23,20 +23,8 @@ const connection_types = [
     {id: serial_plain, text: "Serial (Plain)"},
 ];
 
-export async function openUI(): Promise<any> {
-    await ui_helper.openPopup({
-        body: '<div id="form" style="width: 100%; height: 100%;"></div>',
-        style: 'padding: 15px 0px 0px 0px',
-        title: 'Connection UI',
-    });
-    return new Promise<any>((res, rej) => {
-        recreateForm(connection_types[1], true, res, rej);
-    });
-}
-
-function recreateForm(selected_type: { id: string, text: string }, initial: boolean, resolve: (any) => void, reject: () => void) {
-    let defaultValues = {
-        connection_type: selected_type,
+export function getDefaultOptions(for_autoconnect: boolean): any {
+    let ret = {
         serial_port: config.serial_port,
         baudrate: config.baudrate,
         remote_ip: config.remote_ip,
@@ -44,14 +32,41 @@ function recreateForm(selected_type: { id: string, text: string }, initial: bool
         midi_port: config.midiPort,
         sid_port: config.sidPort
     };
-    console.log(defaultValues);
+    for (const type of connection_types) {
+        if (type.id === config.autoconnect) {
+            ret[connection_type] = type;
+            break;
+        }
+    }
+    if (for_autoconnect && !ret[connection_type]) {
+        return undefined;
+    } else {
+        return ret;
+    }
+}
+
+export async function openUI(): Promise<any> {
+    await ui_helper.openPopup({
+        body: '<div id="form" style="width: 100%; height: 100%;"></div>',
+        style: 'padding: 15px 0px 0px 0px',
+        title: 'Connection UI',
+    });
+    return new Promise<any>((res, rej) => {
+        recreateForm(connection_types[1], res, rej);
+    });
+}
+
+function recreateForm(selected_type: { id: string, text: string }, resolve: (any) => void, reject: () => void) {
+    let defaultValues = getDefaultOptions(false);
+    if (!defaultValues[connection_type]) {
+        defaultValues[connection_type] = selected_type;
+    }
     if (w2ui.connection_ui) {
         for (const field of w2ui.connection_ui.fields) {
             defaultValues[field.name] = w2ui.connection_ui.record[field.name];
         }
         w2ui.connection_ui.destroy();
     }
-    console.log(defaultValues);
     let fields = [
         {
             name: connection_type,
@@ -79,7 +94,7 @@ function recreateForm(selected_type: { id: string, text: string }, initial: bool
     $().w2form({
         name: "connection_ui",
         fields: fields,
-        focus: initial ? 0 : 1,
+        focus: 1,
         record: defaultValues,
         actions: {
             Cancel: () => {
@@ -105,7 +120,7 @@ function recreateForm(selected_type: { id: string, text: string }, initial: bool
 function onChange(event: ChangeEvent, resolve: (any) => void, reject: () => void) {
     if (event.target === connection_type) {
         if (!event.value_old || event.value_new.id !== event.value_old.id) {
-            recreateForm(event.value_new, false, resolve, reject);
+            recreateForm(event.value_new, resolve, reject);
         }
     }
 }

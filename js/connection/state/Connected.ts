@@ -3,6 +3,7 @@ import * as commands from "../../network/commands";
 import {IUD3Connection} from "../IUD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
+import * as media from "../../media/media_player"
 
 const TIMEOUT = 50;
 let response_timeout = TIMEOUT;
@@ -57,6 +58,9 @@ export class Connected implements IConnectionState {
 
     private async disconnectInternal() {
         try {
+            if (media.media_state.state==media.PlayerActivity.playing) {
+                media.media_state.stopPlaying();
+            }
             await commands.stop();
         } catch (e) {
             console.error("Failed to send stop command:", e);
