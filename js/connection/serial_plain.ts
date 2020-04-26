@@ -1,6 +1,6 @@
 import {promisify} from "util";
 import {ISidConnection} from "../sid/ISidConnection";
-import {IUD3Connection, SynthType} from "./IUD3Connection";
+import {IUD3Connection, SynthType, toCommandID} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
 import SerialPort = require("serialport");
 
@@ -45,43 +45,46 @@ export class PlainSerialConnection implements IUD3Connection {
     }
 
     getSidConnection(): ISidConnection {
-        //TODO
+        //TODO add support for returning undefined here
         return undefined;
     }
 
     resetWatchdog(): void {
-        this.sendTelnet(Buffer.of(7));
+        this.sendAsync(Buffer.of(0xF0, 0x0F, 0));
+        //this.sendAsync(Buffer.of(0x07));
     }
 
     sendMidi(data: Buffer): Promise<void> {
-        //TODO
-        return Promise.reject();
+        if (data.length < 3) {
+            data = Buffer.concat([data, Buffer.alloc(3-data.length, 0)]);
+        }
+        console.assert(data[0] >= 0x80);
+        return this.sendAsync(data);
     }
 
     async sendTelnet(data: Buffer): Promise<void> {
-        //await promisify(this.serialPort.write)(data);
-        this.serialPort.write(data);
+        await this.sendAsync(data);
     }
 
     setSynth(type: SynthType): Promise<void> {
-        // TODO proper conversion method
-        let id: number;
-        switch (type) {
-            case SynthType.NONE:
-                id = 0;
-                break;
-            case SynthType.MIDI:
-                id = 1;
-                break;
-            case SynthType.SID:
-                id = 2;
-                break;
-        }
+        const id = toCommandID(type);
         return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
     }
 
     tick(): void {
         // NOP
+    }
+
+    private async sendAsync(rawData: Buffer): Promise<void> {
+        return new Promise<void>((res, rej) => {
+            this.serialPort.write(rawData, err => {
+                if (err) {
+                    rej(err);
+                } else {
+                    res();
+                }
+            });
+        });
     }
 }
 

@@ -4,7 +4,7 @@ import {terminal} from "../gui/constants";
 import {ISidConnection} from "../sid/ISidConnection";
 import {NetworkSIDClient} from "../sid/NetworkSIDClient";
 import {connectTCPSocket} from "./tcp_helper";
-import {IUD3Connection, SynthType} from "./IUD3Connection";
+import {IUD3Connection, SynthType, toCommandID} from "./IUD3Connection";
 import * as telemetry from "../network/telemetry";
 
 class EthernetConnection implements IUD3Connection {
@@ -54,18 +54,7 @@ class EthernetConnection implements IUD3Connection {
     }
 
     public async setSynth(type: SynthType): Promise<void> {
-        let id: number;
-        switch (type) {
-            case SynthType.NONE:
-                id = 0;
-                break;
-            case SynthType.MIDI:
-                id = 1;
-                break;
-            case SynthType.SID:
-                id = 2;
-                break;
-        }
+        const id = toCommandID(type);
         return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
     }
 

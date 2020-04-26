@@ -56,7 +56,11 @@ export class Connected implements IConnectionState {
     }
 
     private async disconnectInternal() {
-        await commands.stop();
+        try {
+            await commands.stop();
+        } catch (e) {
+            console.error("Failed to send stop command:", e);
+        }
         await this.active_connection.disconnect();
     }
 }
