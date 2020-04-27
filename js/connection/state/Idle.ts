@@ -31,7 +31,7 @@ export class Idle implements IConnectionState {
     }
 
     public pressButton(): IConnectionState {
-        return new Connecting(Idle.connectInternal());
+        return new Connecting(Idle.connectInternal(), this);
     }
 
     public tick(): IConnectionState {

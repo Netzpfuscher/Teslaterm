@@ -17,8 +17,10 @@ enum State {
 export class Connecting implements IConnectionState {
     private connection: IUD3Connection | undefined;
     private state: State = State.waiting_for_ud_connection;
+    private readonly stateOnFailure: IConnectionState;
 
-    public constructor(connection: Promise<IUD3Connection | undefined>) {
+    public constructor(connection: Promise<IUD3Connection | undefined>, onFailure: IConnectionState) {
+        this.stateOnFailure = onFailure;
         connection.then(async (c) => {
             this.connection = c;
             if (c) {
@@ -68,7 +70,7 @@ export class Connecting implements IConnectionState {
             case State.connected:
                 return new Connected(this.connection);
             case State.failed:
-                return new Idle();
+                return this.stateOnFailure;
             default:
                 throw new Error("Unexpected state: " + this.state);
         }

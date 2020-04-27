@@ -145,6 +145,7 @@ export function init() {
 
 async function readConfig(file: string) {
     config = new TTConfig(file);
+    // TODO why does this fail randomly?
     connection.autoConnect();
 }
 

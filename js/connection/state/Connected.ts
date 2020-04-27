@@ -1,11 +1,14 @@
+import {terminal} from "../../gui/constants";
 import * as menu from "../../gui/menu";
+import {BootloadableConnection} from "../../network/bootloader/bootloadable_connection";
 import * as commands from "../../network/commands";
 import {IUD3Connection} from "../IUD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
-import * as media from "../../media/media_player"
+import * as media from "../../media/media_player";
+import {Reconnecting} from "./Reconnecting";
 
-const TIMEOUT = 50;
+const TIMEOUT = 100;
 let response_timeout = TIMEOUT;
 const WD_TIMEOUT = 5;
 let wd_reset = WD_TIMEOUT;
@@ -41,11 +44,10 @@ export class Connected implements IConnectionState {
         this.active_connection.tick();
         response_timeout--;
 
-        if (response_timeout === 0) {
-            response_timeout = TIMEOUT;
-            // terminal.io.println('Connection lost, reconnecting...');
-
-            // TODO: Implement reconnect logic, probably type-specific
+        if (this.isConnectionLost()) {
+            terminal.io.println("\n\rLost connection, will attempt to reconnect");
+            this.active_connection.disconnect();
+            return new Reconnecting(this.active_connection);
         }
 
         wd_reset--;
@@ -56,9 +58,20 @@ export class Connected implements IConnectionState {
         return this;
     }
 
+    private isConnectionLost(): boolean {
+        if (this.active_connection instanceof BootloadableConnection) {
+            const bootConnection = this.active_connection as BootloadableConnection;
+            if (bootConnection.isBootloading()) {
+                //TODO detect lost connection in bootloader mode (and fully disconnect)?
+                return false;
+            }
+        }
+        return response_timeout <= 0;
+    }
+
     private async disconnectInternal() {
         try {
-            if (media.media_state.state==media.PlayerActivity.playing) {
+            if (media.media_state.state == media.PlayerActivity.playing) {
                 media.media_state.stopPlaying();
             }
             await commands.stop();

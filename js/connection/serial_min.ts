@@ -61,6 +61,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             .catch((e) => {
                 if (this.serialPort && this.serialPort.isOpen) {
                     this.serialPort.close();
+                    this.serialPort.destroy();
                 }
                 throw e;
             });
@@ -72,8 +73,12 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         } catch (e) {
             console.error("Failed to disconnect cleanly", e);
         }
-        this.serialPort.close();
-        this.serialPort.destroy();
+        if (this.serialPort && this.serialPort.isOpen) {
+            this.serialPort.close();
+            this.serialPort.destroy();
+            this.min_wrapper = undefined;
+            this.serialPort = undefined;
+        }
     }
 
     async sendMedia(data: Buffer) {
@@ -130,13 +135,15 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
     }
 
     public async send_min_socket(connect: boolean) {
-        const infoBuffer = Buffer.from(
-            String.fromCharCode(MIN_ID_TERM) +
-            String.fromCharCode(connect ? 1 : 0) +
-            "TT socket" +
-            String.fromCharCode(0),
-            'utf-8');
-        await this.min_wrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
+        if (this.min_wrapper) {
+            const infoBuffer = Buffer.from(
+                String.fromCharCode(MIN_ID_TERM) +
+                String.fromCharCode(connect ? 1 : 0) +
+                "TT socket" +
+                String.fromCharCode(0),
+                'utf-8');
+            await this.min_wrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
+        }
     }
 
     public async init_min_wrapper(): Promise<void> {

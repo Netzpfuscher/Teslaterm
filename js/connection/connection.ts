@@ -14,7 +14,7 @@ export function autoConnect() {
     console.assert(connectionState instanceof Idle);
     const autoconnect_options = ConnectionUI.getDefaultOptions(true);
     if (autoconnect_options) {
-        connectionState = new Connecting(Idle.connectWithOptions(autoconnect_options));
+        connectionState = new Connecting(Idle.connectWithOptions(autoconnect_options), new Idle());
     }
 }
 
