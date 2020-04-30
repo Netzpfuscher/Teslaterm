@@ -46,11 +46,11 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
                         console.log("Not connecting, ", e);
                         rej(e);
                     } else {
-                        this.serialPort.on('data', (data) => {
+                        this.serialPort.on('data', (data: Buffer) => {
                             if (this.isBootloading()) {
                                 this.bootloaderCallback(data);
                             } else {
-                                this.min_wrapper.min_poll(data);
+                                this.min_wrapper.min_poll(to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN), data);
                             }
                         });
                         res();
@@ -124,13 +124,13 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
 
     public resetWatchdog(): void {
         if (this.min_wrapper) {
-            this.min_wrapper.min_queue_frame(MIN_ID_WD, to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN));
+            this.min_wrapper.min_queue_frame(MIN_ID_WD, []);
         }
     }
 
     public tick(): void {
         if (this.min_wrapper) {
-            this.min_wrapper.min_poll();
+            this.min_wrapper.min_poll(to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN));
         }
     }
 

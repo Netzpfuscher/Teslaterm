@@ -209,5 +209,3 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
     populateMIDISelects();
     sliders.ontime.setRelativeAllowed(false);
 }
-
-

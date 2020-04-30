@@ -33,8 +33,7 @@ export class UD3FormattedConnection implements ISidConnection {
         for (let j = 0; j < FRAME_LENGTH; ++j) {
             data[j + 4] = real_frame[j];
         }
-        // Why did you decide to mix big and little endian, Jens???
-        const ud_time = to_ud3_time(this.lastFrameTime, Endianness.LITTLE_ENDIAN);
+        const ud_time = to_ud3_time(this.lastFrameTime, Endianness.BIG_ENDIAN);
         for (let j = 0; j < 4; ++j) {
             data[j + FRAME_LENGTH + 4] = ud_time[j];
         }
