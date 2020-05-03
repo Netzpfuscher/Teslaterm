@@ -3,8 +3,8 @@ import {terminal} from "../gui/constants";
 import {redrawMediaInfo} from "../gui/oscilloscope/oscilloscope";
 import {kill_msg, midiOut} from "../midi/midi";
 import {loadMidiFile} from "../midi/midi_file";
-import * as commands from "../network/commands";
-import {transientActive} from "../network/telemetry";
+import * as commands from "../connection/commands";
+import {transientActive} from "../connection/telemetry";
 import * as scripting from "../scripting";
 import {loadSidFile} from "../sid/sid";
 

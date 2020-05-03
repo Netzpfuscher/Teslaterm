@@ -1,11 +1,11 @@
 import * as net from "net";
 import * as dgram from "dgram";
-import {terminal} from "../gui/constants";
-import {ISidConnection} from "../sid/ISidConnection";
-import {NetworkSIDClient} from "../sid/NetworkSIDClient";
-import {connectTCPSocket} from "./tcp_helper";
+import {terminal} from "../../gui/constants";
+import {ISidConnection} from "../../sid/ISidConnection";
+import {NetworkSIDClient} from "../../sid/NetworkSIDClient";
+import {connectTCPSocket} from "../tcp_helper";
 import {IUD3Connection, SynthType, toCommandID} from "./IUD3Connection";
-import * as telemetry from "../network/telemetry";
+import * as telemetry from "../telemetry";
 
 class EthernetConnection implements IUD3Connection {
     private telnetSocket: net.Socket | undefined;

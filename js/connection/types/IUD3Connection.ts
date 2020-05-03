@@ -1,4 +1,4 @@
-import {ISidConnection} from "../sid/ISidConnection";
+import {ISidConnection} from "../../sid/ISidConnection";
 
 export enum SynthType {
     NONE = 0x04,

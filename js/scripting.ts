@@ -4,7 +4,7 @@ import {terminal} from "./gui/constants";
 import * as sliders from './gui/sliders';
 import * as helper from './helper';
 import * as media_player from './media/media_player';
-import * as commands from './network/commands';
+import * as commands from './connection/commands';
 
 let running = false;
 let interrupt = null;

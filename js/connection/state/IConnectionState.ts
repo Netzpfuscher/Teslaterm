@@ -1,4 +1,4 @@
-import {IUD3Connection} from "../IUD3Connection";
+import {IUD3Connection} from "../types/IUD3Connection";
 
 export interface IConnectionState {
     getButtonText(): string;

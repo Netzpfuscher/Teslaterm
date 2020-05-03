@@ -1,8 +1,8 @@
 import {terminal} from "../../gui/constants";
 import * as menu from "../../gui/menu";
-import {BootloadableConnection} from "../../network/bootloader/bootloadable_connection";
-import * as commands from "../../network/commands";
-import {IUD3Connection} from "../IUD3Connection";
+import {BootloadableConnection} from "../bootloader/bootloadable_connection";
+import * as commands from "../commands";
+import {IUD3Connection} from "../types/IUD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
 import * as media from "../../media/media_player";

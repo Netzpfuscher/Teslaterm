@@ -1,4 +1,7 @@
-import {IUD3Connection} from "./IUD3Connection";
+import {terminal} from "../gui/constants";
+import {BootloadableConnection} from "./bootloader/bootloadable_connection";
+import {Bootloading} from "./state/Bootloading";
+import {IUD3Connection} from "./types/IUD3Connection";
 import {IConnectionState} from "./state/IConnectionState";
 import {Idle} from "./state/Idle";
 import {Connecting} from "./state/Connecting";
@@ -16,6 +19,17 @@ export function autoConnect() {
     if (autoconnect_options) {
         connectionState = new Connecting(Idle.connectWithOptions(autoconnect_options), new Idle());
     }
+}
+
+export function startBootloading(cyacd: File): boolean {
+    if (hasUD3Connection()) {
+        const connection = getUD3Connection();
+        if (hasUD3Connection() && connection instanceof BootloadableConnection) {
+            connectionState = new Bootloading(connection, cyacd);
+            return true;
+        }
+    }
+    return false;
 }
 
 let lastButton: string;

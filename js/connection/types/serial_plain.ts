@@ -1,7 +1,7 @@
 import {promisify} from "util";
-import {ISidConnection} from "../sid/ISidConnection";
+import {ISidConnection} from "../../sid/ISidConnection";
 import {IUD3Connection, SynthType, toCommandID} from "./IUD3Connection";
-import * as telemetry from "../network/telemetry";
+import * as telemetry from "../telemetry";
 import SerialPort = require("serialport");
 
 export class PlainSerialConnection implements IUD3Connection {

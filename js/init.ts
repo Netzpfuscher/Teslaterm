@@ -9,7 +9,7 @@ import * as menu from './gui/menu';
 import * as scope from './gui/oscilloscope/oscilloscope';
 import * as sliders from './gui/sliders';
 import * as midi from "./midi/midi";
-import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./network/commands";
+import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "./connection/commands";
 import * as connection from "./connection/connection";
 import * as sid from "./sid/sid";
 

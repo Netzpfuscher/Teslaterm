@@ -6,7 +6,7 @@ import {ontime, setBPS, setBurstOfftime, setBurstOntime} from "../gui/sliders";
 import * as helper from "../helper";
 import {config, simulated} from "../init";
 import {checkTransientDisabled, media_state} from "../media/media_player";
-import * as commands from "../network/commands";
+import * as commands from "../connection/commands";
 import {hasUD3Connection, getUD3Connection} from "../connection/connection";
 import * as scripting from "../scripting";
 import * as midiServer from "./midi_server";

@@ -1,8 +1,8 @@
 import {terminal} from "../gui/constants";
 import * as sliders from "../gui/sliders";
 import {media_state, MediaFileType} from "../media/media_player";
-import {getUD3Connection, hasUD3Connection} from "../connection/connection";
-import {SynthType} from "../connection/IUD3Connection";
+import {getUD3Connection, hasUD3Connection} from "./connection";
+import {SynthType} from "./types/IUD3Connection";
 
 export const maxOntime = 400;
 export const maxBPS = 1000;

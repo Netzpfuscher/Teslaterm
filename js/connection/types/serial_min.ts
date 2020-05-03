@@ -1,12 +1,12 @@
-import * as microtime from "../microtime";
+import * as microtime from "../../microtime";
 import SerialPort = require("serialport");
-import minprot = require('../../libs/min');
-import {Endianness, to_ud3_time, withTimeout} from "../helper";
-import {BootloadableConnection} from "../network/bootloader/bootloadable_connection";
-import {ISidConnection} from "../sid/ISidConnection";
-import {UD3FormattedConnection} from "../sid/UD3FormattedConnection";
+import minprot = require('../../../libs/min');
+import {Endianness, to_ud3_time, withTimeout} from "../../helper";
+import {BootloadableConnection} from "../bootloader/bootloadable_connection";
+import {ISidConnection} from "../../sid/ISidConnection";
+import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
 import {IUD3Connection, SynthType} from "./IUD3Connection";
-import * as telemetry from "../network/telemetry";
+import * as telemetry from "../telemetry";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;

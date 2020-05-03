@@ -1,7 +1,7 @@
 import * as $ from "jquery";
 import {TYPE_CHAR, TYPE_FLOAT, TYPE_SIGNED, TYPE_STRING, TYPE_UNSIGNED} from "../connection/constants";
 import {config} from "../init";
-import * as commands from "../network/commands";
+import * as commands from "../connection/commands";
 
 async function saveAndClose(form) {
     for (const change of Object.keys(form.getChanges())) {

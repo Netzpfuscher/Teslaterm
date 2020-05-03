@@ -1,9 +1,9 @@
 import * as helper from "../helper";
 import * as media_player from "../media/media_player";
 import * as midiServer from "../midi/midi_server";
-import * as commands from "../network/commands";
+import * as commands from "../connection/commands";
 import * as connection from "../connection/connection";
-import {busActive, busControllable, transientActive} from "../network/telemetry";
+import {busActive, busControllable, transientActive} from "../connection/telemetry";
 import * as scripting from "../scripting";
 import {connection_type, openUI} from "./ConnectionUI";
 import {terminal} from "./constants";

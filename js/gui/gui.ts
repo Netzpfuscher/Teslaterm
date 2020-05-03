@@ -1,11 +1,8 @@
 import "electron";
 import * as media_player from "../media/media_player";
-import {BootloadableConnection} from "../network/bootloader/bootloadable_connection";
-import {loadCyacd} from "../network/bootloader/bootloader_handler";
-import * as cmd from "../network/commands";
-import {hasUD3Connection, getUD3Connection} from "../connection/connection";
+import * as cmd from "../connection/commands";
+import {startBootloading} from "../connection/connection";
 import * as scripting from "../scripting";
-import {loadSidFile} from "../sid/sid";
 import {terminal} from "./constants";
 import * as gauges from "./gauges";
 import {setScript} from "./menu";
@@ -44,13 +41,8 @@ async function ondrop(e: DragEvent): Promise<void> {
                     console.log(err);
                 });
         } else if (extension === "cyacd") {
-            if (hasUD3Connection()) {
-                const connection = getUD3Connection();
-                if (hasUD3Connection() && connection instanceof BootloadableConnection) {
-                    await loadCyacd(file, connection);
-                } else {
-                    terminal.io.println("Connection does not support bootloading");
-                }
+            if (!startBootloading(file)) {
+                terminal.io.println("Connection does not support bootloading");
             }
         } else {
             await media_player.loadMediaFile(file.path);

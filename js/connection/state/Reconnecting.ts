@@ -1,5 +1,5 @@
 import {terminal} from "../../gui/constants";
-import {IUD3Connection} from "../IUD3Connection";
+import {IUD3Connection} from "../types/IUD3Connection";
 import {Connecting} from "./Connecting";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";

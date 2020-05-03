@@ -1,5 +1,5 @@
 import * as $ from 'jquery';
-import {resetResponseTimeout} from "../connection/state/Connected";
+import {resetResponseTimeout} from "./state/Connected";
 import {terminal} from '../gui/constants';
 import {meters} from '../gui/gauges';
 import * as menu from '../gui/menu';
@@ -7,7 +7,7 @@ import * as scope from '../gui/oscilloscope/oscilloscope';
 import {ud_settings} from "../gui/UDConfig";
 import {bytes_to_signed, convertArrayBufferToString} from '../helper';
 import {config} from '../init';
-import * as commands from '../network/commands';
+import * as commands from './commands';
 import * as sid from "../sid/sid";
 import {
     DATA_LEN,
@@ -31,7 +31,7 @@ import {
     TYPE_FLOAT,
     TYPE_SIGNED, TYPE_STRING,
     TYPE_UNSIGNED,
-} from "../connection/constants";
+} from "./constants";
 
 
 export let busActive: boolean = false;

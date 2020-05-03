@@ -159,3 +159,9 @@ export async function withTimeout<T>(base: Promise<T>, timeout: number): Promise
         base.then(res);
     });
 }
+
+export async function sleep(delay: number): Promise<void> {
+    return new Promise<void>((res, rej) => {
+        setTimeout(res, delay);
+    });
+}

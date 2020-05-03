@@ -1,7 +1,7 @@
 import * as $ from "jquery";
 import * as midiServer from "../midi/midi_server";
-import * as commands from "../network/commands";
-import {busActive, busControllable, transientActive} from "../network/telemetry";
+import * as commands from "../connection/commands";
+import {busActive, busControllable, transientActive} from "../connection/telemetry";
 import {terminal} from "./constants";
 
 export class OntimeUI {
