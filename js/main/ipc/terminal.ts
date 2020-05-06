@@ -1,11 +1,12 @@
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {mainWindow} from "../main";
 
-export const Terminal = {
-    print(s: string) {
+export module TerminalIPC {
+    export function print(s: string) {
         mainWindow.webContents.send(IPCConstantsToRenderer.terminal, s);
-    },
-    println(s: string) {
-        Terminal.print(s + "\r\n");
     }
-};
+
+    export function println(s: string) {
+        TerminalIPC.print(s + "\r\n");
+    }
+}

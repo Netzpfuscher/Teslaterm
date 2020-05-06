@@ -87,7 +87,7 @@ export class Bootloader {
         this.info_cb = cb_func;
     }
 
-    public async loadCyacd(data: ArrayBuffer) {
+    public async loadCyacd(data: Uint8Array) {
         const cyacd_file = new TextDecoder().decode(data)
             .replace(/\r/g, "")
             .split('\n');

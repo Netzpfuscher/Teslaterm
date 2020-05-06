@@ -1,6 +1,6 @@
 import "electron";
 import {commands} from "../ipc/commands";
-import {FileUpload} from "../ipc/FileUpload";
+import {FileUploadIPC} from "../ipc/FileUpload";
 import {terminal} from "./constants";
 import * as gauges from "./gauges";
 
@@ -24,7 +24,7 @@ async function ondrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     if (e.dataTransfer.items.length === 1) {// only one file
         const file = e.dataTransfer.files[0];
-        FileUpload.uploadFile(file);
+        FileUploadIPC.uploadFile(file);
     }
 }
 

@@ -1,25 +1,27 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {TTConfig} from "../../common/TTConfig";
-import {commands, pressButton} from "../connection/connection";
-import {mainWindow} from "../main";
+import * as connection from "../connection/connection";
+import {commands} from "../connection/connection";
+import {config, mainWindow} from "../main";
 import {ipcMain} from "electron";
 
-export class Misc {
-    public static openUDConfig(config: string[][]) {
+export module MiscIPC {
+    export function openUDConfig(config: string[][]) {
         mainWindow.webContents.send(IPCConstantsToRenderer.udConfig, config);
     }
 
-    public static syncTTConfig(config: TTConfig) {
+    export function syncTTConfig(config: TTConfig) {
         mainWindow.webContents.send(IPCConstantsToRenderer.ttConfig, config);
     }
 
-    public static init() {
+    export function init() {
         ipcMain.on(IPCConstantsToMain.command, (ev, cmd: string) => {
             commands.sendCommand(cmd);
         });
-        ipcMain.on(IPCConstantsToMain.menu.connectButton, () => {
-            pressButton();
+        ipcMain.on(IPCConstantsToMain.rendererReady, () => {
+            MiscIPC.syncTTConfig(config);
+            connection.autoConnect();
         });
     }
 }

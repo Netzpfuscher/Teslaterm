@@ -1,8 +1,8 @@
 import * as MidiPlayer from "midi-player-js";
 import * as helper from "../helper";
-import {Scope} from "../ipc/Scope";
+import {ScopeIPC} from "../ipc/Scope";
 import {Sliders} from "../ipc/sliders";
-import {Terminal} from "../ipc/terminal";
+import {TerminalIPC} from "../ipc/terminal";
 import {simulated} from "../main";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import {hasUD3Connection, getUD3Connection} from "../connection/connection";
@@ -42,12 +42,12 @@ export let midiIn: IMidiInput = midiNone;
 
 export async function startCurrentMidiFile() {
     player.play();
-    Scope.updateMediaInfo();
+    ScopeIPC.updateMediaInfo();
 }
 
 export function stopMidiFile() {
     player.stop();
-    Scope.drawChart();
+    ScopeIPC.drawChart();
     stopMidiOutput();
 }
 
@@ -71,7 +71,7 @@ function processMidiFromPlayer(event: MidiPlayer.Event) {
         media_state.stopPlaying();
         scripting.onMidiStopped();
     }
-    Scope.updateMediaInfo();
+    ScopeIPC.updateMediaInfo();
 }
 
 export function stop() {
@@ -180,7 +180,7 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
             setMidiInAsNone();
             Sliders.setRelativeAllowed(true);
             if (reason) {
-                Terminal.println("Disconnected from MIDI server. Reason: " + reason);
+                TerminalIPC.println("Disconnected from MIDI server. Reason: " + reason);
             } else {
                 chrome.sockets.tcp.send(socketId, helper.convertStringToArrayBuffer("C"),
                     (s) => {
@@ -189,7 +189,7 @@ export function setMidiInToSocket(name: string, socketId: number, ip: string, po
                         }
                         chrome.sockets.tcp.close(socketId);
                     });
-                Terminal.println("Disconnected from MIDI server");
+                TerminalIPC.println("Disconnected from MIDI server");
             }
         },
         data: {

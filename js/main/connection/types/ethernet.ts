@@ -3,7 +3,7 @@ import * as dgram from "dgram";
 import {SynthType} from "../../../common/CommonTypes";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {NetworkSIDClient} from "../../sid/NetworkSIDClient";
-import {Terminal} from "../../ipc/terminal";
+import {TerminalIPC} from "../../ipc/terminal";
 import {connectTCPSocket} from "../tcp_helper";
 import {IUD3Connection, toCommandID} from "./IUD3Connection";
 import * as telemetry from "../telemetry";
@@ -75,7 +75,7 @@ function createUDPSocket(
     return new Promise<dgram.Socket>((res, rej) => {
         const ret = dgram.createSocket("udp4");
         ret.on('end', () => {
-            Terminal.println("Socket " + desc + " disconnected");
+            TerminalIPC.println("Socket " + desc + " disconnected");
         });
         ret.on('listening', () => res(ret));
         ret.on('error', rej);

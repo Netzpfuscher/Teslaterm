@@ -1,6 +1,6 @@
 import {TTConfig} from "../common/TTConfig";
 import {convertArrayBufferToString} from "./helper";
-import {Terminal} from "./ipc/terminal";
+import {TerminalIPC} from "./ipc/terminal";
 import * as fs from "fs";
 import * as ini from "ini";
 
@@ -84,9 +84,9 @@ export function loadConfig(filename: string): TTConfig {
     if (changed.val) {
         fs.writeFile(filename, ini.stringify(iniObj), (err) => {
             if (err) {
-                Terminal.println("Failed to write new config!");
+                TerminalIPC.println("Failed to write new config!");
             } else {
-                Terminal.println("Successfully updated config");
+                TerminalIPC.println("Successfully updated config");
             }
         });
     }

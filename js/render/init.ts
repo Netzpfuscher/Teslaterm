@@ -6,12 +6,12 @@ import * as gui from './gui/gui';
 import * as menu from './gui/menu';
 import * as scope from './gui/oscilloscope/oscilloscope';
 import * as sliders from './gui/sliders';
-import {Menu} from "./ipc/Menu";
-import {Meters} from "./ipc/meters";
-import * as Misc from "./ipc/Misc";
+import {MenuIPC} from "./ipc/Menu";
+import {MetersIPC} from "./ipc/meters";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "../common/commands";
-import {Scope} from "./ipc/scope";
-import {Sliders} from "./ipc/sliders";
+import {MiscIPC} from "./ipc/Misc";
+import {ScopeIPC} from "./ipc/scope";
+import {SlidersIPC} from "./ipc/sliders";
 
 
 export function init() {
@@ -134,11 +134,11 @@ export function init() {
 
         scope.init();
 
-        Menu.init();
-        Meters.init();
-        Misc.init();
-        Scope.init();
-        Sliders.init();
+        MenuIPC.init();
+        MetersIPC.init();
+        MiscIPC.init();
+        ScopeIPC.init();
+        SlidersIPC.init();
 
         // midi_server.init();
         setInterval(update, 20);

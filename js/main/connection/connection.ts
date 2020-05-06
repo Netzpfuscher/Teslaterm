@@ -2,7 +2,7 @@ import {CommandInterface} from "../../common/commands";
 import {SynthType} from "../../common/CommonTypes";
 import {getDefaultConnectOptions} from "../../common/ConnectionOptions";
 import {Sliders} from "../ipc/sliders";
-import {Terminal} from "../ipc/terminal";
+import {TerminalIPC} from "../ipc/terminal";
 import {config} from "../main";
 import {media_state} from "../media/media_player";
 import {BootloadableConnection} from "./bootloader/bootloadable_connection";
@@ -22,7 +22,7 @@ export const commands = new CommandInterface(
     },
     () => {
         // \033=\u1B
-        Terminal.print('\u001B[2J\u001B[0;0H');
+        TerminalIPC.print('\u001B[2J\u001B[0;0H');
     },
     Sliders.setRelativeOntime,
     async (t: SynthType) => {
@@ -57,7 +57,7 @@ export function autoConnect() {
     }
 }
 
-export function startBootloading(cyacd: ArrayBuffer): boolean {
+export function startBootloading(cyacd: Uint8Array): boolean {
     if (hasUD3Connection()) {
         const connection = getUD3Connection();
         if (hasUD3Connection() && connection instanceof BootloadableConnection) {

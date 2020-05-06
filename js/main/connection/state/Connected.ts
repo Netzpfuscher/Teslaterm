@@ -1,5 +1,5 @@
 import {PlayerActivity} from "../../../common/CommonTypes";
-import {Terminal} from "../../ipc/terminal";
+import {TerminalIPC} from "../../ipc/terminal";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {commands} from "../connection";
 import {IUD3Connection} from "../types/IUD3Connection";
@@ -45,7 +45,7 @@ export class Connected implements IConnectionState {
         response_timeout--;
 
         if (this.isConnectionLost()) {
-            Terminal.println("\n\rLost connection, will attempt to reconnect");
+            TerminalIPC.println("\n\rLost connection, will attempt to reconnect");
             this.active_connection.disconnect();
             return new Reconnecting(this.active_connection);
         }

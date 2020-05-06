@@ -16,6 +16,7 @@ export const IPCConstantsToMain = {
         stopMedia: "stop-media",
         connectButton: "press-connect-button",
     },
+    rendererReady: "renderer-ready",
 };
 
 export class ConnectionReply {
@@ -30,9 +31,9 @@ export class ConnectionReply {
 
 export class TransmittedFile {
     public readonly name: string;
-    public readonly contents: ArrayBuffer;
+    public readonly contents: Uint8Array;
 
-    constructor(name: string, contents: ArrayBuffer) {
+    constructor(name: string, contents: Uint8Array) {
         this.name = name;
         this.contents = contents;
     }

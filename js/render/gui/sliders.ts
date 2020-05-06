@@ -1,7 +1,7 @@
 import * as $ from "jquery";
 import {maxOntime} from "../../common/commands";
-import {commands} from "../ipc/commands";
-import {ud3State} from "../ipc/Menu";
+import {UD3State} from "../../common/IPCConstantsToRenderer";
+import {SlidersIPC} from "../ipc/sliders";
 import {terminal} from "./constants";
 
 export class OntimeUI {
@@ -99,7 +99,7 @@ export class OntimeUI {
 
     public ontimeChanged() {
         this.totalVal = Math.round(this.absoluteVal * this.relativeValInt / 100.);
-        commands.setOntime(this.totalVal);
+        SlidersIPC.setOntime(this.totalVal);
         this.updateOntimeLabels();
     }
 
@@ -110,8 +110,8 @@ export class OntimeUI {
 
 export let ontime: OntimeUI;
 
-export function updateSliderAvailability() {
-    const busMaybeActive = ud3State.active || !ud3State.controllable;
+export function updateSliderAvailability(ud3State: UD3State) {
+    const busMaybeActive = ud3State.busActive || !ud3State.busControllable;
     const offDisable = !(ud3State.transientActive && busMaybeActive);
     for (let i = 1; i <= 3; ++i) {
         const slider = $(".w2ui-panel-content .scopeview #slider" + i)[0];
@@ -121,9 +121,9 @@ export function updateSliderAvailability() {
 }
 
 export function init() {
-    $("#slider1")[0].addEventListener("input", slider1);
-    $("#slider2")[0].addEventListener("input", slider2);
-    $("#slider3")[0].addEventListener("input", slider3);
+    $("#slider1")[0].addEventListener("input", bpsSlider);
+    $("#slider2")[0].addEventListener("input", burstOntimeSlider);
+    $("#slider3")[0].addEventListener("input", burstOfftimeSlider);
     ontime = new OntimeUI();
 }
 
@@ -138,16 +138,16 @@ function setSliderValue(name, value, slider?) {
     slider.value = value;
 }
 
-function slider1() {
+function bpsSlider() {
     const slider = document.getElementById("slider1") as HTMLInputElement;
     const slider_disp = document.getElementById("slider1_disp");
     slider_disp.innerHTML = slider.value + " Hz";
-    commands.setBPS(Number(slider.value));
+    SlidersIPC.setBPS(Number(slider.value));
 }
 
 export function setBPS(bps) {
     setSliderValue("slider1", bps);
-    slider1();
+    bpsSlider();
 }
 
 export function getBPS(): number {
@@ -155,16 +155,16 @@ export function getBPS(): number {
     return Number(slider.value);
 }
 
-function slider2() {
+function burstOntimeSlider() {
     const slider: HTMLInputElement = document.getElementById("slider2") as HTMLInputElement;
     const slider_disp = document.getElementById("slider2_disp");
     slider_disp.innerHTML = slider.value + " ms";
-    commands.setBurstOntime(Number(slider.value));
+    SlidersIPC.setBurstOntime(Number(slider.value));
 }
 
 export function setBurstOntime(time) {
     setSliderValue("slider2", time);
-    slider2();
+    burstOntimeSlider();
 }
 
 export function getBurstOntime(): number {
@@ -172,16 +172,16 @@ export function getBurstOntime(): number {
     return Number(slider.value);
 }
 
-function slider3() {
+function burstOfftimeSlider() {
     const slider = document.getElementById("slider3") as HTMLInputElement;
     const slider_disp = document.getElementById("slider3_disp");
     slider_disp.innerHTML = slider.value + " ms";
-    commands.setBurstOfftime(Number(slider.value));
+    SlidersIPC.setBurstOfftime(Number(slider.value));
 }
 
 export function setBurstOfftime(time) {
     setSliderValue("slider3", time);
-    slider3();
+    burstOfftimeSlider();
 }
 
 export function getBurstOfftime(): number {

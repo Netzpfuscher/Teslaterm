@@ -2,8 +2,9 @@ import {app, BrowserWindow} from "electron";
 import * as path from "path";
 import {TTConfig} from "../common/TTConfig";
 import * as connection from "./connection/connection";
-import {Menu} from "./ipc/Menu";
-import {Misc} from "./ipc/Misc";
+import {FileUploadIPC} from "./ipc/FileUpload";
+import {MenuIPC} from "./ipc/Menu";
+import {MiscIPC} from "./ipc/Misc";
 import {Sliders} from "./ipc/sliders";
 import * as midi from "./midi/midi";
 import * as sid from "./sid/sid";
@@ -42,10 +43,9 @@ function createWindow() {
 function initAll() {
     Sliders.init();
     midi.init();
-    connection.autoConnect();
-    Misc.init();
-    //TODO is this too early?
-    Misc.syncTTConfig(config);
+    MiscIPC.init();
+    FileUploadIPC.init();
+    MenuIPC.init();
 }
 
 //TODO make everything tick individually?
@@ -53,7 +53,7 @@ function tick() {
     sid.update();
     const updateButton = connection.update();
     if (updateButton) {
-        Menu.setConnectionButtonText(connection.connectionState.getButtonText());
+        MenuIPC.setConnectionButtonText(connection.connectionState.getButtonText());
     }
 }
 

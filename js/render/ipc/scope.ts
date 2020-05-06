@@ -15,8 +15,8 @@ import {
     traces
 } from "../gui/oscilloscope/oscilloscope";
 
-export class Scope {
-    public static init() {
+export namespace ScopeIPC {
+    export function init() {
         ipcRenderer.on(IPCConstantsToRenderer.scope.refresh, () => {
             redrawInfo();
         });
@@ -33,7 +33,7 @@ export class Scope {
             beginControlledDraw();
         });
         ipcRenderer.on(IPCConstantsToRenderer.scope.drawLine, (ev, cfg: ScopeLine) => {
-            drawLine(cfg.x1, cfg.x2, cfg.y1, cfg.y2, cfg.color);
+            drawLine(cfg.x1, cfg.y1, cfg.x2, cfg.y2, cfg.color);
         });
         ipcRenderer.on(IPCConstantsToRenderer.scope.drawString, (ev, cfg: ScopeText) => {
             drawString(cfg.x, cfg.y, cfg.color, cfg.size, cfg.str, cfg.center);

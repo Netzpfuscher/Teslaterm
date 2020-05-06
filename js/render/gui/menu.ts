@@ -1,6 +1,6 @@
 import {UD3State} from "../../common/IPCConstantsToRenderer";
 import {commands} from "../ipc/commands";
-import {Menu} from "../ipc/Menu";
+import {MenuIPC} from "../ipc/Menu";
 import * as sliders from "./sliders";
 import * as ui_helper from "./ui_helper";
 
@@ -19,17 +19,16 @@ export function init() {
 export function onCtrlMenuClick(event) {
     switch (event.target) {
         case "connect":
-            console.log("Click1");
-            Menu.connectButton();
+            MenuIPC.connectButton();
             break;
         case "cls":
             commands.clear();
             break;
         case "mnu_command:bus":
-            if (ud3State.active) {
+            if (ud3State.busActive) {
                 commands.busOff();
             } else {
-                ui_helper.warn("WARNING!<br>The coil will be energized.", commands.busOn);
+                ui_helper.warn("WARNING!<br>The coil will be energized.", () => commands.busOn());
             }
             break;
         case "mnu_command:transient":
@@ -47,16 +46,16 @@ export function onCtrlMenuClick(event) {
                 commands.eepromSave);
             break;
         case "mnu_midi:Play":
-            Menu.startPlaying();
+            MenuIPC.startPlaying();
             break;
         case "mnu_midi:Stop":
-            Menu.stopPlaying();
+            MenuIPC.stopPlaying();
             break;
         case "mnu_script:Start":
-            Menu.startScript();
+            MenuIPC.startScript();
             break;
         case "mnu_script:Stop":
-            Menu.startScript();
+            MenuIPC.startScript();
             break;
         case "kill_set":
             commands.setKill();
@@ -67,24 +66,23 @@ export function onCtrlMenuClick(event) {
     }
 }
 
-let ud3State: UD3State;
+let ud3State: UD3State = new UD3State(false, false, false);
 
-export function updateUD3State(state: UD3State) {
-    ud3State = state;
-    if (state.controllable) {
-        ui_helper.changeMenuEntry("mnu_command", "bus", "Bus " + (state.active ? "OFF" : "ON"));
+export function updateUD3State(newState: UD3State) {
+    if (newState.transientActive != ud3State.transientActive) {
+        ui_helper.changeMenuEntry("mnu_command", "transient", "TR " + (newState.transientActive ? "Stop" : "Start"));
     }
-    ui_helper.changeMenuEntry("mnu_command", "transient", "TR " + (state.transientActive ? "Stop" : "Start"));
 
-    ui_helper.changeMenuEntry("mnu_command", "transient", "TR " + (state.transientActive ? "Stop" : "Start"));
-
-    if (state.controllable) {
-        ui_helper.addFirstMenuEntry("mnu_command", "bus", "Bus " + (state.active ? "OFF" : "ON"), "fa fa-bolt");
-    } else {
+    if (newState.busControllable && !ud3State.busControllable) {
+        ui_helper.addFirstMenuEntry("mnu_command", "bus", "Bus " + (newState.busActive ? "OFF" : "ON"), "fa fa-bolt");
+    } else if (!newState.busControllable && ud3State.busControllable) {
         ui_helper.removeMenuEntry("mnu_command", "bus");
+    } else if (newState.busActive != ud3State.busActive) {
+        ui_helper.changeMenuEntry("mnu_command", "bus", "Bus " + (newState.busActive ? "OFF" : "ON"));
     }
 
-    sliders.updateSliderAvailability();
+    sliders.updateSliderAvailability(newState);
+    ud3State = newState;
 }
 
 export function updateConnectionButton(buttonText: string) {

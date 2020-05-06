@@ -2,8 +2,8 @@ import * as path from "path";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {readFileAsync} from "../helper";
-import {Menu} from "../ipc/Menu";
-import {Scope} from "../ipc/Scope";
+import {MenuIPC} from "../ipc/Menu";
+import {ScopeIPC} from "../ipc/Scope";
 import {checkTransientDisabled, isSID, media_state} from "../media/media_player";
 import * as connection from "../connection/connection";
 import {ISidSource} from "./sid_api";
@@ -23,15 +23,14 @@ async function stopPlayingSID() {
 }
 
 export async function loadSidFile(file: TransmittedFile) {
-    const data = new Uint8Array(file.contents);
     const extension = path.extname(file.name).substr(1).toLowerCase();
     const name = path.basename(file.name);
-    Menu.setMediaName("SID-File: " + name);
+    MenuIPC.setMediaName("SID-File: " + name);
     if (extension === "dmp") {
-        current_sid_source = new DumpSidSource(data);
+        current_sid_source = new DumpSidSource(file.contents);
         await media_state.loadFile(file, MediaFileType.sid_dmp, name, startPlayingSID, stopPlayingSID);
     } else if (extension === "sid") {
-        const source_emulated = new EmulationSidSource(data);
+        const source_emulated = new EmulationSidSource(file.contents);
         current_sid_source = source_emulated;
         await media_state.loadFile(
             file,
@@ -43,7 +42,7 @@ export async function loadSidFile(file: TransmittedFile) {
     } else {
         throw new Error("Unknown extension " + extension);
     }
-    Scope.updateMediaInfo();
+    ScopeIPC.updateMediaInfo();
 }
 
 export function update() {
@@ -68,6 +67,6 @@ export function update() {
         if (current_sid_source.isDone()) {
             media_state.stopPlaying();
         }
-        Scope.updateMediaInfo();
+        ScopeIPC.updateMediaInfo();
     }
 }

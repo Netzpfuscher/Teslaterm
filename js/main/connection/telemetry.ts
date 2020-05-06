@@ -1,8 +1,8 @@
-import {Menu} from "../ipc/Menu";
-import {Meters} from "../ipc/meters";
-import {Misc} from "../ipc/Misc";
-import {Scope} from "../ipc/Scope";
-import {Terminal} from "../ipc/terminal";
+import {MenuIPC} from "../ipc/Menu";
+import {MetersIPC} from "../ipc/meters";
+import {MiscIPC} from "../ipc/Misc";
+import {ScopeIPC} from "../ipc/Scope";
+import {TerminalIPC} from "../ipc/terminal";
 import {resetResponseTimeout} from "./state/Connected";
 import {bytes_to_signed, convertArrayBufferToString, convertBufferToString} from '../helper';
 import {
@@ -38,7 +38,7 @@ function compute(dat: number[]) {
     let str: string;
     switch (dat[DATA_TYPE]) {
         case TT_GAUGE:
-            Meters.setValue(dat[DATA_NUM], bytes_to_signed(dat[3], dat[4]));
+            MetersIPC.setValue(dat[DATA_NUM], bytes_to_signed(dat[3], dat[4]));
             break;
         case TT_GAUGE_CONF:
             const index = dat[DATA_NUM];
@@ -46,8 +46,8 @@ function compute(dat: number[]) {
             const gauge_max = bytes_to_signed(dat[5], dat[6]);
             dat.splice(0, 7);
             str = convertBufferToString(dat);
-            Meters.configure(index, gauge_min, gauge_max, str);
-            Scope.refresh();
+            MetersIPC.configure(index, gauge_min, gauge_max, str);
+            ScopeIPC.refresh();
             break;
         case TT_CHART_CONF: {
             const traceId = dat[2].valueOf();
@@ -57,20 +57,20 @@ function compute(dat: number[]) {
             const unit = UNITS[dat[9]];
             dat.splice(0, 10);
             const name = convertBufferToString(dat);
-            Scope.configure(traceId, min, max, offset, unit, name);
+            ScopeIPC.configure(traceId, min, max, offset, unit, name);
             break;
         }
         case TT_CHART: {
             const val = bytes_to_signed(dat[3], dat[4]);
             const chart_num = dat[DATA_NUM].valueOf();
-            Scope.addValue(chart_num, val);
+            ScopeIPC.addValue(chart_num, val);
             break;
         }
         case TT_CHART_DRAW:
-            Scope.drawChart();
+            ScopeIPC.drawChart();
             break;
         case TT_CHART_CLEAR:
-            Scope.startControlledDraw();
+            ScopeIPC.startControlledDraw();
             break;
         case TT_CHART_LINE:
             const x1 = bytes_to_signed(dat[2], dat[3]);
@@ -78,7 +78,7 @@ function compute(dat: number[]) {
             const x2 = bytes_to_signed(dat[6], dat[7]);
             const y2 = bytes_to_signed(dat[8], dat[9]);
             const color = dat[10].valueOf();
-            Scope.drawLine(x1, x2, y1, y2, color);
+            ScopeIPC.drawLine(x1, x2, y1, y2, color);
 
             break;
         case TT_CHART_TEXT:
@@ -96,7 +96,7 @@ function compute(dat: number[]) {
             dat.splice(0, 2);
             str = convertBufferToString(dat, false);
             if (str === "NULL;NULL") {
-                Misc.openUDConfig(udconfig);
+                MiscIPC.openUDConfig(udconfig);
                 udconfig = [];
             } else {
                 const substrings = str.split(";");
@@ -109,21 +109,21 @@ function compute(dat: number[]) {
 function setBusActive(active) {
     if (active !== busActive) {
         busActive = active;
-        Menu.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setBusState(busActive, busControllable, transientActive);
     }
 }
 
 function setTransientActive(active) {
     if (active !== transientActive) {
         transientActive = active;
-        Menu.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setBusState(busActive, busControllable, transientActive);
     }
 }
 
 function setBusControllable(controllable) {
     if (controllable !== busControllable) {
         busControllable = controllable;
-        Menu.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setBusState(busActive, busControllable, transientActive);
     }
 }
 
@@ -137,7 +137,7 @@ function drawString(dat: number[], center: boolean) {
     }
     dat.splice(0, 8);
     const str = convertBufferToString(dat);
-    Scope.drawText(x, y, color, size, str, center);
+    ScopeIPC.drawText(x, y, color, size, str, center);
 }
 
 let buffer: number[] = [];
@@ -154,7 +154,7 @@ export function receive_main(data: Buffer) {
                     term_state = TT_STATE_FRAME;
                 } else {
                     const str = String.fromCharCode.apply(null, [byte]);
-                    Terminal.print(str);
+                    TerminalIPC.print(str);
                 }
                 break;
 

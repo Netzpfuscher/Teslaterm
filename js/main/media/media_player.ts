@@ -1,9 +1,11 @@
+//TODO MIDI
+//TODO slider messages
 import * as path from "path";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {commands} from "../connection/connection";
-import {Scope} from "../ipc/Scope";
-import {Terminal} from "../ipc/terminal";
+import {ScopeIPC} from "../ipc/Scope";
+import {TerminalIPC} from "../ipc/terminal";
 import {kill_msg, midiOut} from "../midi/midi";
 import {loadMidiFile} from "../midi/midi_file";
 import {transientActive} from "../connection/telemetry";
@@ -64,11 +66,11 @@ export class PlayerState {
 
     public async startPlaying(): Promise<void> {
         if (this.currentFile === null) {
-            Terminal.println("Please select a media file using drag&drop");
+            TerminalIPC.println("Please select a media file using drag&drop");
             return;
         }
         if (this.state !== PlayerActivity.idle) {
-            Terminal.println("A media file is currently playing, stop it before starting it again");
+            TerminalIPC.println("A media file is currently playing, stop it before starting it again");
             return;
         }
         if (this.startCallback) {
@@ -80,14 +82,14 @@ export class PlayerState {
     public stopPlaying(): void {
         midiOut.send(kill_msg);
         if (this.currentFile === null || this.state !== PlayerActivity.playing) {
-            Terminal.println("No media file is currently playing");
+            TerminalIPC.println("No media file is currently playing");
             return;
         }
         if (this.stopCallback) {
             this.stopCallback();
         }
         this.stateInt = PlayerActivity.idle;
-        Scope.updateMediaInfo();
+        ScopeIPC.updateMediaInfo();
         scripting.onMidiStopped();
     }
 }
@@ -114,6 +116,6 @@ export async function loadMediaFile(file: TransmittedFile): Promise<void> {
     } else if (extension === "dmp" || extension === "sid") {
         await loadSidFile(file);
     } else {
-        Terminal.println("Unknown extension: " + extension);
+        TerminalIPC.println("Unknown extension: " + extension);
     }
 }

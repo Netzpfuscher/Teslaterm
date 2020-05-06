@@ -6,8 +6,8 @@ import {
     serial_min,
     serial_plain, serial_port, sid_port, telnet_port
 } from "../../../common/ConnectionOptions";
-import {openConnectionUI} from "../../ipc/ConnectionUI";
-import {Terminal} from "../../ipc/terminal";
+import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
+import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../main";
 import {createEthernetConnection} from "../types/ethernet";
 import {IUD3Connection} from "../types/IUD3Connection";
@@ -45,14 +45,18 @@ export class Idle implements IConnectionState {
             case eth_node:
                 return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
             default:
-                Terminal.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");
+                TerminalIPC.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");
                 return undefined;
         }
     }
 
     private static async connectInternal(): Promise<IUD3Connection | undefined> {
-        const options = await openConnectionUI();
-        return Idle.connectWithOptions(options);
+        try {
+            const options = await ConnectionUIIPC.openConnectionUI();
+            return Idle.connectWithOptions(options);
+        } catch (e) {
+            return Promise.resolve(undefined);
+        }
     }
 
     private static async connectSerial(options: any, create: (port: string, baudrate: number) => IUD3Connection)
@@ -70,11 +74,11 @@ export class Idle implements IConnectionState {
         const all = await SerialPort.list();
         for (const port of all) {
             if (port.vendorId === config.vendorID && port.productId === config.productID) {
-                Terminal.println("Auto connecting to " + port.path);
+                TerminalIPC.println("Auto connecting to " + port.path);
                 return create(port.path, baudrate);
             }
         }
-        Terminal.println("Did not find port to auto-connect to");
+        TerminalIPC.println("Did not find port to auto-connect to");
         return undefined;
     }
 }

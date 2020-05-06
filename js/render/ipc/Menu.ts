@@ -5,29 +5,29 @@ import {updateConnectionButton, updateUD3State} from "../gui/menu";
 
 export let ud3State: UD3State;
 
-export class Menu {
-    public static startPlaying(): void {
+export namespace MenuIPC {
+    export function startPlaying(): void {
         ipcRenderer.send(IPCConstantsToMain.menu.startMedia);
     }
 
-    public static stopPlaying(): void {
+    export function stopPlaying(): void {
         ipcRenderer.send(IPCConstantsToMain.menu.stopMedia);
     }
 
-    public static startScript() {
+    export function startScript() {
         ipcRenderer.send(IPCConstantsToMain.menu.startScript);
     }
 
-    public static stopScript() {
+    export function stopScript() {
         ipcRenderer.send(IPCConstantsToMain.menu.stopScript);
     }
 
-    public static connectButton() {
+    export function connectButton() {
         ipcRenderer.send(IPCConstantsToMain.menu.connectButton);
     }
 
-    public static init() {
-        ipcRenderer.on(IPCConstantsToRenderer.menu.busState, (ev, state: UD3State) => {
+    export function init() {
+        ipcRenderer.on(IPCConstantsToRenderer.menu.ud3State, (ev, state: UD3State) => {
             updateUD3State(state);
             ud3State = state;
         });

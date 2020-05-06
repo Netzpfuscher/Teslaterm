@@ -1,5 +1,5 @@
 import * as net from "net";
-import {Terminal} from "../ipc/terminal";
+import {TerminalIPC} from "../ipc/terminal";
 
 export function connectTCPSocket(
     ipaddr: string,
@@ -13,15 +13,15 @@ export function connectTCPSocket(
                 console.error(e);
                 rej();
             } else {
-                Terminal.println("Connected socket " + desc);
+                TerminalIPC.println("Connected socket " + desc);
                 res(ret);
             }
         });
         ret.on('end', () => {
-            Terminal.println("Socket " + desc + " disconnected");
+            TerminalIPC.println("Socket " + desc + " disconnected");
         });
         ret.addListener('error', (e: Error) => {
-            Terminal.println("Error on " + desc + " socket!");
+            TerminalIPC.println("Error on " + desc + " socket!");
             console.error(e);
             rej();
         });

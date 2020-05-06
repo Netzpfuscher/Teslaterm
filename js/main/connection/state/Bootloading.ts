@@ -1,5 +1,5 @@
 import {sleep} from "../../helper";
-import {Terminal} from "../../ipc/terminal";
+import {TerminalIPC} from "../../ipc/terminal";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {Bootloader} from "../bootloader/bootloader";
 import {commands} from "../connection";
@@ -14,13 +14,13 @@ export class Bootloading implements IConnectionState {
     private cancelled: boolean = false;
     private inBootloadMode: boolean = false;
 
-    constructor(connection: BootloadableConnection, file: ArrayBuffer) {
+    constructor(connection: BootloadableConnection, file: Uint8Array) {
         this.connection = connection;
         this.bootload(file)
             .catch(
                 (e) => {
                     console.error(e);
-                    Terminal.println("Error while bootloading: " + e);
+                    TerminalIPC.println("Error while bootloading: " + e);
                 }
             )
             .then(
@@ -57,30 +57,30 @@ export class Bootloading implements IConnectionState {
         }
     }
 
-    private async bootload(file: ArrayBuffer) {
+    private async bootload(file: Uint8Array) {
         try {
             const ldr = new Bootloader();
             await ldr.loadCyacd(file);
             await commands.sendCommand('\rbootloader\r');
-            Terminal.println("Waiting for bootloader to start...");
+            TerminalIPC.println("Waiting for bootloader to start...");
             await sleep(3000);
             this.connection.enterBootloaderMode((data) => {
                 ldr.onDataReceived(data);
             });
             this.inBootloadMode = true;
-            Terminal.println("Connecting to bootloader...");
-            ldr.set_info_cb((str: string) => Terminal.println(str));
+            TerminalIPC.println("Connecting to bootloader...");
+            ldr.set_info_cb((str: string) => TerminalIPC.println(str));
             ldr.set_progress_cb((percentage) => {
-                Terminal.print('\x1B[2K');
-                Terminal.print('\r|');
+                TerminalIPC.print('\x1B[2K');
+                TerminalIPC.print('\r|');
                 for (let i = 0; i < 50; i++) {
                     if (percentage >= (i * 2)) {
-                        Terminal.print('=');
+                        TerminalIPC.print('=');
                     } else {
-                        Terminal.print('.');
+                        TerminalIPC.print('.');
                     }
                 }
-                Terminal.print('| ' + percentage + '%');
+                TerminalIPC.print('| ' + percentage + '%');
             });
             ldr.set_write_cb((data) => {
                 return this.connection.sendBootloaderData(data);
@@ -88,7 +88,7 @@ export class Bootloading implements IConnectionState {
             await ldr.connectAndProgram();
         } catch (e) {
             console.error(e);
-            Terminal.println("Error while bootloading: " + e);
+            TerminalIPC.println("Error while bootloading: " + e);
         }
         if (this.inBootloadMode) {
             this.connection.leaveBootloaderMode();

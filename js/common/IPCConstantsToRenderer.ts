@@ -15,7 +15,7 @@ export const IPCConstantsToRenderer = {
         configure: "meter-config",
     },
     menu: {
-        busState: "menu-bus-state",
+        ud3State: "menu-ud3-state",
         connectionButtonText: "menu-connection-text",
         setMediaTitle: "menu-media-title",
         setScriptName: "menu-script-name",
@@ -57,13 +57,13 @@ export class MeterConfig {
 }
 
 export class UD3State {
-    public readonly active: boolean;
-    public readonly controllable: boolean;
+    public readonly busActive: boolean;
+    public readonly busControllable: boolean;
     public readonly transientActive: boolean;
 
     constructor(active: boolean, controllable: boolean, transientActive: boolean) {
-        this.active = active;
-        this.controllable = controllable;
+        this.busActive = active;
+        this.busControllable = controllable;
         this.transientActive = transientActive;
     }
 }

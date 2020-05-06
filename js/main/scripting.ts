@@ -3,7 +3,7 @@ import * as vm from 'vm';
 import {commands} from "./connection/connection";
 import * as helper from './helper';
 import {Sliders} from "./ipc/sliders";
-import {Terminal} from "./ipc/terminal";
+import {TerminalIPC} from "./ipc/terminal";
 import * as media_player from './media/media_player';
 
 let running = false;
@@ -86,7 +86,7 @@ function waitForConfirmation(text, title): Promise<any> {
     });
 }
 
-export async function loadScript(content: ArrayBuffer): Promise<Array<() => Promise<any>>> {
+export async function loadScript(content: Uint8Array): Promise<Array<() => Promise<any>>> {
     const code = helper.convertArrayBufferToString(content, false);
     queue = [];
     const sandbox = vm.createContext({
@@ -98,7 +98,7 @@ export async function loadScript(content: ArrayBuffer): Promise<Array<() => Prom
         playMediaAsync: wrapForSandboxNonPromise(media_player.media_state.startPlaying),
         playMediaBlocking: wrapForSandbox(playMediaBlocking),
         println: wrapForSandbox((s) => {
-            Terminal.println(s);
+            TerminalIPC.println(s);
             return Promise.resolve();
         }),
         setBPS: wrapForSandboxNonPromise(commands.setBPS),
@@ -120,7 +120,7 @@ export async function loadScript(content: ArrayBuffer): Promise<Array<() => Prom
 
 export function startScript(script_queue: Array<() => Promise<any>>) {
     if (running) {
-        Terminal.println("The script is already running.");
+        TerminalIPC.println("The script is already running.");
         return;
     }
     let script = Promise.resolve();
@@ -131,10 +131,10 @@ export function startScript(script_queue: Array<() => Promise<any>>) {
     }
     script.then(() => {
         running = false;
-        Terminal.println("Script finished normally");
+        TerminalIPC.println("Script finished normally");
     }).catch((e) => {
         running = false;
-        Terminal.println("Script finished with error: " + e);
+        TerminalIPC.println("Script finished with error: " + e);
         console.error(e);
     }).then(() => Sliders.setRelativeAllowed(true));
 }
