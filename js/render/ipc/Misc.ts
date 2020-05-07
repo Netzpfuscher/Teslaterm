@@ -31,4 +31,8 @@ export namespace MiscIPC {
         });
         ipcRenderer.send(IPCConstantsToMain.rendererReady);
     }
+
+    export function sendMidi(data: Uint8Array) {
+        ipcRenderer.send(IPCConstantsToMain.midiMessage, data);
+    }
 }

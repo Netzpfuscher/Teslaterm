@@ -23,8 +23,7 @@ export const IPCConstantsToRenderer = {
     scope: {
         refresh: "scope-refresh",
         configure: "scope-config",
-        addValue: "scope-value",
-        drawChart: "scope-draw-chart",
+        addValues: "scope-values",
         startControlled: "scope-start-controlled",
         drawLine: "scope-draw-line",
         drawString: "scope-draw-string",
@@ -32,13 +31,11 @@ export const IPCConstantsToRenderer = {
     },
 };
 
-export class SetMeter {
-    public readonly meterId: number;
-    public readonly value: number;
+export class SetMeters {
+    public readonly values: { [id: number]: number };
 
-    constructor(meterId: number, value: number) {
-        this.meterId = meterId;
-        this.value = value;
+    constructor(values: { [id: number]: number }) {
+        this.values = values;
     }
 }
 
@@ -86,13 +83,11 @@ export class ScopeTraceConfig {
     }
 }
 
-export class ScopeValue {
-    public readonly id: number;
-    public readonly value: number;
+export class ScopeValues {
+    public readonly values: { [key: number]: number }[];
 
-    constructor(id: number, value: number) {
-        this.id = id;
-        this.value = value;
+    constructor(values: { [key: number]: number }[]) {
+        this.values = values;
     }
 }
 

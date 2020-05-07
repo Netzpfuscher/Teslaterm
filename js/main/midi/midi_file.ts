@@ -10,7 +10,7 @@ export async function loadMidiFile(file: TransmittedFile) {
     await media_state.loadFile(
         file,
         MediaFileType.midi,
-        name,
+        file.name,
         startCurrentMidiFile,
         stopMidiFile,
     );

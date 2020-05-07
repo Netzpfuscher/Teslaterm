@@ -17,6 +17,7 @@ export const IPCConstantsToMain = {
         connectButton: "press-connect-button",
     },
     rendererReady: "renderer-ready",
+    midiMessage: "midi-message",
 };
 
 export class ConnectionReply {

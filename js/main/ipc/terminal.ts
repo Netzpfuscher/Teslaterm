@@ -2,11 +2,24 @@ import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {mainWindow} from "../main";
 
 export module TerminalIPC {
+    let buffer: string = "";
+
     export function print(s: string) {
-        mainWindow.webContents.send(IPCConstantsToRenderer.terminal, s);
+        buffer += s;
     }
 
     export function println(s: string) {
         TerminalIPC.print(s + "\r\n");
+    }
+
+    function tick() {
+        if (buffer !== "") {
+            mainWindow.webContents.send(IPCConstantsToRenderer.terminal, buffer);
+            buffer = "";
+        }
+    }
+
+    export function init() {
+        setInterval(tick, 20);
     }
 }

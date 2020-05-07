@@ -1,14 +1,17 @@
-import {app, BrowserWindow} from "electron";
+import {app, BrowserWindow, contentTracing} from "electron";
 import * as path from "path";
 import {TTConfig} from "../common/TTConfig";
 import * as connection from "./connection/connection";
 import {FileUploadIPC} from "./ipc/FileUpload";
 import {MenuIPC} from "./ipc/Menu";
+import {MetersIPC} from "./ipc/meters";
 import {MiscIPC} from "./ipc/Misc";
+import {ScopeIPC} from "./ipc/Scope";
 import {Sliders} from "./ipc/sliders";
-import * as midi from "./midi/midi";
+import {TerminalIPC} from "./ipc/terminal";
 import * as sid from "./sid/sid";
 import {loadConfig} from "./TTConfigLoader";
+import * as microtime from "./microtime";
 
 export let mainWindow: BrowserWindow;
 export let config: TTConfig;
@@ -42,10 +45,12 @@ function createWindow() {
 //TODO multi-window support?
 function initAll() {
     Sliders.init();
-    midi.init();
     MiscIPC.init();
     FileUploadIPC.init();
     MenuIPC.init();
+    TerminalIPC.init();
+    ScopeIPC.init();
+    MetersIPC.init();
 }
 
 //TODO make everything tick individually?

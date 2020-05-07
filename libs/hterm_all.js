@@ -5727,8 +5727,6 @@ lib.registerInit('hterm', function(onInit) {
   }
 
   if (!hterm.defaultStorage) {
-    console.log(window.chrome);
-    console.log(chrome);
     if (window.chrome && chrome.storage && chrome.storage.sync) {
       hterm.defaultStorage = new lib.Storage.Chrome(chrome.storage.sync);
     } else {

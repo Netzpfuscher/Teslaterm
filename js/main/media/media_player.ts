@@ -6,7 +6,7 @@ import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {commands} from "../connection/connection";
 import {ScopeIPC} from "../ipc/Scope";
 import {TerminalIPC} from "../ipc/terminal";
-import {kill_msg, midiOut} from "../midi/midi";
+import {kill_msg, playMidiData} from "../midi/midi";
 import {loadMidiFile} from "../midi/midi_file";
 import {transientActive} from "../connection/telemetry";
 import * as scripting from "../scripting";
@@ -80,7 +80,7 @@ export class PlayerState {
     }
 
     public stopPlaying(): void {
-        midiOut.send(kill_msg);
+        playMidiData(kill_msg);
         if (this.currentFile === null || this.state !== PlayerActivity.playing) {
             TerminalIPC.println("No media file is currently playing");
             return;

@@ -1,4 +1,3 @@
-import {populateMIDISelects} from "../../midi/midi_ui";
 import {TerminalIPC} from "../../ipc/terminal";
 import {startConf} from "../connection";
 import {IUD3Connection} from "../types/IUD3Connection";
@@ -29,11 +28,11 @@ export class Connecting implements IConnectionState {
                     await c.connect();
                     this.state = State.initializing;
                     await startConf();
-                    populateMIDISelects();
                     this.state = State.connected;
                 } catch (x) {
                     TerminalIPC.println("Failed to connect");
                     console.log("While connecting: ", x);
+                    c.disconnect();
                     this.state = State.failed;
                 }
             } else {

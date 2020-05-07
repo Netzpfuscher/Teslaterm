@@ -3,15 +3,15 @@ import {
     IPCConstantsToRenderer, MediaState,
     ScopeLine,
     ScopeText,
-    ScopeTraceConfig,
-    ScopeValue
+    ScopeTraceConfig, ScopeValues
 } from "../../common/IPCConstantsToRenderer";
 import {
     beginControlledDraw,
     drawChart,
     drawLine,
     drawString,
-    redrawInfo, redrawMediaInfo,
+    redrawInfo,
+    redrawMediaInfo,
     traces
 } from "../gui/oscilloscope/oscilloscope";
 
@@ -23,11 +23,13 @@ export namespace ScopeIPC {
         ipcRenderer.on(IPCConstantsToRenderer.scope.configure, (ev, cfg: ScopeTraceConfig) => {
             traces[cfg.id].configure(cfg.min, cfg.max, cfg.offset, cfg.unit, cfg.name);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.addValue, (ev, cfg: ScopeValue) => {
-            traces[cfg.id].addValue(cfg.value);
-        });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.drawChart, () => {
-            drawChart();
+        ipcRenderer.on(IPCConstantsToRenderer.scope.addValues, (ev, cfg: ScopeValues) => {
+            for (const tick of cfg.values) {
+                for (const [id, val] of Object.entries(tick)) {
+                    traces[id].addValue(val);
+                }
+                drawChart();
+            }
         });
         ipcRenderer.on(IPCConstantsToRenderer.scope.startControlled, () => {
             beginControlledDraw();

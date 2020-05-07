@@ -12,6 +12,7 @@ import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "../common/comm
 import {MiscIPC} from "./ipc/Misc";
 import {ScopeIPC} from "./ipc/scope";
 import {SlidersIPC} from "./ipc/sliders";
+import * as midi_ui from "./gui/midi_ui";
 
 
 export function init() {
@@ -71,6 +72,15 @@ export function init() {
                 name: 'toolbar',
                 onClick: menu.onCtrlMenuClick,
             });
+
+            midi_ui.init();
+            MenuIPC.init();
+            MetersIPC.init();
+            MiscIPC.init();
+            ScopeIPC.init();
+            SlidersIPC.init();
+
+            setInterval(update, 20);
         });
 
         let html_gauges = '';
@@ -106,7 +116,6 @@ export function init() {
                         '<br><br>Burst Off<br><br>' +
                         '<input type="range" id="slider3" min="0" max="' + maxBurstOfftime + '" value="500" class="slider-gray" data-show-value="true"><label id="slider3_disp">500 ms</label>' +
                         '<br><br>MIDI Input: <select id="midiIn"></select>' +
-                        '<br>MIDI Output: <select id="midiOut"></select>' +
                         '</aside>' +
                         '</div>',
                     style: pstyle, type: 'main',
@@ -128,20 +137,9 @@ export function init() {
         });
         terminal.decorate(document.querySelector('#terminal'));
         terminal.installKeyboard();
-
         gui.init();
         sliders.init();
-
         scope.init();
-
-        MenuIPC.init();
-        MetersIPC.init();
-        MiscIPC.init();
-        ScopeIPC.init();
-        SlidersIPC.init();
-
-        // midi_server.init();
-        setInterval(update, 20);
     });
 }
 

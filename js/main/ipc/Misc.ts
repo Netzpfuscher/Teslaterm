@@ -5,6 +5,7 @@ import * as connection from "../connection/connection";
 import {commands} from "../connection/connection";
 import {config, mainWindow} from "../main";
 import {ipcMain} from "electron";
+import {playMidiData} from "../midi/midi";
 
 export module MiscIPC {
     export function openUDConfig(config: string[][]) {
@@ -22,6 +23,9 @@ export module MiscIPC {
         ipcMain.on(IPCConstantsToMain.rendererReady, () => {
             MiscIPC.syncTTConfig(config);
             connection.autoConnect();
+        });
+        ipcMain.on(IPCConstantsToMain.midiMessage, (ev, msg: Uint8Array) => {
+            playMidiData(msg);
         });
     }
 }
