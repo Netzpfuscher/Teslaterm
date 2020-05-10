@@ -1,4 +1,3 @@
-import "justgage";
 import {terminal} from "./constants";
 
 export class Meter {

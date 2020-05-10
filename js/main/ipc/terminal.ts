@@ -1,5 +1,5 @@
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
-import {mainWindow} from "../main";
+import {processIPC} from "../../common/IPCProvider";
 
 export module TerminalIPC {
     let buffer: string = "";
@@ -14,7 +14,7 @@ export module TerminalIPC {
 
     function tick() {
         if (buffer !== "") {
-            mainWindow.webContents.send(IPCConstantsToRenderer.terminal, buffer);
+            processIPC.send(IPCConstantsToRenderer.terminal, buffer);
             buffer = "";
         }
     }

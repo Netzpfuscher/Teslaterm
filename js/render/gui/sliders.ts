@@ -1,4 +1,3 @@
-import * as $ from "jquery";
 import {maxOntime} from "../../common/commands";
 import {UD3State} from "../../common/IPCConstantsToRenderer";
 import {SlidersIPC} from "../ipc/sliders";

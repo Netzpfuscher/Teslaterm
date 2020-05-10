@@ -1,4 +1,3 @@
-import * as $ from "jquery";
 import {TYPE_CHAR, TYPE_FLOAT, TYPE_SIGNED, TYPE_STRING, TYPE_UNSIGNED} from "../../common/constants";
 import {commands} from "../ipc/commands";
 import {config} from "../ipc/Misc";

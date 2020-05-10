@@ -1,4 +1,3 @@
-import "electron";
 import {commands} from "../ipc/commands";
 import {FileUploadIPC} from "../ipc/FileUpload";
 import {terminal} from "./constants";

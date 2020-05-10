@@ -3,7 +3,7 @@ import {SynthType} from "../../common/CommonTypes";
 import {getDefaultConnectOptions} from "../../common/ConnectionOptions";
 import {Sliders} from "../ipc/sliders";
 import {TerminalIPC} from "../ipc/terminal";
-import {config} from "../main";
+import {config} from "../init";
 import {media_state} from "../media/media_player";
 import {BootloadableConnection} from "./bootloader/bootloadable_connection";
 import {Bootloading} from "./state/Bootloading";

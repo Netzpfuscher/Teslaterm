@@ -1,4 +1,4 @@
-import {ipcRenderer} from "electron";
+import {processIPC} from "../../common/IPCProvider";
 import {ConnectionReply, IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {TTConfig} from "../../common/TTConfig";
@@ -11,28 +11,28 @@ export let config: TTConfig = new TTConfig();
 export namespace MiscIPC {
 
     export function init() {
-        ipcRenderer.on(IPCConstantsToRenderer.terminal, (ev, s: string) => {
+        processIPC.on(IPCConstantsToRenderer.terminal, (s: string) => {
             terminal.io.print(s);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.ttConfig, (ev, cfg: TTConfig) => {
+        processIPC.on(IPCConstantsToRenderer.ttConfig, (cfg: TTConfig) => {
             config = cfg;
         });
-        ipcRenderer.on(IPCConstantsToRenderer.udConfig, (ev, cfg: string[][]) => {
+        processIPC.on(IPCConstantsToRenderer.udConfig, (cfg: string[][]) => {
             ud_settings(cfg);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.openConnectionUI, async (ev) => {
+        processIPC.on(IPCConstantsToRenderer.openConnectionUI, async () => {
             let reply: Object | null;
             try {
                 reply = await openUI();
             } catch (e) {
                 reply = null;
             }
-            ipcRenderer.send(IPCConstantsToMain.connect, reply);
+            processIPC.send(IPCConstantsToMain.connect, reply);
         });
-        ipcRenderer.send(IPCConstantsToMain.rendererReady);
+        processIPC.send(IPCConstantsToMain.rendererReady);
     }
 
     export function sendMidi(data: Uint8Array) {
-        ipcRenderer.send(IPCConstantsToMain.midiMessage, data);
+        processIPC.send(IPCConstantsToMain.midiMessage, data);
     }
 }

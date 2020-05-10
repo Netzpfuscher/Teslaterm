@@ -98,7 +98,6 @@ export function init(): void {
     backContext = backCanvas.getContext("2d");
     waveCanvas.onmousedown = onMouseDown;
 
-
     for (let i = 0; i < NUM_GAUGES; i++) {
         traces.push(new Trace(wavecolors[i]));
     }

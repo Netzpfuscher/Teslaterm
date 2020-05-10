@@ -8,7 +8,7 @@ import {
 } from "../../../common/ConnectionOptions";
 import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
-import {config} from "../../main";
+import {config} from "../../init";
 import {createEthernetConnection} from "../types/ethernet";
 import {IUD3Connection} from "../types/IUD3Connection";
 import {createMinSerialConnection} from "../types/serial_min";

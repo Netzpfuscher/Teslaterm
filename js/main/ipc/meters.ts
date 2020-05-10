@@ -1,5 +1,5 @@
 import {IPCConstantsToRenderer, MeterConfig, SetMeters} from "../../common/IPCConstantsToRenderer";
-import {mainWindow} from "../main";
+import {processIPC} from "../../common/IPCProvider";
 
 export module MetersIPC {
     let state: { [id: number]: number } = {};
@@ -10,7 +10,7 @@ export module MetersIPC {
     }
 
     export function configure(id: number, min: number, max: number, name: string) {
-        mainWindow.webContents.send(IPCConstantsToRenderer.meters.configure, new MeterConfig(id, min, max, name));
+        processIPC.send(IPCConstantsToRenderer.meters.configure, new MeterConfig(id, min, max, name));
     }
 
     function tick() {
@@ -22,7 +22,7 @@ export module MetersIPC {
             }
         }
         if (Object.keys(update).length > 0) {
-            mainWindow.webContents.send(IPCConstantsToRenderer.meters.setValue, new SetMeters(update));
+            processIPC.send(IPCConstantsToRenderer.meters.setValue, new SetMeters(update));
         }
     }
 

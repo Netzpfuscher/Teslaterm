@@ -2,11 +2,11 @@ import {CommandInterface} from "../../common/commands";
 import {SynthType} from "../../common/CommonTypes";
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {terminal} from "../gui/constants";
-import {ipcRenderer} from "electron";
+import {processIPC} from "../../common/IPCProvider";
 
 export const commands = new CommandInterface(
     c => {
-        ipcRenderer.send(IPCConstantsToMain.command, c);
+        processIPC.send(IPCConstantsToMain.command, c);
         //TODO?
         return Promise.resolve();
     },

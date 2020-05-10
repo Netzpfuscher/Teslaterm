@@ -1,4 +1,3 @@
-import * as $ from "jquery";
 import {
     baudrate,
     connection_type, connection_types, eth_node,

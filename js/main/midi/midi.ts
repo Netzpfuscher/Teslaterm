@@ -1,6 +1,6 @@
 import * as MidiPlayer from "midi-player-js";
 import {ScopeIPC} from "../ipc/Scope";
-import {simulated} from "../main";
+import {simulated} from "../init";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import {getUD3Connection, hasUD3Connection} from "../connection/connection";
 import * as scripting from "../scripting";

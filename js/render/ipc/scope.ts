@@ -1,4 +1,4 @@
-import {ipcRenderer} from "electron";
+import {processIPC} from "../../common/IPCProvider";
 import {
     IPCConstantsToRenderer, MediaState,
     ScopeLine,
@@ -17,13 +17,13 @@ import {
 
 export namespace ScopeIPC {
     export function init() {
-        ipcRenderer.on(IPCConstantsToRenderer.scope.refresh, () => {
+        processIPC.on(IPCConstantsToRenderer.scope.refresh, () => {
             redrawInfo();
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.configure, (ev, cfg: ScopeTraceConfig) => {
+        processIPC.on(IPCConstantsToRenderer.scope.configure, (cfg: ScopeTraceConfig) => {
             traces[cfg.id].configure(cfg.min, cfg.max, cfg.offset, cfg.unit, cfg.name);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.addValues, (ev, cfg: ScopeValues) => {
+        processIPC.on(IPCConstantsToRenderer.scope.addValues, (cfg: ScopeValues) => {
             for (const tick of cfg.values) {
                 for (const [id, val] of Object.entries(tick)) {
                     traces[id].addValue(val);
@@ -31,16 +31,16 @@ export namespace ScopeIPC {
                 drawChart();
             }
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.startControlled, () => {
+        processIPC.on(IPCConstantsToRenderer.scope.startControlled, () => {
             beginControlledDraw();
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.drawLine, (ev, cfg: ScopeLine) => {
+        processIPC.on(IPCConstantsToRenderer.scope.drawLine, (cfg: ScopeLine) => {
             drawLine(cfg.x1, cfg.y1, cfg.x2, cfg.y2, cfg.color);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.drawString, (ev, cfg: ScopeText) => {
+        processIPC.on(IPCConstantsToRenderer.scope.drawString, (cfg: ScopeText) => {
             drawString(cfg.x, cfg.y, cfg.color, cfg.size, cfg.str, cfg.center);
         });
-        ipcRenderer.on(IPCConstantsToRenderer.scope.redrawMedia, (ev, state: MediaState) => {
+        processIPC.on(IPCConstantsToRenderer.scope.redrawMedia, (state: MediaState) => {
             redrawMediaInfo(state);
         });
     }

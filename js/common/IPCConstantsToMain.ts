@@ -1,5 +1,5 @@
 export const IPCConstantsToMain = {
-    connect: "connect",
+    connect: "connect-to-ud3",
     loadFile: "load-file",
     command: "command",
     // TODO send these!
