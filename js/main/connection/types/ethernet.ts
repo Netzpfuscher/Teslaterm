@@ -5,10 +5,10 @@ import {ISidConnection} from "../../sid/ISidConnection";
 import {NetworkSIDClient} from "../../sid/NetworkSIDClient";
 import {TerminalIPC} from "../../ipc/terminal";
 import {connectTCPSocket} from "../tcp_helper";
-import {IUD3Connection, toCommandID} from "./IUD3Connection";
+import {UD3Connection, TerminalHandle, toCommandID} from "./UD3Connection";
 import * as telemetry from "../telemetry";
 
-class EthernetConnection implements IUD3Connection {
+class EthernetConnection extends UD3Connection {
     private telnetSocket: net.Socket | undefined;
     private sidClient: NetworkSIDClient;
     private midiSocket: dgram.Socket | undefined;
@@ -18,6 +18,7 @@ class EthernetConnection implements IUD3Connection {
     private readonly sidPort: number;
 
     constructor(ipaddr: string, telnet: number, midi: number, sid: number) {
+        super();
         this.remoteIp = ipaddr;
         this.telnetPort = telnet;
         this.midiPort = midi;
@@ -34,8 +35,19 @@ class EthernetConnection implements IUD3Connection {
         this.midiSocket.send(data, this.midiPort, this.remoteIp);
     }
 
+    private handleMessage(data: Buffer): void {
+        for (const [id, callback] of this.terminalCallbacks) {
+            callback.callback(data);
+        }
+    }
+
     public async connect(): Promise<void> {
-        this.telnetSocket = await connectTCPSocket(this.remoteIp, this.telnetPort, "main", telemetry.receive_main);
+        this.telnetSocket = await connectTCPSocket(
+            this.remoteIp,
+            this.telnetPort,
+            "main",
+            (data: Buffer) => this.handleMessage(data)
+        );
         this.midiSocket = await createUDPSocket("media", d => {
             console.error("Received unexpected data on MIDI socket: ", d);
         });
@@ -62,9 +74,14 @@ class EthernetConnection implements IUD3Connection {
     getSidConnection(): ISidConnection {
         return this.sidClient;
     }
+
+    getMaxTerminalID(): number {
+        // There are no separate terminals in ethernet connections, so we don't need to limit the number of terminals
+        return 100;
+    }
 }
 
-export function createEthernetConnection(ip: string, telnetPort: number, midiPort: number, sidPort: number): IUD3Connection {
+export function createEthernetConnection(ip: string, telnetPort: number, midiPort: number, sidPort: number): UD3Connection {
     return new EthernetConnection(ip, telnetPort, midiPort, sidPort);
 }
 

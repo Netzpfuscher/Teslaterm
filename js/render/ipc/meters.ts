@@ -1,4 +1,4 @@
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 import {IPCConstantsToRenderer, MeterConfig, SetMeters} from "../../common/IPCConstantsToRenderer";
 import {meters} from "../gui/gauges";
 

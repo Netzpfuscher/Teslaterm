@@ -6,12 +6,11 @@ import {Endianness, to_ud3_time, withTimeout} from "../../helper";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
-import {IUD3Connection} from "./IUD3Connection";
+import {UD3Connection, TerminalHandle} from "./UD3Connection";
 import * as telemetry from "../telemetry";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
-const MIN_ID_TERM = 0;
 const MIN_ID_SOCKET = 13;
 const MIN_ID_SYNTH = 14;
 
@@ -20,12 +19,12 @@ const SYNTH_CMD_SID = 0x02;
 const SYNTH_CMD_MIDI = 0x03;
 const SYNTH_CMD_OFF = 0x04;
 
-class MinSerialConnection extends BootloadableConnection implements IUD3Connection {
+class MinSerialConnection extends BootloadableConnection {
     public readonly port: string;
     public readonly baudrate: number;
     private serialPort: SerialPort;
     private min_wrapper: minprot | undefined;
-    private sidConnection: UD3FormattedConnection;
+    private readonly sidConnection: UD3FormattedConnection;
 
     constructor(port: string, baud: number) {
         super();
@@ -70,10 +69,19 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
 
     public async disconnect() {
         try {
-            await withTimeout(this.send_min_socket(false), 500);
+            let toDisconnect = [];
+            for (const [id, handler] of this.terminalCallbacks) {
+                if (handler.active) {
+                    toDisconnect[toDisconnect.length] = id;
+                }
+            }
+            for (const id of toDisconnect) {
+                this.closeTerminal(id);
+            }
         } catch (e) {
             console.error("Failed to disconnect cleanly", e);
         }
+        this.terminalCallbacks.clear();
         if (this.serialPort && this.serialPort.isOpen) {
             this.serialPort.close();
             this.serialPort.destroy();
@@ -94,10 +102,20 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         return this.sidConnection;
     }
 
-    public async sendTelnet(data: Buffer) {
+    public async sendTelnet(data: Buffer, handle: TerminalHandle) {
         if (this.min_wrapper) {
-            await this.min_wrapper.min_queue_frame(MIN_ID_TERM, data);
+            await this.min_wrapper.min_queue_frame(handle, data);
         }
+    }
+
+    async closeTerminal(handle: TerminalHandle): Promise<void> {
+        await withTimeout(this.send_min_socket(false, handle), 500);
+        await super.closeTerminal(handle);
+    }
+
+    async startTerminal(handle: TerminalHandle): Promise<void> {
+        await super.startTerminal(handle);
+        await this.send_min_socket(true, handle);
     }
 
     public sendBootloaderData(data: Buffer): Promise<void> {
@@ -135,10 +153,10 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
         }
     }
 
-    public async send_min_socket(connect: boolean) {
+    public async send_min_socket(connect: boolean, id: TerminalHandle) {
         if (this.min_wrapper) {
             const infoBuffer = Buffer.from(
-                String.fromCharCode(MIN_ID_TERM) +
+                String.fromCharCode(id) +
                 String.fromCharCode(connect ? 1 : 0) +
                 "TT socket" +
                 String.fromCharCode(0),
@@ -160,9 +178,7 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             });
         };
         this.min_wrapper.handler = (id, data) => {
-            if (id === MIN_ID_TERM) {
-                telemetry.receive_main(new Buffer(data));
-            } else if (id === MIN_ID_MEDIA) {
+            if (id === MIN_ID_MEDIA) {
                 if (data[0] === 0x78) {
                     this.sidConnection.setBusy(true);
                 } else if (data[0] === 0x6f) {
@@ -170,11 +186,12 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
                 } else {
                     console.error("Unexpected MEDIA MIN message");
                 }
+            } else if (this.terminalCallbacks.has(id)) {
+                this.terminalCallbacks.get(id).callback(new Buffer(data));
             } else {
                 console.warn("Unexpected ID in min: " + id);
             }
         };
-        await this.send_min_socket(true);
     }
 
     public async flushSynth(): Promise<void> {
@@ -188,9 +205,13 @@ class MinSerialConnection extends BootloadableConnection implements IUD3Connecti
             await this.min_wrapper.min_queue_frame(MIN_ID_SYNTH, [type]);
         }
     }
+
+    getMaxTerminalID(): number {
+        return 3;
+    }
 }
 
-export function createMinSerialConnection(port: string, baudrate: number): IUD3Connection {
+export function createMinSerialConnection(port: string, baudrate: number): UD3Connection {
     return new MinSerialConnection(port, baudrate);
 }
 

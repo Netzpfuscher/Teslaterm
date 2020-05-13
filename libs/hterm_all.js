@@ -12455,17 +12455,18 @@ hterm.Terminal.prototype.runCommandClass = function(commandClass, argString) {
     environment = {};
 
   var self = this;
-  this.command = new commandClass(
-      { argString: argString || '',
-        io: this.io.push(),
-        environment: environment,
-        onExit: function(code) {
-          self.io.pop();
-          self.uninstallKeyboard();
-          if (self.prefs_.get('close-on-exit'))
-              window.close();
-        }
-      });
+  this.automaticCommand = new commandClass(
+	  {
+		  argString: argString || '',
+		  io: this.io.push(),
+		  environment: environment,
+		  onExit: function (code) {
+			  self.io.pop();
+			  self.uninstallKeyboard();
+			  if (self.prefs_.get('close-on-exit'))
+				  window.close();
+		  }
+	  });
 
   this.installKeyboard();
   this.command.run();

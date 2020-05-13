@@ -3,19 +3,21 @@ import {TerminalIPC} from "../../ipc/terminal";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {Bootloader} from "../bootloader/bootloader";
 import {commands} from "../connection";
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
 import {Reconnecting} from "./Reconnecting";
 
 export class Bootloading implements IConnectionState {
     private readonly connection: BootloadableConnection;
+    private readonly autoTerminal: TerminalHandle;
     private done: boolean = false;
     private cancelled: boolean = false;
     private inBootloadMode: boolean = false;
 
-    constructor(connection: BootloadableConnection, file: Uint8Array) {
+    constructor(connection: BootloadableConnection, autoTerm: TerminalHandle, file: Uint8Array) {
         this.connection = connection;
+        this.autoTerminal = autoTerm;
         this.bootload(file)
             .catch(
                 (e) => {
@@ -30,7 +32,7 @@ export class Bootloading implements IConnectionState {
             );
     }
 
-    getActiveConnection(): IUD3Connection | undefined {
+    getActiveConnection(): UD3Connection | undefined {
         if (this.inBootloadMode) {
             return undefined;
         } else {
@@ -38,11 +40,19 @@ export class Bootloading implements IConnectionState {
         }
     }
 
+    public getAutoTerminal(): TerminalHandle | undefined {
+        if (this.inBootloadMode) {
+            return undefined;
+        } else {
+            return this.autoTerminal;
+        }
+    }
+
     getButtonText(): string {
         return "Abort bootloading";
     }
 
-    pressButton(): IConnectionState {
+    pressButton(window: object): IConnectionState {
         this.cancelled = true;
         this.connection.disconnect();
         return new Idle();

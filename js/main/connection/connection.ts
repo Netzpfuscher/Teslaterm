@@ -7,7 +7,7 @@ import {config} from "../init";
 import {media_state} from "../media/media_player";
 import {BootloadableConnection} from "./bootloader/bootloadable_connection";
 import {Bootloading} from "./state/Bootloading";
-import {IUD3Connection} from "./types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "./types/UD3Connection";
 import {IConnectionState} from "./state/IConnectionState";
 import {Idle} from "./state/Idle";
 import {Connecting} from "./state/Connecting";
@@ -17,7 +17,7 @@ export let connectionState: IConnectionState = new Idle();
 export const commands = new CommandInterface(
     async (c: string) => {
         if (hasUD3Connection()) {
-            await getUD3Connection().sendTelnet(new Buffer(c));
+            await getUD3Connection().sendTelnet(new Buffer(c), getAutoTerminal());
         }
     },
     () => {
@@ -45,8 +45,8 @@ export async function startConf() {
     await commands.sendCommand('cls\r');
 }
 
-export function pressButton() {
-    connectionState = connectionState.pressButton();
+export function pressButton(window: object) {
+    connectionState = connectionState.pressButton(window);
 }
 
 export function autoConnect() {
@@ -61,7 +61,7 @@ export function startBootloading(cyacd: Uint8Array): boolean {
     if (hasUD3Connection()) {
         const connection = getUD3Connection();
         if (hasUD3Connection() && connection instanceof BootloadableConnection) {
-            connectionState = new Bootloading(connection, cyacd);
+            connectionState = new Bootloading(connection, getAutoTerminal(), cyacd);
             return true;
         }
     }
@@ -78,12 +78,16 @@ export function update(): boolean {
     return ret;
 }
 
-export function getUD3Connection(): IUD3Connection {
+export function getUD3Connection(): UD3Connection {
     const ret = connectionState.getActiveConnection();
     if (!ret) {
         throw new Error("No connection is currently active");
     }
     return ret;
+}
+
+export function getAutoTerminal(): TerminalHandle | undefined {
+    return connectionState.getAutoTerminal();
 }
 
 export function hasUD3Connection(): boolean {

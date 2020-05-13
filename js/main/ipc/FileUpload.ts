@@ -1,12 +1,12 @@
 import {IPCConstantsToMain, TransmittedFile} from "../../common/IPCConstantsToMain";
-import {processIPC} from "../../common/IPCProvider";
 import {startBootloading} from "../connection/connection";
 import * as media_player from "../media/media_player";
+import {processIPC} from "./IPCProvider";
 import {ScriptingIPC} from "./Scripting";
 import {TerminalIPC} from "./terminal";
 
 export module FileUploadIPC {
-    async function loadFile(name: string, data: number[]) {
+    async function loadFile(source: object, name: string, data: number[]) {
         const file = new TransmittedFile(name, new Uint8Array(data));
         const extension = file.name.substring(file.name.lastIndexOf(".") + 1);
         if (extension === "js") {

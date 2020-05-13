@@ -1,5 +1,5 @@
-import {IPCProvider, setIPC} from "../common/IPCProvider";
 import {init} from './init';
+import {IPCProvider, setIPC} from "./ipc/IPCProvider";
 
 const serverComms = io();
 

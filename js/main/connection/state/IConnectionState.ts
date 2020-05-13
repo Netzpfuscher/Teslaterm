@@ -1,11 +1,13 @@
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 
 export interface IConnectionState {
     getButtonText(): string;
 
-    pressButton(): IConnectionState;
+    pressButton(window: object): IConnectionState;
 
-    getActiveConnection(): IUD3Connection | undefined;
+    getActiveConnection(): UD3Connection | undefined;
+
+    getAutoTerminal(): TerminalHandle | undefined;
 
     tick(): IConnectionState;
 }

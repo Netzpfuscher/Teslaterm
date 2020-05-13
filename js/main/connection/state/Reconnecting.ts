@@ -1,5 +1,5 @@
 import {TerminalIPC} from "../../ipc/terminal";
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {Connecting} from "./Connecting";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
@@ -9,13 +9,17 @@ export class Reconnecting implements IConnectionState {
     private static readonly TICKS_BETWEEN_RETRIES = 100;
     private ticksSinceLastFailure: number = 0;
     private failedAttempts: number = 0;
-    private readonly connectionToReestablish: IUD3Connection;
+    private readonly connectionToReestablish: UD3Connection;
 
-    public constructor(connection: IUD3Connection) {
+    public constructor(connection: UD3Connection) {
         this.connectionToReestablish = connection;
     }
 
-    getActiveConnection(): IUD3Connection | undefined {
+    getActiveConnection(): UD3Connection | undefined {
+        return undefined;
+    }
+
+    public getAutoTerminal(): TerminalHandle | undefined {
         return undefined;
     }
 
@@ -23,7 +27,7 @@ export class Reconnecting implements IConnectionState {
         return "Abort reconnection attempt";
     }
 
-    pressButton(): IConnectionState {
+    pressButton(window: object): IConnectionState {
         return new Idle();
     }
 

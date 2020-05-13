@@ -1,8 +1,8 @@
 export const IPCConstantsToMain = {
     connect: "connect-to-ud3",
     loadFile: "load-file",
-    command: "command",
-    // TODO send these!
+    automaticCommand: "automatic_command",
+    manualCommand: "manual_command",
     sliders: {
         setOntime: "slider-set-ontime",
         setBPS: "slider-set-bps",

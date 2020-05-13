@@ -34,7 +34,7 @@ let term_state: number = 0;
 
 let udconfig: string[][] = [];
 
-function compute(dat: number[]) {
+function compute(dat: number[], source?: object) {
     let str: string;
     switch (dat[DATA_TYPE]) {
         case TT_GAUGE:
@@ -78,7 +78,7 @@ function compute(dat: number[]) {
             const x2 = bytes_to_signed(dat[6], dat[7]);
             const y2 = bytes_to_signed(dat[8], dat[9]);
             const color = dat[10].valueOf();
-            ScopeIPC.drawLine(x1, x2, y1, y2, color);
+            ScopeIPC.drawLine(x1, y1, x2, y2, color);
 
             break;
         case TT_CHART_TEXT:
@@ -96,7 +96,7 @@ function compute(dat: number[]) {
             dat.splice(0, 2);
             str = convertBufferToString(dat, false);
             if (str === "NULL;NULL") {
-                MiscIPC.openUDConfig(udconfig);
+                MiscIPC.openUDConfig(udconfig, source);
                 udconfig = [];
             } else {
                 const substrings = str.split(";");
@@ -140,21 +140,25 @@ function drawString(dat: number[], center: boolean) {
     ScopeIPC.drawText(x, y, color, size, str, center);
 }
 
-let buffer: number[] = [];
+let buffers: Map<object, number[]> = new Map();
 let bytes_done: number = 0;
 
-export function receive_main(data: Buffer) {
+export function receive_main(data: Buffer, source?: object) {
     const buf = new Uint8Array(data);
     resetResponseTimeout();
+    if (!buffers.has(source)) {
+        buffers.set(source, []);
+    }
+    const buffer = buffers.get(source);
 
     for (const byte of buf) {
         switch (term_state) {
             case TT_STATE_IDLE:
                 if (byte === 0xff) {
                     term_state = TT_STATE_FRAME;
-                } else {
+                } else if (source) {
                     const str = String.fromCharCode.apply(null, [byte]);
-                    TerminalIPC.print(str);
+                    TerminalIPC.print(str, source);
                 }
                 break;
 
@@ -173,8 +177,8 @@ export function receive_main(data: Buffer) {
                     if (bytes_done === buffer[DATA_LEN]) {
                         bytes_done = 0;
                         term_state = TT_STATE_IDLE;
-                        compute(buffer);
-                        buffer = [];
+                        compute(buffer, source);
+                        buffers.delete(source);
                     }
                 }
                 break;

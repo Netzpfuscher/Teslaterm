@@ -4,10 +4,10 @@ import * as url from "url";
 import * as path from "path";
 import * as fs from "fs";
 import * as socket_io from "socket.io";
-import {IPCProvider, setIPC} from "../common/IPCProvider";
 import {init} from "./init";
+import {ISingleWindowIPC, processIPC} from "./ipc/IPCProvider";
 
-class IPC implements IPCProvider {
+class IPC implements ISingleWindowIPC {
     private readonly socket: Socket;
 
     constructor(socket: Socket) {
@@ -31,12 +31,15 @@ const app = createServer(httpHandler);
 const io = socket_io(app);
 //TODO config
 app.listen(2525);
+init();
 
 //TODO multi-connection support
 io.sockets.on('connection', (socket: Socket) => {
     console.log("New websocket connection from " + socket.id);
-    setIPC(new IPC(socket));
-    init();
+    processIPC.addWindow(socket, new IPC(socket));
+    socket.on("disconnect", (reason) => {
+        processIPC.removeWindow(socket);
+    });
 });
 
 const mimeTypes = {

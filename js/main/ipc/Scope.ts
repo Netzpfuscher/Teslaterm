@@ -6,19 +6,20 @@ import {
     ScopeValues
 } from "../../common/IPCConstantsToRenderer";
 import {MediaState} from "../../common/IPCConstantsToRenderer";
-import {processIPC} from "../../common/IPCProvider";
 import {media_state} from "../media/media_player";
+import {processIPC} from "./IPCProvider";
 
 export module ScopeIPC {
     let tickSummary: { [id: number]: number }[] = [];
     let sinceLastDraw: { [id: number]: number } = {};
+    let configs: Map<number, ScopeTraceConfig> = new Map();
 
     export function refresh() {
-        processIPC.send(IPCConstantsToRenderer.scope.refresh);
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.refresh);
     }
 
     export function drawChart() {
-        tickSummary[tickSummary.length] = sinceLastDraw;
+        tickSummary.push(sinceLastDraw);
         sinceLastDraw = {};
     }
 
@@ -27,35 +28,42 @@ export module ScopeIPC {
     }
 
     export function startControlledDraw() {
-        processIPC.send(IPCConstantsToRenderer.scope.startControlled);
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.startControlled);
     }
 
     export function drawLine(x1: number, y1: number, x2: number, y2: number, color: number) {
-        processIPC.send(IPCConstantsToRenderer.scope.drawLine, new ScopeLine(x1, y1, x2, y2, color));
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.drawLine, new ScopeLine(x1, y1, x2, y2, color));
     }
 
     export function drawText(x: number, y: number, color: number, size: number, str: string, center: boolean) {
-        processIPC.send(IPCConstantsToRenderer.scope.drawString, new ScopeText(x, y, color, size, str, center));
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.drawString, new ScopeText(x, y, color, size, str, center));
     }
 
     export function configure(traceId: number, min: number, max: number, offset: number, unit: string, name: string) {
-        processIPC.send(IPCConstantsToRenderer.scope.configure,
-            new ScopeTraceConfig(traceId, min, max, offset, unit, name));
+        const config = new ScopeTraceConfig(traceId, min, max, offset, unit, name);
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.configure, config);
+        configs.set(traceId, config);
     }
 
     export function updateMediaInfo() {
-        processIPC.send(IPCConstantsToRenderer.scope.redrawMedia,
+        processIPC.sendToAll(IPCConstantsToRenderer.scope.redrawMedia,
             new MediaState(media_state.progress, media_state.state, media_state.title, media_state.type));
     }
 
     function tick() {
         if (Object.keys(tickSummary).length > 0) {
-            processIPC.send(IPCConstantsToRenderer.scope.addValues, new ScopeValues(tickSummary));
+            processIPC.sendToAll(IPCConstantsToRenderer.scope.addValues, new ScopeValues(tickSummary));
             tickSummary = [];
         }
     }
 
     export function init() {
         setInterval(tick, 50);
+    }
+
+    export function sendConfig(source: object) {
+        for (const cfg of configs.values()) {
+            processIPC.sendToWindow(IPCConstantsToRenderer.scope.configure, source, cfg);
+        }
     }
 }

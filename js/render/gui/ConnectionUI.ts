@@ -21,7 +21,7 @@ export async function openUI(): Promise<any> {
     });
 }
 
-function recreateForm(selected_type: { id: string, text: string }, resolve: (any) => void, reject: () => void) {
+function recreateForm(selected_type: { id: string, text: string }, resolve: (cfg: object) => void, reject: (e: any) => void) {
     let defaultValues = getDefaultConnectOptions(false, config);
     if (!defaultValues[connection_type]) {
         defaultValues[connection_type] = selected_type;
@@ -64,7 +64,7 @@ function recreateForm(selected_type: { id: string, text: string }, resolve: (any
         actions: {
             Cancel: () => {
                 w2popup.close();
-                reject();
+                reject("Cancelled");
             },
             Connect: () => {
                 w2popup.close();
@@ -82,7 +82,7 @@ function recreateForm(selected_type: { id: string, text: string }, resolve: (any
     w2ui.connection_ui.on("change", ev => onChange(ev, resolve, reject));
 }
 
-function onChange(event: ChangeEvent, resolve: (any) => void, reject: () => void) {
+function onChange(event: ChangeEvent, resolve: (cfg: object) => void, reject: (e: any) => void) {
     if (event.target === connection_type) {
         if (!event.value_old || event.value_new.id !== event.value_old.id) {
             recreateForm(event.value_new, resolve, reject);

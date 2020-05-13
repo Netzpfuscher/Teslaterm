@@ -1,9 +1,10 @@
 import {TerminalIPC} from "../../ipc/terminal";
 import {startConf} from "../connection";
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {Connected} from "./Connected";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
+import * as telemetry from "../telemetry";
 
 enum State {
     waiting_for_ud_connection,
@@ -14,24 +15,36 @@ enum State {
 }
 
 export class Connecting implements IConnectionState {
-    private connection: IUD3Connection | undefined;
+    private connection: UD3Connection | undefined;
+    private autoTerminal: TerminalHandle | undefined;
     private state: State = State.waiting_for_ud_connection;
     private readonly stateOnFailure: IConnectionState;
 
-    public constructor(connection: Promise<IUD3Connection | undefined>, onFailure: IConnectionState) {
+    public constructor(connection: Promise<UD3Connection | undefined>, onFailure: IConnectionState) {
         this.stateOnFailure = onFailure;
         connection.then(async (c) => {
             this.connection = c;
             if (c) {
                 this.state = State.connecting;
+                let error = undefined;
                 try {
                     await c.connect();
-                    this.state = State.initializing;
-                    await startConf();
-                    this.state = State.connected;
+                    this.autoTerminal = c.setupNewTerminal(telemetry.receive_main);
+                    if (this.autoTerminal === undefined) {
+                        error = "Failed to create a terminal for automatic commands";
+                    } else {
+                        await c.startTerminal(this.autoTerminal);
+                        this.state = State.initializing;
+                        await startConf();
+                        await TerminalIPC.onSlotsAvailable(true);
+                        this.state = State.connected;
+                    }
                 } catch (x) {
+                    error = x;
+                }
+                if (error) {
                     TerminalIPC.println("Failed to connect");
-                    console.log("While connecting: ", x);
+                    console.log("While connecting: ", error);
                     c.disconnect();
                     this.state = State.failed;
                 }
@@ -41,7 +54,7 @@ export class Connecting implements IConnectionState {
         });
     }
 
-    public getActiveConnection(): IUD3Connection | undefined {
+    public getActiveConnection(): UD3Connection | undefined {
         if (this.state === State.initializing || this.state === State.connected) {
             return this.connection;
         } else {
@@ -53,7 +66,7 @@ export class Connecting implements IConnectionState {
         return "Abort connection";
     }
 
-    public pressButton(): IConnectionState {
+    public pressButton(window: object): IConnectionState {
         console.log("Aborting connection");
         return new Idle();
     }
@@ -67,11 +80,15 @@ export class Connecting implements IConnectionState {
                 this.connection.tick();
                 return this;
             case State.connected:
-                return new Connected(this.connection);
+                return new Connected(this.connection, this.autoTerminal);
             case State.failed:
                 return this.stateOnFailure;
             default:
                 throw new Error("Unexpected state: " + this.state);
         }
+    }
+
+    getAutoTerminal(): TerminalHandle | undefined {
+        return undefined;
     }
 }

@@ -10,7 +10,7 @@ import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../init";
 import {createEthernetConnection} from "../types/ethernet";
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {createMinSerialConnection} from "../types/serial_min";
 import {createPlainSerialConnection} from "../types/serial_plain";
 import {Connecting} from "./Connecting";
@@ -18,7 +18,11 @@ import {IConnectionState} from "./IConnectionState";
 import SerialPort = require("serialport");
 
 export class Idle implements IConnectionState {
-    public getActiveConnection(): IUD3Connection | undefined {
+    public getActiveConnection(): UD3Connection | undefined {
+        return undefined;
+    }
+
+    public getAutoTerminal(): TerminalHandle | undefined {
         return undefined;
     }
 
@@ -26,15 +30,15 @@ export class Idle implements IConnectionState {
         return "Connect";
     }
 
-    public pressButton(): IConnectionState {
-        return new Connecting(Idle.connectInternal(), this);
+    public pressButton(window: object): IConnectionState {
+        return new Connecting(Idle.connectInternal(window), this);
     }
 
     public tick(): IConnectionState {
         return this;
     }
 
-    public static async connectWithOptions(options: any): Promise<IUD3Connection | undefined> {
+    public static async connectWithOptions(options: any): Promise<UD3Connection | undefined> {
         console.log(options);
         const type = options[connection_type];
         switch (type.id) {
@@ -50,17 +54,17 @@ export class Idle implements IConnectionState {
         }
     }
 
-    private static async connectInternal(): Promise<IUD3Connection | undefined> {
+    private static async connectInternal(window: object): Promise<UD3Connection | undefined> {
         try {
-            const options = await ConnectionUIIPC.openConnectionUI();
+            const options = await ConnectionUIIPC.openConnectionUI(window);
             return Idle.connectWithOptions(options);
         } catch (e) {
             return Promise.resolve(undefined);
         }
     }
 
-    private static async connectSerial(options: any, create: (port: string, baudrate: number) => IUD3Connection)
-        : Promise<IUD3Connection | undefined> {
+    private static async connectSerial(options: any, create: (port: string, baudrate: number) => UD3Connection)
+        : Promise<UD3Connection | undefined> {
         if (options[serial_port]) {
             return create(options[serial_port], options[baudrate]);
         } else {
@@ -69,8 +73,8 @@ export class Idle implements IConnectionState {
     }
 
     private static async autoConnectSerial(baudrate: number,
-                                           create: (port: string, baudrate: number) => IUD3Connection)
-        : Promise<IUD3Connection | undefined> {
+                                           create: (port: string, baudrate: number) => UD3Connection)
+        : Promise<UD3Connection | undefined> {
         const all = await SerialPort.list();
         for (const port of all) {
             if (port.vendorId === config.vendorID && port.productId === config.productID) {

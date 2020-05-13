@@ -1,6 +1,6 @@
 import {init} from './init';
-import {IPCProvider, setIPC} from "../common/IPCProvider";
 import {ipcRenderer} from 'electron';
+import {IPCProvider, setIPC} from "./ipc/IPCProvider";
 
 class ElectronIPC implements IPCProvider {
     on(channel: string, callback: (...args: any[]) => void) {

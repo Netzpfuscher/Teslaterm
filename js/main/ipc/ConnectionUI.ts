@@ -1,18 +1,18 @@
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 
 export module ConnectionUIIPC {
-    export async function openConnectionUI(): Promise<Object> {
+    export async function openConnectionUI(key: object): Promise<Object> {
         return new Promise<any>((res, rej) => {
-            processIPC.once(IPCConstantsToMain.connect, (args: Object) => {
+            processIPC.once(IPCConstantsToMain.connect, (source: object, args: Object) => {
                 if (args !== null) {
                     res(args);
                 } else {
-                    rej();
+                    rej("Cancelled");
                 }
             });
-            processIPC.send(IPCConstantsToRenderer.openConnectionUI);
+            processIPC.sendToWindow(IPCConstantsToRenderer.openConnectionUI, key);
         });
     }
 }

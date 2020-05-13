@@ -1,11 +1,11 @@
 import {app, BrowserWindow, ipcMain} from "electron";
 import * as path from "path";
-import {IPCProvider, setIPC} from "../common/IPCProvider";
 import {init} from "./init";
+import {ISingleWindowIPC, processIPC} from "./ipc/IPCProvider";
 
 export let mainWindow: BrowserWindow;
 
-class ElectronIPC implements IPCProvider {
+class ElectronIPC implements ISingleWindowIPC {
     on(channel: string, callback: (...args: any[]) => void) {
         ipcMain.on(channel, (ev, ...args) => callback(...args));
     }
@@ -39,9 +39,10 @@ function createWindow() {
     mainWindow.setMenuBarVisibility(false);
 
     mainWindow.on("closed", () => {
+        processIPC.removeWindow(mainWindow);
         mainWindow = null;
     });
-    setIPC(new ElectronIPC());
+    processIPC.addWindow(mainWindow, new ElectronIPC());
     init();
 }
 

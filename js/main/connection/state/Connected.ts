@@ -2,7 +2,7 @@ import {PlayerActivity} from "../../../common/CommonTypes";
 import {TerminalIPC} from "../../ipc/terminal";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {commands} from "../connection";
-import {IUD3Connection} from "../types/IUD3Connection";
+import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
 import * as media from "../../media/media_player";
@@ -18,13 +18,15 @@ export function resetResponseTimeout() {
 }
 
 export class Connected implements IConnectionState {
-    private readonly active_connection: IUD3Connection;
+    private readonly active_connection: UD3Connection;
+    private readonly autoTerminal: TerminalHandle;
 
-    public constructor(conn: IUD3Connection) {
+    public constructor(conn: UD3Connection, autoTerm: TerminalHandle) {
         this.active_connection = conn;
+        this.autoTerminal = autoTerm;
     }
 
-    public getActiveConnection(): IUD3Connection | undefined {
+    public getActiveConnection(): UD3Connection | undefined {
         return this.active_connection;
     }
 
@@ -32,11 +34,12 @@ export class Connected implements IConnectionState {
         return "Disconnect";
     }
 
-    public pressButton(): IConnectionState {
+    public pressButton(window: object): IConnectionState {
         console.log("Disconnecting");
         this.disconnectInternal().then(() => {
             // NOP
         });
+        TerminalIPC.onConnectionClosed();
         return new Idle();
     }
 
@@ -47,6 +50,7 @@ export class Connected implements IConnectionState {
         if (this.isConnectionLost()) {
             TerminalIPC.println("\n\rLost connection, will attempt to reconnect");
             this.active_connection.disconnect();
+            TerminalIPC.onConnectionClosed();
             return new Reconnecting(this.active_connection);
         }
 
@@ -79,5 +83,9 @@ export class Connected implements IConnectionState {
             console.error("Failed to send stop command:", e);
         }
         await this.active_connection.disconnect();
+    }
+
+    getAutoTerminal(): TerminalHandle | undefined {
+        return this.autoTerminal;
     }
 }

@@ -1,4 +1,4 @@
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {IPCConstantsToRenderer, UD3State} from "../../common/IPCConstantsToRenderer";
 import {updateConnectionButton, updateUD3State} from "../gui/menu";

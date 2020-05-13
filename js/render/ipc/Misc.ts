@@ -1,4 +1,4 @@
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 import {ConnectionReply, IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {TTConfig} from "../../common/TTConfig";

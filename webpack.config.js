@@ -8,6 +8,10 @@ module.exports = {
 			{
 				test: /\.tsx?$/,
 				use: 'ts-loader',
+				include: [
+					path.resolve(__dirname, "js/render"),
+					path.resolve(__dirname, "js/common"),
+				],
 				exclude: /node_modules/,
 			},
 		],

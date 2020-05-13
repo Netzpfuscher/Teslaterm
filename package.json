@@ -5,12 +5,11 @@
     "build": "cross-var tsc",
     "watch": "cross-var tsc -w",
     "lint": "cross-var tslint -c tslint.json -p tsconfig.json",
-    "start": "npm run build && npm run start_nobuild",
-    "start_nobuild": "cross-var electron . --no-sandbox",
-    "install-win": "cd node_modules/@serialport/bindings && prebuild-install --arch x64 --platform win32 --tag-prefix @serialport/bindings@ -r electron -t 7.2.1",
-    "install-linux": "cd node_modules/@serialport/bindings; prebuild-install --arch x64 --platform linux --tag-prefix @serialport/bindings@ -r electron -t 7.2.1",
-    "package-win": "cross-var electron-packager . --overwrite --platform=win32 --arch=x64 --out=dist --prune=true ",
-    "package-linux": "cross-var electron-packager . --overwrite --platform=linux --arch=x64 --out=dist --prune=true "
+    "start-electron": "npm run build && cross-var electron . --no-sandbox",
+    "start-node": "npm run build && webpack && node js/main/main_node.js",
+    "install-electron": "cd node_modules/@serialport/bindings && prebuild-install --tag-prefix @serialport/bindings@ -r electron -t 7.2.1",
+    "install-node": "cd node_modules/@serialport/bindings && prebuild-install --tag-prefix @serialport/bindings@ -r node",
+    "package-electron": "cross-var electron-packager . --overwrite --platform=linux --arch=x64 --out=dist --prune=true "
   },
   "main": "js/main/main_electron.js",
   "dependencies": {

@@ -1,4 +1,4 @@
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 import {IPCConstantsToMain, TransmittedFile} from "../../common/IPCConstantsToMain";
 
 export namespace FileUploadIPC {

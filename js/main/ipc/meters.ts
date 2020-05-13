@@ -1,16 +1,19 @@
 import {IPCConstantsToRenderer, MeterConfig, SetMeters} from "../../common/IPCConstantsToRenderer";
-import {processIPC} from "../../common/IPCProvider";
+import {processIPC} from "./IPCProvider";
 
 export module MetersIPC {
     let state: { [id: number]: number } = {};
     let lastState: { [id: number]: number } = {};
+    const configs: Map<number, MeterConfig> = new Map();
 
     export function setValue(id: number, value: number) {
         state[id] = value;
     }
 
     export function configure(id: number, min: number, max: number, name: string) {
-        processIPC.send(IPCConstantsToRenderer.meters.configure, new MeterConfig(id, min, max, name));
+        const config = new MeterConfig(id, min, max, name);
+        processIPC.sendToAll(IPCConstantsToRenderer.meters.configure, config);
+        configs.set(id, config);
     }
 
     function tick() {
@@ -22,11 +25,17 @@ export module MetersIPC {
             }
         }
         if (Object.keys(update).length > 0) {
-            processIPC.send(IPCConstantsToRenderer.meters.setValue, new SetMeters(update));
+            processIPC.sendToAll(IPCConstantsToRenderer.meters.setValue, new SetMeters(update));
         }
     }
 
     export function init() {
         setInterval(tick, 100);
+    }
+
+    export function sendConfig(source: object) {
+        for (const cfg of configs.values()) {
+            processIPC.sendToWindow(IPCConstantsToRenderer.meters.configure, source, cfg);
+        }
     }
 }

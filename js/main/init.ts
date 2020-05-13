@@ -13,7 +13,6 @@ import {loadConfig} from "./TTConfigLoader";
 export let config: TTConfig;
 export const simulated = true;
 
-//TODO multi-window support?
 export function init() {
     config = loadConfig("config.ini");
     Sliders.init();
@@ -24,6 +23,7 @@ export function init() {
     ScopeIPC.init();
     MetersIPC.init();
     setInterval(tick, 20);
+    connection.autoConnect();
 }
 
 function tick() {

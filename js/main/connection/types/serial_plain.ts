@@ -1,15 +1,16 @@
 import {SynthType} from "../../../common/CommonTypes";
 import {ISidConnection} from "../../sid/ISidConnection";
-import {IUD3Connection, toCommandID} from "./IUD3Connection";
+import {UD3Connection, toCommandID} from "./UD3Connection";
 import * as telemetry from "../telemetry";
 import SerialPort = require("serialport");
 
-export class PlainSerialConnection implements IUD3Connection {
+export class PlainSerialConnection extends UD3Connection {
     private serialPort: SerialPort;
     private readonly baudrate: number;
     private readonly port: string;
 
     constructor(port: string, baudrate: number) {
+        super();
         this.baudrate = baudrate;
         this.port = port;
     }
@@ -86,8 +87,13 @@ export class PlainSerialConnection implements IUD3Connection {
             });
         });
     }
+
+    getMaxTerminalID(): number {
+        // There are no separate terminals in ethernet connections, so we don't need to limit the number of terminals
+        return 100;
+    }
 }
 
-export function createPlainSerialConnection(port: string, baudrate: number): IUD3Connection {
+export function createPlainSerialConnection(port: string, baudrate: number): UD3Connection {
     return new PlainSerialConnection(port, baudrate);
 }

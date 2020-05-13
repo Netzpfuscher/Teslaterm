@@ -1,5 +1,3 @@
-import {setIPC} from "./IPCProvider";
-
 export const enum MediaFileType {
     none,
     midi,
