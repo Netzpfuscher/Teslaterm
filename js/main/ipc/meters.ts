@@ -10,8 +10,8 @@ export module MetersIPC {
         state[id] = value;
     }
 
-    export function configure(id: number, min: number, max: number, name: string) {
-        const config = new MeterConfig(id, min, max, name);
+    export function configure(id: number, min: number, max: number, div: number, name: string) {
+        const config = new MeterConfig(id, min, max, div, name);
         processIPC.sendToAll(IPCConstantsToRenderer.meters.configure, config);
         configs.set(id, config);
     }

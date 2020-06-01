@@ -16,8 +16,12 @@ export let connectionState: IConnectionState = new Idle();
 
 export const commands = new CommandInterface(
     async (c: string) => {
-        if (hasUD3Connection()) {
-            await getUD3Connection().sendTelnet(new Buffer(c), getAutoTerminal());
+        try {
+            if (hasUD3Connection()) {
+                await getUD3Connection().sendTelnet(new Buffer(c), getAutoTerminal());
+            }
+        } catch (x) {
+            console.log("Error while sending: ", x);
         }
     },
     () => {

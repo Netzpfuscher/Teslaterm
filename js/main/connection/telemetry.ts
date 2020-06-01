@@ -1,10 +1,3 @@
-import {MenuIPC} from "../ipc/Menu";
-import {MetersIPC} from "../ipc/meters";
-import {MiscIPC} from "../ipc/Misc";
-import {ScopeIPC} from "../ipc/Scope";
-import {TerminalIPC} from "../ipc/terminal";
-import {resetResponseTimeout} from "./state/Connected";
-import {bytes_to_signed, convertArrayBufferToString, convertBufferToString} from '../helper';
 import {
     DATA_LEN,
     DATA_NUM,
@@ -18,19 +11,24 @@ import {
     TT_CHART_TEXT_CENTER,
     TT_CONFIG_GET,
     TT_GAUGE,
+    TT_GAUGE32,
+    TT_GAUGE32_CONF,
     TT_GAUGE_CONF,
-    TT_STATE_COLLECT,
-    TT_STATE_FRAME,
-    TT_STATE_IDLE,
-    TT_STATE_SYNC, UNITS,
+    TT_STATE_SYNC,
+    UNITS,
 } from "../../common/constants";
+import {bytes_to_signed, convertBufferToString, Endianness, from_32_bit_bytes} from '../helper';
+import {MenuIPC} from "../ipc/Menu";
+import {MetersIPC} from "../ipc/meters";
+import {MiscIPC} from "../ipc/Misc";
+import {ScopeIPC} from "../ipc/Scope";
+import {TerminalIPC} from "../ipc/terminal";
+import {resetResponseTimeout} from "./state/Connected";
 
 
 export let busActive: boolean = false;
 export let busControllable: boolean = false;
 export let transientActive: boolean = false;
-
-let term_state: number = 0;
 
 let udconfig: string[][] = [];
 
@@ -40,15 +38,30 @@ function compute(dat: number[], source?: object) {
         case TT_GAUGE:
             MetersIPC.setValue(dat[DATA_NUM], bytes_to_signed(dat[3], dat[4]));
             break;
-        case TT_GAUGE_CONF:
+        case TT_GAUGE32:
+            MetersIPC.setValue(dat[DATA_NUM], from_32_bit_bytes(dat.slice(3), Endianness.LITTLE_ENDIAN));
+            break;
+        case TT_GAUGE_CONF: {
             const index = dat[DATA_NUM];
             const gauge_min = bytes_to_signed(dat[3], dat[4]);
             const gauge_max = bytes_to_signed(dat[5], dat[6]);
             dat.splice(0, 7);
             str = convertBufferToString(dat);
-            MetersIPC.configure(index, gauge_min, gauge_max, str);
+            MetersIPC.configure(index, gauge_min, gauge_max, 1, str);
             ScopeIPC.refresh();
             break;
+        }
+        case TT_GAUGE32_CONF: {
+            const index = dat[DATA_NUM];
+            const min = from_32_bit_bytes(dat.slice(4, 8), Endianness.LITTLE_ENDIAN);
+            const max = from_32_bit_bytes(dat.slice(8, 12), Endianness.LITTLE_ENDIAN);
+            const div = from_32_bit_bytes(dat.slice(12, 16), Endianness.LITTLE_ENDIAN);
+            dat.splice(0, 17);
+            str = convertBufferToString(dat);
+            MetersIPC.configure(index, min, max, div, str);
+            ScopeIPC.refresh();
+            break;
+        }
         case TT_CHART_CONF: {
             const traceId = dat[2].valueOf();
             const min = bytes_to_signed(dat[3], dat[4]);
@@ -140,7 +153,14 @@ function drawString(dat: number[], center: boolean) {
     ScopeIPC.drawText(x, y, color, size, str, center);
 }
 
+enum TelemetryFrameState {
+    idle,
+    frame,
+    collect
+}
+
 let buffers: Map<object, number[]> = new Map();
+let term_states: Map<Object, TelemetryFrameState> = new Map();
 let bytes_done: number = 0;
 
 export function receive_main(data: Buffer, source?: object) {
@@ -149,36 +169,39 @@ export function receive_main(data: Buffer, source?: object) {
     if (!buffers.has(source)) {
         buffers.set(source, []);
     }
+    if (!term_states.has(source)) {
+        term_states.set(source, TelemetryFrameState.idle);
+    }
     const buffer = buffers.get(source);
+    const state = term_states.get(source);
 
     for (const byte of buf) {
-        switch (term_state) {
-            case TT_STATE_IDLE:
+        switch (state) {
+            case TelemetryFrameState.idle:
                 if (byte === 0xff) {
-                    term_state = TT_STATE_FRAME;
+                    term_states.set(source, TelemetryFrameState.frame);
                 } else if (source) {
                     const str = String.fromCharCode.apply(null, [byte]);
                     TerminalIPC.print(str, source);
                 }
                 break;
-
-            case TT_STATE_FRAME:
+            case TelemetryFrameState.frame:
                 buffer[DATA_LEN] = byte;
                 bytes_done = 0;
-                term_state = TT_STATE_COLLECT;
+                term_states.set(source, TelemetryFrameState.collect);
                 break;
-            case TT_STATE_COLLECT:
+            case TelemetryFrameState.collect:
                 if (bytes_done === 0) {
                     buffer[0] = byte;
                     bytes_done++;
                 } else {
                     buffer[bytes_done + 1] = byte;
                     bytes_done++;
-                    if (bytes_done === buffer[DATA_LEN]) {
+                    if (bytes_done >= buffer[DATA_LEN]) {
                         bytes_done = 0;
-                        term_state = TT_STATE_IDLE;
+                        term_states.set(source, TelemetryFrameState.idle);
+                        buffers.set(source, []);
                         compute(buffer, source);
-                        buffers.delete(source);
                     }
                 }
                 break;

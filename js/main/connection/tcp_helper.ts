@@ -11,7 +11,7 @@ export function connectTCPSocket(
         const ret = net.createConnection({port, host: ipaddr}, (e) => {
             if (e) {
                 console.error(e);
-                rej();
+                rej(e);
             } else {
                 TerminalIPC.println("Connected socket " + desc);
                 res(ret);
@@ -23,7 +23,7 @@ export function connectTCPSocket(
         ret.addListener('error', (e: Error) => {
             TerminalIPC.println("Error on " + desc + " socket!");
             console.error(e);
-            rej();
+            rej(e);
         });
         ret.on('data', dataCallback);
     });

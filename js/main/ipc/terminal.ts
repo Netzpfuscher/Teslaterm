@@ -79,9 +79,13 @@ export module TerminalIPC {
     }
 
     export function init() {
-        processIPC.on(IPCConstantsToMain.manualCommand, (source: object, msg: string) => {
-            if (hasUD3Connection() && terminals.has(source)) {
-                getUD3Connection().sendTelnet(new Buffer(msg), terminals.get(source));
+        processIPC.on(IPCConstantsToMain.manualCommand, async (source: object, msg: string) => {
+            try {
+                if (hasUD3Connection() && terminals.has(source)) {
+                    await getUD3Connection().sendTelnet(new Buffer(msg), terminals.get(source));
+                }
+            } catch (x) {
+                console.log("Error while sending: ", x);
             }
         });
         processIPC.on(IPCConstantsToMain.automaticCommand, (source: object, cmd: string) => {

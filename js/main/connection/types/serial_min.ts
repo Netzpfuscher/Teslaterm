@@ -7,7 +7,6 @@ import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
 import {UD3Connection, TerminalHandle} from "./UD3Connection";
-import * as telemetry from "../telemetry";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
@@ -207,7 +206,7 @@ class MinSerialConnection extends BootloadableConnection {
     }
 
     getMaxTerminalID(): number {
-        return 3;
+        return 4;
     }
 }
 

@@ -5,12 +5,12 @@ import {meters} from "../gui/gauges";
 export namespace MetersIPC {
     export function init() {
         processIPC.on(IPCConstantsToRenderer.meters.configure, (cfg: MeterConfig) => {
-            meters[cfg.meterId].range(cfg.min, cfg.max);
-            meters[cfg.meterId].text(cfg.name);
+            meters[cfg.meterId].setRange(cfg.min, cfg.max, cfg.scale);
+            meters[cfg.meterId].setText(cfg.name);
         });
         processIPC.on(IPCConstantsToRenderer.meters.setValue, (cfg: SetMeters) => {
             for (const [id, value] of Object.entries(cfg.values)) {
-                meters[id].value(value);
+                meters[id].setValue(value);
             }
         });
     }

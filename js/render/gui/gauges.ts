@@ -3,6 +3,7 @@ import {terminal} from "./constants";
 export class Meter {
     private meter_buf_old: number;
     private meter_buf: number;
+    private scale: number = 1;
     private gauge: JustGage;
 
     constructor(id: number) {
@@ -25,16 +26,17 @@ export class Meter {
         }
     }
 
-    public value(value: number): void {
-        this.meter_buf = value;
+    public setValue(value: number): void {
+        this.meter_buf = value / this.scale;
     }
 
-    public text(new_text: string): void {
+    public setText(new_text: string): void {
         this.gauge.txtLabel.attr({text: new_text});
     }
 
-    public range(min: number, max: number) {
-        this.gauge.refresh(min, max);
+    public setRange(min: number, max: number, scale: number) {
+        this.scale = scale;
+        this.gauge.refresh(min / scale, max / scale);
     }
 }
 

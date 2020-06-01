@@ -43,12 +43,14 @@ export class MeterConfig {
     public readonly meterId: number;
     public readonly min: number;
     public readonly max: number;
+    public readonly scale: number;
     public readonly name: string;
 
-    constructor(meterId: number, min: number, max: number, name: string) {
+    constructor(meterId: number, min: number, max: number, scale: number, name: string) {
         this.meterId = meterId;
         this.min = min;
         this.max = max;
+        this.scale = scale;
         this.name = name;
     }
 }
