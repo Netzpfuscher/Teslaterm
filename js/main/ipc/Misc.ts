@@ -7,7 +7,7 @@ import {processIPC} from "./IPCProvider";
 import {MenuIPC} from "./Menu";
 import {MetersIPC} from "./meters";
 import {ScopeIPC} from "./Scope";
-import {TerminalIPC} from "./terminal";
+import {TerminalIPC, TermSetupResult} from "./terminal";
 
 export module MiscIPC {
     export function openUDConfig(config: string[][], target: object) {
@@ -21,7 +21,7 @@ export module MiscIPC {
     export function init() {
         processIPC.on(IPCConstantsToMain.rendererReady, async (source: object) => {
             const terminalSuccessful = await TerminalIPC.setupTerminal(source);
-            if (!terminalSuccessful) {
+            if (terminalSuccessful === TermSetupResult.no_terminal_available) {
                 TerminalIPC.println("No free terminal slot available. Will assign one when available.", source);
             }
             MenuIPC.sendFullState(source);

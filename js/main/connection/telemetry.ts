@@ -53,10 +53,10 @@ function compute(dat: number[], source?: object) {
         }
         case TT_GAUGE32_CONF: {
             const index = dat[DATA_NUM];
-            const min = from_32_bit_bytes(dat.slice(4, 8), Endianness.LITTLE_ENDIAN);
-            const max = from_32_bit_bytes(dat.slice(8, 12), Endianness.LITTLE_ENDIAN);
-            const div = from_32_bit_bytes(dat.slice(12, 16), Endianness.LITTLE_ENDIAN);
-            dat.splice(0, 17);
+            const min = from_32_bit_bytes(dat.slice(3, 7), Endianness.LITTLE_ENDIAN);
+            const max = from_32_bit_bytes(dat.slice(7, 11), Endianness.LITTLE_ENDIAN);
+            const div = from_32_bit_bytes(dat.slice(11, 15), Endianness.LITTLE_ENDIAN);
+            dat.splice(0, 15);
             str = convertBufferToString(dat);
             MetersIPC.configure(index, min, max, div, str);
             ScopeIPC.refresh();
@@ -122,21 +122,21 @@ function compute(dat: number[], source?: object) {
 function setBusActive(active) {
     if (active !== busActive) {
         busActive = active;
-        MenuIPC.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setUD3State(busActive, busControllable, transientActive);
     }
 }
 
 function setTransientActive(active) {
     if (active !== transientActive) {
         transientActive = active;
-        MenuIPC.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setUD3State(busActive, busControllable, transientActive);
     }
 }
 
 function setBusControllable(controllable) {
     if (controllable !== busControllable) {
         busControllable = controllable;
-        MenuIPC.setBusState(busActive, busControllable, transientActive);
+        MenuIPC.setUD3State(busActive, busControllable, transientActive);
     }
 }
 
@@ -162,6 +162,7 @@ enum TelemetryFrameState {
 let buffers: Map<object, number[]> = new Map();
 let term_states: Map<Object, TelemetryFrameState> = new Map();
 let bytes_done: number = 0;
+let consoleLine: string = "";
 
 export function receive_main(data: Buffer, source?: object) {
     const buf = new Uint8Array(data);
@@ -172,17 +173,26 @@ export function receive_main(data: Buffer, source?: object) {
     if (!term_states.has(source)) {
         term_states.set(source, TelemetryFrameState.idle);
     }
-    const buffer = buffers.get(source);
-    const state = term_states.get(source);
 
     for (const byte of buf) {
+        const buffer = buffers.get(source);
+        const state = term_states.get(source);
         switch (state) {
             case TelemetryFrameState.idle:
                 if (byte === 0xff) {
                     term_states.set(source, TelemetryFrameState.frame);
-                } else if (source) {
-                    const str = String.fromCharCode.apply(null, [byte]);
-                    TerminalIPC.print(str, source);
+                } else {
+                    const asString = String.fromCharCode(byte);
+                    if (source) {
+                        TerminalIPC.print(asString, source);
+                    } else if (asString === '\n' || asString === '\r') {
+                        if (consoleLine !== "") {
+                            console.log(consoleLine);
+                            consoleLine = "";
+                        }
+                    } else {
+                        consoleLine += asString;
+                    }
                 }
                 break;
             case TelemetryFrameState.frame:

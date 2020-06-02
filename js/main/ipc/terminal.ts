@@ -5,6 +5,12 @@ import {receive_main} from "../connection/telemetry";
 import {TerminalHandle} from "../connection/types/UD3Connection";
 import {processIPC} from "./IPCProvider";
 
+export enum TermSetupResult {
+    not_connected,
+    no_terminal_available,
+    success,
+}
+
 export module TerminalIPC {
     const buffers: Map<object, string> = new Map();
     export const terminals = new Map<object, TerminalHandle>();
@@ -33,28 +39,30 @@ export module TerminalIPC {
         buffers.clear();
     }
 
-    export async function setupTerminal(source: object): Promise<boolean> {
-        if (hasUD3Connection()) {
-            const connection = getUD3Connection();
-            const termID = connection.setupNewTerminal(d => {
-                receive_main(d, source);
-            });
-            if (termID === undefined) {
-                waitingConnections.push(source);
-                return false;
-            }
-            processIPC.addDisconnectCallback(source, () => {
-                if (terminals.has(source)) {
-                    if (hasUD3Connection()) {
-                        getUD3Connection().closeTerminal(terminals.get(source));
-                    }
-                    terminals.delete(source);
-                }
-            });
-            terminals.set(source, termID);
-            await connection.startTerminal(termID);
+    export async function setupTerminal(source: object): Promise<TermSetupResult> {
+        if (!hasUD3Connection()) {
+            waitingConnections.push(source);
+            return TermSetupResult.not_connected;
         }
-        return true;
+        const connection = getUD3Connection();
+        const termID = connection.setupNewTerminal(d => {
+            receive_main(d, source);
+        });
+        if (termID === undefined) {
+            waitingConnections.push(source);
+            return TermSetupResult.no_terminal_available;
+        }
+        processIPC.addDisconnectCallback(source, () => {
+            if (terminals.has(source)) {
+                if (hasUD3Connection()) {
+                    getUD3Connection().closeTerminal(terminals.get(source));
+                }
+                terminals.delete(source);
+            }
+        });
+        terminals.set(source, termID);
+        await connection.startTerminal(termID);
+        return TermSetupResult.success;
     }
 
     export function onConnectionClosed() {
@@ -67,7 +75,7 @@ export module TerminalIPC {
     export async function onSlotsAvailable(sendExcuse: boolean) {
         while (waitingConnections.length > 0) {
             const newTerminal = waitingConnections.pop();
-            if (!await setupTerminal(newTerminal)) {
+            if (await setupTerminal(newTerminal) !== TermSetupResult.success) {
                 break;
             }
         }

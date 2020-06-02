@@ -11,7 +11,7 @@ export module MenuIPC {
     let lastScriptName: string = "Script: none";
     let lastMediaName: string = "MIDI-File: none";
 
-    export function setBusState(active: boolean, controllable: boolean, transientActive: boolean) {
+    export function setUD3State(active: boolean, controllable: boolean, transientActive: boolean) {
         lastUD3State = new UD3State(active, controllable, transientActive);
         processIPC.sendToAll(IPCConstantsToRenderer.menu.ud3State, lastUD3State);
     }
@@ -43,9 +43,6 @@ export module MenuIPC {
         processIPC.on(IPCConstantsToMain.menu.stopMedia, () => media_state.stopPlaying());
         processIPC.on(IPCConstantsToMain.menu.startScript, ScriptingIPC.startScript);
         processIPC.on(IPCConstantsToMain.menu.stopScript, ScriptingIPC.stopScript);
-        processIPC.on(IPCConstantsToMain.menu.connectButton, (source: object) => {
-            console.log("Connect btn");
-            pressButton(source);
-        });
+        processIPC.on(IPCConstantsToMain.menu.connectButton, pressButton);
     }
 }

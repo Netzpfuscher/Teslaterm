@@ -5,10 +5,10 @@ import {processIPC} from "./IPCProvider";
 
 export module Sliders {
     export class SliderValues {
-        public ontime: number;
-        public bps: number;
-        public burstOntime: number;
-        public burstOfftime: number;
+        public ontime: number = 0;
+        public bps: number = 20;
+        public burstOntime: number = 0;
+        public burstOfftime: number = 500;
     }
 
     export let values = new SliderValues();

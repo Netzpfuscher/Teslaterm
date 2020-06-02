@@ -35,8 +35,12 @@ export class Meter {
     }
 
     public setRange(min: number, max: number, scale: number) {
+        // Why????
+        if (scale === 0) {
+            scale = 1;
+        }
         this.scale = scale;
-        this.gauge.refresh(min / scale, max / scale);
+        this.gauge.refresh(min, max);
     }
 }
 
