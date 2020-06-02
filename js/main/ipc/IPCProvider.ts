@@ -34,6 +34,10 @@ export class MultiWindowIPC {
         }
     }
 
+    public isValidWindow(key: object): boolean {
+        return this.windows.has(key);
+    }
+
     public removeWindow(key: object) {
         this.windows.delete(key);
         this.activeSingleCallbacks.delete(key);
@@ -52,7 +56,7 @@ export class MultiWindowIPC {
     }
 
     public sendToWindow(channel: string, key: object, ...data: any[]) {
-        if (!this.windows.has(key)) {
+        if (!this.isValidWindow(key)) {
             throw new Error("Tried to send to invalid window " + key);
         }
         this.windows.get(key).send(channel, ...data);

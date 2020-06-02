@@ -33,7 +33,6 @@ const io = socket_io(app);
 app.listen(2525);
 init();
 
-//TODO multi-connection support
 io.sockets.on('connection', (socket: Socket) => {
     console.log("New websocket connection from " + socket.id);
     processIPC.addWindow(socket, new IPC(socket));
@@ -64,8 +63,7 @@ function httpHandler(request: IncomingMessage, res: ServerResponse) {
     pathName = pathName.substring(1, pathName.length);
     let extName = path.extname(pathName);
     //TODO only give access to the correct files
-    console.log("Requested file ", pathName);
-    let staticFiles = `${__dirname}/../../${pathName}`;
+    let staticFiles = path.join(__dirname, `../../${pathName}`);
 
     if (extName === '.jpg' || extName === '.png' || extName === '.ico' || extName === '.eot' || extName === '.ttf' || extName === '.svg') {
         if (fs.existsSync(staticFiles)) {
@@ -73,9 +71,9 @@ function httpHandler(request: IncomingMessage, res: ServerResponse) {
             res.writeHead(200, {'Content-Type': mimeTypes[extName]});
             res.write(file, 'binary');
         } else {
-            console.log('HTTP: File not Found: ' + staticFiles);
+            console.log('HTTP: File not Found: ', staticFiles);
             res.writeHead(404, {'Content-Type': 'text/html;charset=utf8'});
-            res.write(`<strong>${staticFiles}</strong>File is not found.`);
+            res.write(`<strong>${staticFiles}</strong>: File is not found.`);
         }
         res.end();
     } else {
@@ -85,7 +83,9 @@ function httpHandler(request: IncomingMessage, res: ServerResponse) {
                 res.end(data);
             } else {
                 res.writeHead(404, {'Content-Type': 'text/html;charset=utf8'});
-                res.write(`<strong>${staticFiles}</strong>File is not found.`);
+                console.log('HTTP: File not Found: ', staticFiles);
+                console.log(err);
+                res.write(`<strong>${staticFiles}</strong>: File is not found.`);
             }
             res.end();
         });

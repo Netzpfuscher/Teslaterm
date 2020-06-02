@@ -14,7 +14,7 @@ export enum TermSetupResult {
 export module TerminalIPC {
     const buffers: Map<object, string> = new Map();
     export const terminals = new Map<object, TerminalHandle>();
-    export const waitingConnections: object[] = [];
+    export let waitingConnections: object[] = [];
 
     export function print(s: string, target?: object) {
         let base: string = "";
@@ -40,6 +40,21 @@ export module TerminalIPC {
     }
 
     export async function setupTerminal(source: object): Promise<TermSetupResult> {
+        processIPC.addDisconnectCallback(source, () => {
+            if (terminals.has(source)) {
+                if (hasUD3Connection()) {
+                    getUD3Connection().closeTerminal(terminals.get(source));
+                }
+                terminals.delete(source);
+            }
+            let newWaiting: object[] = [];
+            for (const c of waitingConnections) {
+                if (c !== source) {
+                    newWaiting.push(c);
+                }
+            }
+            waitingConnections = newWaiting;
+        });
         if (!hasUD3Connection()) {
             waitingConnections.push(source);
             return TermSetupResult.not_connected;
@@ -52,14 +67,6 @@ export module TerminalIPC {
             waitingConnections.push(source);
             return TermSetupResult.no_terminal_available;
         }
-        processIPC.addDisconnectCallback(source, () => {
-            if (terminals.has(source)) {
-                if (hasUD3Connection()) {
-                    getUD3Connection().closeTerminal(terminals.get(source));
-                }
-                terminals.delete(source);
-            }
-        });
         terminals.set(source, termID);
         await connection.startTerminal(termID);
         return TermSetupResult.success;
@@ -76,6 +83,7 @@ export module TerminalIPC {
         while (waitingConnections.length > 0) {
             const newTerminal = waitingConnections.pop();
             if (await setupTerminal(newTerminal) !== TermSetupResult.success) {
+                waitingConnections.push(newTerminal);
                 break;
             }
         }

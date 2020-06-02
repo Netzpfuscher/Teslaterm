@@ -5,8 +5,7 @@ import {ISidConnection} from "../../sid/ISidConnection";
 import {NetworkSIDClient} from "../../sid/NetworkSIDClient";
 import {TerminalIPC} from "../../ipc/terminal";
 import {connectTCPSocket} from "../tcp_helper";
-import {UD3Connection, TerminalHandle, toCommandID} from "./UD3Connection";
-import * as telemetry from "../telemetry";
+import {UD3Connection, toCommandID} from "./UD3Connection";
 
 class EthernetConnection extends UD3Connection {
     private telnetSocket: net.Socket | undefined;
@@ -27,7 +26,13 @@ class EthernetConnection extends UD3Connection {
 
     public async sendTelnet(data: Buffer) {
         return new Promise<void>((res, rej) => {
-            this.telnetSocket.write(data, res);
+            this.telnetSocket.write(data, (e) => {
+                if (e) {
+                    rej(e);
+                } else {
+                    res();
+                }
+            });
         });
     }
 

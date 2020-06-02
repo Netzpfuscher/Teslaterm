@@ -1,0 +1,67 @@
+name: Release for tags
+on:
+  push:
+  #tags:
+  #- 'v*'
+
+jobs:
+  make-release:
+    name: Make release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install wine
+        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install wine32
+      - name: NPM install
+        run: npm install --dev
+      - name: Prepare
+        run: npm run build
+      - name: Build Electron
+        run: npm run install-electron && npm run package-electron
+      - name: Build Node
+        run: npm run install-node && npm run package-node
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+      - name: Upload electron-linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/electron/teslaterm-linux.zip
+          asset_name: teslaterm-linux.zip
+          asset_content_type: application/zip
+      - name: Upload electron-win
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/electron/teslaterm-win.zip
+          asset_name: teslaterm-windows.zip
+          asset_content_type: application/zip
+      - name: Upload node-linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/node/teslaterm-linux
+          asset_name: ud3-node-linux
+          asset_content_type: application/zip
+      - name: Upload node-win
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/node/teslaterm-win.exe
+          asset_name: ud3-node-win.exe
+          asset_content_type: application/zip

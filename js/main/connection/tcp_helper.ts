@@ -8,14 +8,9 @@ export function connectTCPSocket(
     dataCallback: (data: Buffer) => void,
 ): Promise<net.Socket> {
     return new Promise<net.Socket>((res, rej) => {
-        const ret = net.createConnection({port, host: ipaddr}, (e) => {
-            if (e) {
-                console.error(e);
-                rej(e);
-            } else {
-                TerminalIPC.println("Connected socket " + desc);
-                res(ret);
-            }
+        const ret = net.createConnection({port, host: ipaddr}, () => {
+            TerminalIPC.println("Connected socket " + desc);
+            res(ret);
         });
         ret.on('end', () => {
             TerminalIPC.println("Socket " + desc + " disconnected");
