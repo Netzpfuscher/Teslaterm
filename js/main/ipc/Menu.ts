@@ -1,9 +1,10 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {UD3State, IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
-import {pressButton} from "../connection/connection";
+import {commands, pressButton} from "../connection/connection";
 import {media_state} from "../media/media_player";
 import {processIPC} from "./IPCProvider";
 import {ScriptingIPC} from "./Scripting";
+import {configRequestQueue} from "../connection/telemetry";
 
 export module MenuIPC {
     let lastUD3State: UD3State = new UD3State(false, false, false);
@@ -44,5 +45,10 @@ export module MenuIPC {
         processIPC.on(IPCConstantsToMain.menu.startScript, ScriptingIPC.startScript);
         processIPC.on(IPCConstantsToMain.menu.stopScript, ScriptingIPC.stopScript);
         processIPC.on(IPCConstantsToMain.menu.connectButton, pressButton);
+        processIPC.on(IPCConstantsToMain.menu.requestUDConfig, source => {
+                configRequestQueue.push(source);
+                commands.sendCommand("config_get\r");
+            }
+        );
     }
 }

@@ -1,5 +1,5 @@
 import {UD3State} from "../../common/IPCConstantsToRenderer";
-import {commands} from "../ipc/commands";
+import {commands, manualCommands} from "../ipc/commands";
 import {MenuIPC} from "../ipc/Menu";
 import * as sliders from "./sliders";
 import * as ui_helper from "./ui_helper";
@@ -22,7 +22,7 @@ export function onCtrlMenuClick(event) {
             MenuIPC.connectButton();
             break;
         case "cls":
-            commands.clear();
+            manualCommands.clear();
             break;
         case "mnu_command:bus":
             if (ud3State.busActive) {
@@ -35,7 +35,7 @@ export function onCtrlMenuClick(event) {
             commands.setTransientEnabled(!ud3State.transientActive);
             break;
         case "mnu_command:settings":
-            commands.sendCommand("config_get\r");
+            MenuIPC.requestUDConfig();
             break;
         case "mnu_command:Load EEPROM-Config":
             ui_helper.warn("WARNING!<br>Are you sure to load the configuration from EEPROM?",

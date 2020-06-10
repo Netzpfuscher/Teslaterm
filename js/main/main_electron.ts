@@ -34,7 +34,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "../../index_electron.html"));
 
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
 
     mainWindow.setMenuBarVisibility(false);
 

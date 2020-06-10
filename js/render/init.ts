@@ -84,7 +84,6 @@ export function init() {
                             {text: 'Save EEPROM-Config', icon: 'fa fa-microchip'},
                             {text: 'Load EEPROM-Config', icon: 'fa fa-microchip'},
                             {text: 'Settings', id: 'settings', icon: 'fa fa-table'},
-                            {text: 'Start MIDI server', id: 'startStopMidi', icon: 'fa fa-table'},
                         ], text: 'Commands', type: 'menu',
                     },
                     {

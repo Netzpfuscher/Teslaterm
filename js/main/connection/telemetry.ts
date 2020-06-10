@@ -29,6 +29,7 @@ import {resetResponseTimeout} from "./state/Connected";
 export let busActive: boolean = false;
 export let busControllable: boolean = false;
 export let transientActive: boolean = false;
+export let configRequestQueue: object[] = [];
 
 let udconfig: string[][] = [];
 
@@ -109,7 +110,12 @@ function compute(dat: number[], source?: object) {
             dat.splice(0, 2);
             str = convertBufferToString(dat, false);
             if (str === "NULL;NULL") {
-                MiscIPC.openUDConfig(udconfig, source);
+                if (!source && configRequestQueue.length > 0) {
+                    source = configRequestQueue.shift();
+                }
+                if (source) {
+                    MiscIPC.openUDConfig(udconfig, source);
+                }
                 udconfig = [];
             } else {
                 const substrings = str.split(";");

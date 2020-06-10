@@ -6,6 +6,10 @@ import {updateConnectionButton, updateUD3State} from "../gui/menu";
 export let ud3State: UD3State;
 
 export namespace MenuIPC {
+    export function requestUDConfig(): void {
+        processIPC.send(IPCConstantsToMain.menu.requestUDConfig);
+    }
+
     export function startPlaying(): void {
         processIPC.send(IPCConstantsToMain.menu.startMedia);
     }

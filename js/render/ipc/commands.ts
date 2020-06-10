@@ -5,8 +5,26 @@ import {terminal} from "../gui/constants";
 import {processIPC} from "./IPCProvider";
 
 export function sendManualCommand(cmd: string) {
+    // TODO async?
     processIPC.send(IPCConstantsToMain.manualCommand, cmd);
 }
+
+export const manualCommands = new CommandInterface(
+    c => {
+        sendManualCommand(c);
+        return Promise.resolve();
+    },
+    () => {
+        // \033=\u1B
+        terminal.io.print('\u001B[2J\u001B[0;0H');
+    },
+    (val: number) => {
+        throw new Error();
+    },
+    async (t: SynthType) => {
+        throw new Error();
+    }
+);
 
 export const commands = new CommandInterface(
     c => {
@@ -15,8 +33,6 @@ export const commands = new CommandInterface(
         return Promise.resolve();
     },
     () => {
-        // \033=\u1B
-        terminal.io.print('\u001B[2J\u001B[0;0H');
     },
     (val: number) => {
         throw new Error();

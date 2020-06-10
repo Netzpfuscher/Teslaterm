@@ -1,8 +1,8 @@
 export const IPCConstantsToMain = {
     connect: "connect-to-ud3",
     loadFile: "load-file",
-    automaticCommand: "automatic_command",
-    manualCommand: "manual_command",
+    automaticCommand: "automatic-command",
+    manualCommand: "manual-command",
     sliders: {
         setOntime: "slider-set-ontime",
         setBPS: "slider-set-bps",
@@ -15,6 +15,7 @@ export const IPCConstantsToMain = {
         startMedia: "start-media",
         stopMedia: "stop-media",
         connectButton: "press-connect-button",
+        requestUDConfig: "ud-config",
     },
     rendererReady: "renderer-ready",
     midiMessage: "midi-message",

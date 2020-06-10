@@ -13,7 +13,7 @@ async function saveAndClose(form) {
 
 export function ud_settings(uconfig: string[][]) {
     const tfields = [];
-    const trecords = [];
+    const trecords = {};
     for (const data of uconfig) {
         let inipage: number = config.udConfigPages[data[0]];
         if (!inipage) {
@@ -76,24 +76,21 @@ export function ud_settings(uconfig: string[][]) {
     }
 
     if (w2ui.udconfigui) {
-        w2ui.udconfigui.original = [];
-        w2ui.udconfigui.record = [];
-        for (const copy of trecords) {
-            w2ui.udconfigui.original[copy] = trecords[copy];
-            w2ui.udconfigui.record[copy] = trecords[copy];
-        }
+        w2ui.udconfigui.original = {...trecords};
+        w2ui.udconfigui.record = {...trecords};
+        w2ui.udconfigui.fields = [...tfields];
         w2ui.udconfigui.refresh();
     }
 
     if (!w2ui.udconfigui) {
         $().w2form({
             actions: {
-                "save"() {
-                    saveAndClose(this);
+                async "Save"() {
+                    await saveAndClose(this);
                 },
-                "save EEPROM"() {
-                    saveAndClose(this)
-                        .then(() => commands.eepromSave());
+                async "Save EEPROM"() {
+                    await saveAndClose(this);
+                    await commands.eepromSave();
                 },
             },
             fields: tfields,
