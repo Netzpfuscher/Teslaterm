@@ -1,15 +1,16 @@
 name: Release for tags
 on:
   push:
-    branches:
-      - 'electron-ts'
+  create:
     tags:
-      - 'v**'
+      - 'v*'
 
 jobs:
-  make-release:
-    name: Make release
+  create-artifacts:
+    name: Create artifacts
     runs-on: ubuntu-latest
+    env:
+      release: ${{ github.event_name == 'create' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,15 +30,36 @@ jobs:
         run: (cd node_modules/@serialport/bindings && npx prebuild-install --tag-prefix @serialport/bindings@ -r node --platform win32)
       - name: Package node-windows
         run: zip -j dist/node/ud3-node-win.zip dist/node/ud3-node.exe node_modules/@serialport/bindings/build/Release/bindings.node
+      - name: Upload electron-linux
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/electron/teslaterm-linux.zip
+          name: teslaterm-linux.zip
+      - name: Upload electron-win
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/electron/teslaterm-win.zip
+          name: teslaterm-windows.zip
+      - name: Upload node-linux
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/node/ud3-node-linux.zip
+          name: ud3-node-linux.zip
+      - name: Upload node-win
+        uses: actions/upload-artifact@v2
+        with:
+          path: dist/node/ud3-node-win.zip
+          name: ud3-node-win.zip
       - name: Create release
-        id: create_release
+        if: ${{ env.release }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-      - name: Upload electron-linux
+      - name: Release electron-linux
+        if: ${{ env.release }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,7 +68,8 @@ jobs:
           asset_path: dist/electron/teslaterm-linux.zip
           asset_name: teslaterm-linux.zip
           asset_content_type: application/zip
-      - name: Upload electron-win
+      - name: Release electron-windows
+        if: ${{ env.release }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +78,8 @@ jobs:
           asset_path: dist/electron/teslaterm-win.zip
           asset_name: teslaterm-windows.zip
           asset_content_type: application/zip
-      - name: Upload node-linux
+      - name: Release node-linux
+        if: ${{ env.release }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,12 +88,13 @@ jobs:
           asset_path: dist/node/ud3-node-linux.zip
           asset_name: ud3-node-linux.zip
           asset_content_type: application/zip
-      - name: Upload node-win
+      - name: Release node-windows
+        if: ${{ env.release }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/node/ud3-node-win.zip
-          asset_name: ud3-node-win.zip
+          asset_name: ud3-node-windows.zip
           asset_content_type: application/zip
