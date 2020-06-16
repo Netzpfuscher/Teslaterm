@@ -41,7 +41,7 @@ class EthernetConnection extends UD3Connection {
     }
 
     private handleMessage(data: Buffer): void {
-        for (const [id, callback] of this.terminalCallbacks) {
+        for (const callback of this.terminalCallbacks.values()) {
             callback.callback(data);
         }
     }

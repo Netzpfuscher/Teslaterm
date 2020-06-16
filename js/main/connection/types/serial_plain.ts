@@ -25,24 +25,31 @@ export class PlainSerialConnection extends UD3Connection {
                         console.log("Not connecting, ", e);
                         rej(e);
                     } else {
-                        this.serialPort.on('data', telemetry.receive_main);
+                        this.serialPort.on('data', (data: Buffer) => {
+                            for (const terminal of this.terminalCallbacks.values()) {
+                                terminal.callback(data);
+                            }
+                        });
                         res();
                     }
                 });
         })
             .catch((e) => {
-                if (this.serialPort && this.serialPort.isOpen) {
-                    this.serialPort.close();
-                    this.serialPort.destroy();
-                }
+                this.close();
                 throw e;
             });
     }
 
+    private close() {
+        if (this.serialPort && this.serialPort.isOpen) {
+            this.serialPort.close();
+            this.serialPort.destroy();
+        }
+    }
+
     disconnect(): void {
         this.sendTelnet(new Buffer("tterm stop"));
-        this.serialPort.close();
-        this.serialPort.destroy();
+        this.close();
     }
 
     getSidConnection(): ISidConnection {
