@@ -11,7 +11,7 @@ export class DumpSidSource implements ISidSource {
     public next_frame(): SidFrame {
         const ret = this.sid_file.slice(FRAME_LENGTH * this.processedFrames, FRAME_LENGTH * (this.processedFrames + 1));
         this.processedFrames++;
-        return ret;
+        return new SidFrame(ret, 2e4);
     }
 
     public getTotalFrameCount(): number | null {

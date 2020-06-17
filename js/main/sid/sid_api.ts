@@ -1,6 +1,17 @@
 export const FRAME_LENGTH = 25;
 
-export type SidFrame = Uint8Array;
+export class SidFrame {
+    public readonly data: Uint8Array;
+    public readonly delayMicrosecond: number;
+
+    constructor(data: Uint8Array, delayUS: number) {
+        if (data.byteLength != FRAME_LENGTH) {
+            throw new Error("Wrong SID frame size: " + data.byteLength);
+        }
+        this.data = data;
+        this.delayMicrosecond = delayUS;
+    }
+}
 
 export interface ISidSource {
     next_frame(): SidFrame;

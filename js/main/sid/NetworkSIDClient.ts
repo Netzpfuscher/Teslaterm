@@ -2,6 +2,7 @@ import * as net from "net";
 import {connectTCPSocket} from "../connection/tcp_helper";
 import {jspack} from "jspack";
 import {ISidConnection} from "./ISidConnection";
+import {SidFrame} from "./sid_api";
 
 enum Command {
     FLUSH = 0,
@@ -50,13 +51,12 @@ export class NetworkSIDClient implements ISidConnection {
         // NOP
     }
 
-    async processFrame(frame: Uint8Array | Buffer, delay: number): Promise<void> {
-        console.assert(frame.length === 25);
+    async processFrame(frame: SidFrame): Promise<void> {
         let data: number[] = [];
-        for (let i = 0; i < frame.length; ++i) {
+        for (let i = 0; i < frame.data.length; ++i) {
             // Technically not correct, but C64 clock speed is close enough to 1 MHz for this to work
-            const delayForRegister = (i == 0) ? delay : 0;
-            const registerData = jspack.Pack("!HBB", [delayForRegister, i, frame[i]]);
+            const delayForRegister = (i == 0) ? frame.delayMicrosecond : 0;
+            const registerData = jspack.Pack("!HBB", [delayForRegister, i, frame.data[i]]);
             data = data.concat(registerData);
         }
         const reply = await this.sendCommand(Command.TRY_WRITE, 0, data);

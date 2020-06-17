@@ -1,6 +1,6 @@
-import {Endianness, to_ud3_time, to_ud3_time_number} from "../helper";
+import {Endianness, to_ud3_time} from "../helper";
 import {ISidConnection} from "./ISidConnection";
-import {FRAME_LENGTH} from "./sid_api";
+import {FRAME_LENGTH, SidFrame} from "./sid_api";
 import * as microtime from "../microtime";
 
 export class UD3FormattedConnection implements ISidConnection {
@@ -23,21 +23,20 @@ export class UD3FormattedConnection implements ISidConnection {
         this.lastFrameTime = microtime.now() + 50e3;
     }
 
-    processFrame(real_frame: Uint8Array | Buffer, delay: number): Promise<void> {
+    processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
-        console.assert(real_frame.length === FRAME_LENGTH);
         const data = new Buffer(FRAME_LENGTH + 4 + 4);
         for (let j = 0; j < 4; ++j) {
             data[j] = 0xFF;
         }
         for (let j = 0; j < FRAME_LENGTH; ++j) {
-            data[j + 4] = real_frame[j];
+            data[j + 4] = frame.data[j];
         }
         const ud_time = to_ud3_time(this.lastFrameTime, Endianness.BIG_ENDIAN);
         for (let j = 0; j < 4; ++j) {
             data[j + FRAME_LENGTH + 4] = ud_time[j];
         }
-        this.lastFrameTime += delay;
+        this.lastFrameTime += frame.delayMicrosecond;
         return this.sendToUD(data);
     }
 

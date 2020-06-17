@@ -8,6 +8,21 @@ enum CPUStatus {
     done_0xFF
 }
 
+class TimingStandard {
+    public readonly cpu_clock: number;
+    public readonly framerate: number;
+    public readonly cycles_per_frame: number;
+
+    constructor(cpu_clock: number, framerate: number) {
+        this.cpu_clock = cpu_clock;
+        this.framerate = framerate;
+        this.cycles_per_frame = cpu_clock / framerate;
+    }
+}
+
+const PAL = new TimingStandard(985248, 50);
+const NTSC = new TimingStandard(1022727, 60);
+
 class InstructionResult {
     num_cycles: number;
     status: CPUStatus;
@@ -29,23 +44,21 @@ class SidFileInfo {
     timermodes: Uint8Array;
     initAddr: number;
     playAddr: number;
+    timing: TimingStandard;
 
-    constructor(title: string, author: string, info: string, timermodes: Uint8Array, initAddr: number, playAddr: number) {
+    constructor(title: string, author: string, info: string, timermodes: Uint8Array, initAddr: number, playAddr: number, timing: TimingStandard) {
         this.title = title;
         this.author = author;
         this.info = info;
         this.timermodes = timermodes;
         this.initAddr = initAddr;
         this.playAddr = playAddr;
+        this.timing = timing;
     }
 }
 
 const branchflag = [0x80, 0x40, 0x01, 0x02];
 const flagsw = [0x01, 0x21, 0x04, 0x24, 0x00, 0x40, 0x08, 0x28];
-const C64_PAL_CPUCLK = 985248;
-//TODO config?
-const PAL_FRAMERATE = 50;
-const CYCLES_PER_FRAME = C64_PAL_CPUCLK / PAL_FRAMERATE;
 const SID_BASE_ADDR = 0xD400;
 
 export class EmulationSidSource implements ISidSource {
@@ -84,7 +97,7 @@ export class EmulationSidSource implements ISidSource {
         let finished: boolean = false;
         this.PC = this.sid_info.playAddr;
         this.SP = 0xFF;
-        while (this.cpu_time <= CYCLES_PER_FRAME) {
+        while (this.cpu_time <= this.sid_info.timing.cycles_per_frame) {
             const prev_pc = this.PC;
             const instr_result = this.run_single_instruction();
             if (instr_result.status !== CPUStatus.running) {
@@ -98,13 +111,13 @@ export class EmulationSidSource implements ISidSource {
                 break;
             }
         }
-        this.cpu_time -= CYCLES_PER_FRAME;
-        let data: SidFrame = new Uint8Array(25);
+        this.cpu_time -= this.sid_info.timing.cycles_per_frame;
+        let data = new Uint8Array(25);
         for (let i = 0; i < data.byteLength; ++i) {
             data[i] = this.memory[SID_BASE_ADDR + i];
         }
         ++this.current_frame;
-        return data;
+        return new SidFrame(data, 1e6 / this.sid_info.timing.framerate);
     }
 
     private load(filedata: Uint8Array): SidFileInfo {
@@ -149,14 +162,22 @@ export class EmulationSidSource implements ISidSource {
         }
         const initaddr = filedata[0xA] + filedata[0xB] ? filedata[0xA] * 256 + filedata[0xB] : loadaddr;
         const playaddr = filedata[0xC] * 256 + filedata[0xD];
-        //const subtune_count = filedata[0xF];
+        let timing: TimingStandard = PAL;
+        if (offs >= 0x7C) {
+            // SID file standard >= 2
+            if ((filedata[0x77] & 0x0C) == 8) {
+                timing = NTSC;
+                console.log("Setting to NTSC");
+            }
+        }
         return new SidFileInfo(
             convertArrayBufferToString(sidTitle),
             convertArrayBufferToString(sidAuthor),
             convertArrayBufferToString(sidInfo),
             timermode,
             initaddr,
-            playaddr
+            playaddr,
+            timing
         );
     }
 

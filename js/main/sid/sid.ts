@@ -56,7 +56,7 @@ export function update() {
         if (connection.hasUD3Connection()) {
             for (let i = 0; i < 2 && !current_sid_source.isDone(); ++i) {
                 const real_frame = current_sid_source.next_frame();
-                sidConnection.processFrame(real_frame, 5e4);
+                sidConnection.processFrame(real_frame);
             }
         }
         const totalFrames = current_sid_source.getTotalFrameCount();
