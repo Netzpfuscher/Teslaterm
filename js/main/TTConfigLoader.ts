@@ -149,7 +149,13 @@ export function loadConfig(filename: string): TTConfig {
     }
     {
         let serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
-        ret.serial_port = serial.getOrWrite("port", "/dev/ttyUSB0", changed);
+        let defaultPort: string;
+        if (os.platform() === "win32") {
+            defaultPort = "COM1";
+        } else {
+            defaultPort = "/dev/ttyUSB0";
+        }
+        ret.serial_port = serial.getOrWrite("port", defaultPort, changed);
         ret.baudrate = serial.getOrWrite("baudrate", 460_800, changed);
         ret.vendorID = serial.getOrWrite("vendor_id", "1a86", changed);
         ret.productID = serial.getOrWrite("product_id", "7523", changed);
