@@ -1,11 +1,10 @@
 import {
     baudrate,
-    connection_type, connection_types, eth_node,
+    connection_type,
     getDefaultConnectOptions, midi_port, remote_ip,
-    serial_min,
-    serial_plain,
     serial_port, sid_port, telnet_port
 } from "../../common/ConnectionOptions";
+import {connection_types, eth_node, serial_min, serial_plain} from "../../main/TTConfigLoader";
 import {config} from "../ipc/Misc";
 import * as ui_helper from "./ui_helper";
 import ChangeEvent = W2UI.ChangeEvent;
@@ -17,11 +16,11 @@ export async function openUI(): Promise<any> {
         title: 'Connection UI',
     });
     return new Promise<any>((res, rej) => {
-        recreateForm(connection_types[1], res, rej);
+        recreateForm(serial_min, res, rej);
     });
 }
 
-function recreateForm(selected_type: { id: string, text: string }, resolve: (cfg: object) => void, reject: (e: any) => void) {
+function recreateForm(selected_type: string, resolve: (cfg: object) => void, reject: (e: any) => void) {
     let defaultValues = getDefaultConnectOptions(false, config);
     if (!defaultValues[connection_type]) {
         defaultValues[connection_type] = selected_type;
@@ -41,7 +40,7 @@ function recreateForm(selected_type: { id: string, text: string }, resolve: (cfg
             }
         }
     ];
-    switch (selected_type.id) {
+    switch (selected_type) {
         case serial_min:
         case serial_plain:
             addField(fields, serial_port, "Serial port", "text", "Autoconnect");
@@ -74,18 +73,22 @@ function recreateForm(selected_type: { id: string, text: string }, resolve: (cfg
     });
     $('#w2ui-popup #form').w2render('connection_ui');
     const selector = $("input[name=" + connection_type + "]");
+    const selectorItems: { id: string, text: string }[] = [];
+    for (const [id, text] of connection_types.entries()) {
+        selectorItems.push({id, text});
+    }
     selector.w2field("list", {
-        items: connection_types,
+        items: selectorItems,
     });
-    selector.data("selected", selected_type);
+    selector.data("selected", {id: selected_type, text: connection_types.get(selected_type)});
     selector.change();
     w2ui.connection_ui.on("change", ev => onChange(ev, resolve, reject));
 }
 
 function onChange(event: ChangeEvent, resolve: (cfg: object) => void, reject: (e: any) => void) {
     if (event.target === connection_type) {
-        if (!event.value_old || event.value_new.id !== event.value_old.id) {
-            recreateForm(event.value_new, resolve, reject);
+        if (!event.value_old || event.value_new !== event.value_old) {
+            recreateForm(event.value_new.id, resolve, reject);
         }
     }
 }

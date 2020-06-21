@@ -1,14 +1,16 @@
 import {
     baudrate,
-    connection_type, eth_node,
+    connection_type,
     midi_port,
     remote_ip,
-    serial_min,
-    serial_plain, serial_port, sid_port, telnet_port
+    serial_port,
+    sid_port,
+    telnet_port,
 } from "../../../common/ConnectionOptions";
 import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../init";
+import {connection_types, eth_node, serial_min, serial_plain} from "../../TTConfigLoader";
 import {createEthernetConnection} from "../types/ethernet";
 import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {createMinSerialConnection} from "../types/serial_min";
@@ -41,7 +43,7 @@ export class Idle implements IConnectionState {
     public static async connectWithOptions(options: any): Promise<UD3Connection | undefined> {
         console.log(options);
         const type = options[connection_type];
-        switch (type.id) {
+        switch (type) {
             case serial_plain:
                 return this.connectSerial(options, createPlainSerialConnection);
             case serial_min:
@@ -49,7 +51,8 @@ export class Idle implements IConnectionState {
             case eth_node:
                 return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
             default:
-                TerminalIPC.println("Connection type \"" + type.text + "\" (" + type.id + ") is currently not supported");
+                TerminalIPC.println("Connection type \"" + connection_types.get(type) +
+                    "\" (" + type + ") is currently not supported");
                 return undefined;
         }
     }

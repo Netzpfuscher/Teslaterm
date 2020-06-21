@@ -1,8 +1,18 @@
+import * as os from "os";
 import {TTConfig} from "../common/TTConfig";
 import {convertArrayBufferToString} from "./helper";
 import {TerminalIPC} from "./ipc/terminal";
 import * as fs from "fs";
 import * as ini from "ini";
+
+// Connection types
+export const eth_node = "eth";
+export const serial_min = "min";
+export const serial_plain = "serial";
+export const connection_types = new Map<string, string>();
+connection_types.set(eth_node, "Ethernet to UD3-node");
+connection_types.set(serial_min, "Serial (MIN)");
+connection_types.set(serial_plain, "Serial (Plain)");
 
 const defaultUDConfigPages: { [prop: string]: number } = {
     offtime: 1,
@@ -45,76 +55,173 @@ const defaultUDConfigPages: { [prop: string]: number } = {
     passwd: 3
 };
 
+class ConfigEntry {
+    public readonly value: any;
+    public desc: string | undefined;
+
+    constructor(value: any, desc?: string) {
+        this.value = value;
+        this.desc = desc;
+    }
+}
+
+class ConfigSection {
+    public readonly contents: Map<string, ConfigEntry>;
+    public desc: string | undefined;
+
+    constructor(desc?: string) {
+        this.contents = new Map<string, ConfigEntry>();
+        this.desc = desc;
+    }
+
+    public getOrWrite<T>(
+        key: string,
+        defaultValue: T,
+        changed: { val: boolean },
+        description?: string
+    ): T {
+        if (this.contents.has(key)) {
+            const retEntry = this.contents.get(key);
+            retEntry.desc = description;
+            const ret = retEntry.value;
+            if (typeof (defaultValue) === "number" && typeof (ret) === "string") {
+                return parseInt(ret) as unknown as T;
+            } else {
+                return ret as T;
+            }
+        } else {
+            this.contents.set(key, new ConfigEntry(defaultValue, description));
+            changed.val = true;
+            return defaultValue;
+        }
+    }
+}
+
+class Config {
+    public readonly contents: Map<string, ConfigSection>;
+
+    constructor() {
+        this.contents = new Map<string, ConfigSection>();
+    }
+
+    public get(section: string, entry: string): ConfigEntry {
+        return this.contents.get(section).contents.get(entry);
+    }
+
+    public getOrCreateSection(name: string, desc?: string): ConfigSection {
+        if (!this.contents.has(name)) {
+            this.contents.set(name, new ConfigSection());
+        }
+        const ret = this.contents.get(name);
+        ret.desc = desc;
+        return ret;
+    }
+}
+
 export function loadConfig(filename: string): TTConfig {
     let ret = new TTConfig();
     let contents: string = "";
     if (fs.existsSync(filename)) {
         contents = convertArrayBufferToString(fs.readFileSync(filename));
     }
-    let iniObj: { [p: string]: any };
-    iniObj = ini.parse(contents);
+    let config = configFromString(contents);
     let changed: { val: boolean } = {val: false};
 
     {
-        let general = getOrCreateSection("general", iniObj);
-        ret.autoconnect = getOrWrite("autoconnect", "none", general, changed);
+        let general = config.getOrCreateSection("general");
+        const types = Array.from(connection_types.keys());
+        ret.autoconnect = general.getOrWrite(
+            "autoconnect",
+            "none",
+            changed,
+            "One of \"" + types.join("\", \"") + "\" or \"none\""
+        );
     }
     {
-        let ethernet = getOrCreateSection("ethernet", iniObj);
-        ret.remote_ip = getOrWrite("remote_ip", "localhost", ethernet, changed);
-        ret.midiPort = getOrWrite("midiport", 12001, ethernet, changed);
-        ret.telnetPort = getOrWrite("telnetport", 2321, ethernet, changed);
-        ret.sidPort = getOrWrite("sidport", 6581, ethernet, changed);
+        let ethernet = config.getOrCreateSection(
+            "ethernet",
+            "Default settings for ethernet connections to UD3 node instances"
+        );
+        ret.remote_ip = ethernet.getOrWrite("remote_ip", "localhost", changed);
+        ret.midiPort = ethernet.getOrWrite("midiport", 12001, changed);
+        ret.telnetPort = ethernet.getOrWrite("telnetport", 2321, changed);
+        ret.sidPort = ethernet.getOrWrite("sidport", 6581, changed);
     }
     {
-        let serial = getOrCreateSection("serial", iniObj);
-        ret.serial_port = getOrWrite("port", "/dev/ttyUSB0", serial, changed);
-        ret.baudrate = getOrWrite("baudrate", 460_800, serial, changed);
-        ret.vendorID = getOrWrite("vendor_id", "1a86", serial, changed);
-        ret.productID = getOrWrite("product_id", "7523", serial, changed);
+        let serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
+        ret.serial_port = serial.getOrWrite("port", "/dev/ttyUSB0", changed);
+        ret.baudrate = serial.getOrWrite("baudrate", 460_800, changed);
+        ret.vendorID = serial.getOrWrite("vendor_id", "1a86", changed);
+        ret.productID = serial.getOrWrite("product_id", "7523", changed);
     }
     {
-        let udconfig = getOrCreateSection("udconfig", iniObj);
-        const allNames = Object.keys(defaultUDConfigPages).concat(Object.keys(udconfig));
+        let udconfig = config.getOrCreateSection(
+            "udconfig",
+            "Each entry indicates which page the corresponding UD3 option should be shown on in the UD3 config GUI"
+        );
+        const allNames = new Set<string>(Object.keys(defaultUDConfigPages));
+        for (const key of udconfig.contents.keys()) {
+            allNames.add(key);
+        }
         ret.udConfigPages = {};
         for (const name of allNames) {
-            ret.udConfigPages[name] = getOrWrite(name, defaultUDConfigPages[name], udconfig, changed);
+            ret.udConfigPages[name] = udconfig.getOrWrite(name, defaultUDConfigPages[name], changed);
         }
     }
-    if (changed.val) {
-        fs.writeFile(filename, ini.stringify(iniObj), (err) => {
-            if (err) {
-                TerminalIPC.println("Failed to write new config!");
-            } else {
-                TerminalIPC.println("Successfully updated config");
-            }
-        });
+    fs.writeFile(filename, configToString(config), (err) => {
+        if (err) {
+            TerminalIPC.println("Failed to write new config!");
+        } else {
+            TerminalIPC.println("Successfully updated config");
+        }
+    });
+    return ret;
+}
+
+function configFromString(contents: string): Config {
+    let ret = new Config();
+    const iniData = ini.parse(contents);
+    for (const [key, value] of Object.entries(iniData)) {
+        let section = new ConfigSection();
+        for (const [subKey, subValue] of Object.entries(value)) {
+            section.contents.set(subKey, new ConfigEntry(subValue));
+        }
+        ret.contents.set(key, section);
     }
     return ret;
 }
 
-function getOrCreateSection(name: string, config: { [k: string]: any }): { [k: string]: any } {
-    if (!config.hasOwnProperty(name)) {
-        config[name] = {};
-    }
-    return config[name] as { [k: string]: any };
-}
-
-function getOrWrite<T>(
-    key: string,
-    defaultValue: T,
-    config: { [option: string]: any },
-    changed: { val: boolean }
-): T {
-    if (config.hasOwnProperty(key)) {
-        const ret = config[key];
-        if (typeof (defaultValue) === "number" && typeof (ret) === "string") {
-            return parseInt(ret) as unknown as T;
+function configToString(config: Config): string {
+    let configObject = {};
+    for (const [key, section] of config.contents.entries()) {
+        let sectionObject = {};
+        for (const [sectionKey, value] of section.contents.entries()) {
+            sectionObject[sectionKey] = value.value;
         }
-        return ret as T;
-    } else {
-        config[key] = defaultValue;
-        changed.val = true;
-        return defaultValue;
+        configObject[key] = sectionObject;
     }
+    const iniString = ini.stringify(configObject);
+    const iniLines = iniString.split(/\r?\n/);
+    let resultLines = [];
+    let currentSection: string | undefined = undefined;
+    for (const iniLine of iniLines) {
+        const sectionMatch = /\[(.*)]/.exec(iniLine);
+        let comment: string | undefined = undefined;
+        if (sectionMatch !== null) {
+            currentSection = sectionMatch[1];
+            comment = config.contents.get(currentSection).desc;
+        } else {
+            const entryMatch = /(\S*)=\S*/.exec(iniLine);
+            if (entryMatch !== null) {
+                const currentEntry = entryMatch[1];
+                const configEntry = config.get(currentSection, currentEntry);
+                comment = configEntry.desc;
+            }
+        }
+        if (comment) {
+            resultLines.push(";" + comment);
+        }
+        resultLines.push(iniLine);
+    }
+    return resultLines.join(os.EOL);
 }
