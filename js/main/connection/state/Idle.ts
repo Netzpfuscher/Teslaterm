@@ -41,7 +41,6 @@ export class Idle implements IConnectionState {
     }
 
     public static async connectWithOptions(options: any): Promise<UD3Connection | undefined> {
-        console.log(options);
         const type = options[connection_type];
         switch (type) {
             case serial_plain:

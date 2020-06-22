@@ -1,5 +1,5 @@
 // Fields
-import {connection_types} from "../main/TTConfigLoader";
+import {connection_types, serial_min} from "../main/TTConfigLoader";
 import {TTConfig} from "./TTConfig";
 
 export const connection_type = "connection_type";
@@ -26,6 +26,9 @@ export function getDefaultConnectOptions(for_autoconnect: boolean, config: TTCon
     if (for_autoconnect && !ret[connection_type]) {
         return undefined;
     } else {
+        if (!ret[connection_type]) {
+            ret[connection_type] = serial_min;
+        }
         return ret;
     }
 }

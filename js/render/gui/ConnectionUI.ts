@@ -16,14 +16,16 @@ export async function openUI(): Promise<any> {
         title: 'Connection UI',
     });
     return new Promise<any>((res, rej) => {
-        recreateForm(serial_min, res, rej);
+        recreateForm(undefined, res, rej);
     });
 }
 
-function recreateForm(selected_type: string, resolve: (cfg: object) => void, reject: (e: any) => void) {
+function recreateForm(selected_type: string | undefined, resolve: (cfg: object) => void, reject: (e: any) => void) {
     let defaultValues = getDefaultConnectOptions(false, config);
     if (!defaultValues[connection_type]) {
         defaultValues[connection_type] = selected_type;
+    } else if (!selected_type) {
+        selected_type = defaultValues[connection_type];
     }
     if (w2ui.connection_ui) {
         for (const field of w2ui.connection_ui.fields) {
@@ -67,7 +69,15 @@ function recreateForm(selected_type: string, resolve: (cfg: object) => void, rej
             },
             Connect: () => {
                 w2popup.close();
-                resolve(w2ui.connection_ui.record);
+                let ret = {};
+                for (const [key, value] of Object.entries(w2ui.connection_ui.record)) {
+                    if (key === connection_type) {
+                        ret[key] = value["id"];
+                    } else {
+                        ret[key] = value;
+                    }
+                }
+                resolve(ret);
             }
         }
     });
