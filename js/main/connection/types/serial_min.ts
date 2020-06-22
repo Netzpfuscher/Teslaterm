@@ -24,6 +24,7 @@ class MinSerialConnection extends BootloadableConnection {
     private serialPort: SerialPort;
     private min_wrapper: minprot | undefined;
     private readonly sidConnection: UD3FormattedConnection;
+    private mediaFramesForBatching: Buffer[] = [];
 
     constructor(port: string, baud: number) {
         super();
@@ -49,7 +50,7 @@ class MinSerialConnection extends BootloadableConnection {
                             if (this.isBootloading()) {
                                 this.bootloaderCallback(data);
                             } else {
-                                this.min_wrapper.min_poll(to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN), data);
+                                this.min_wrapper.min_poll(data);
                             }
                         });
                         res();
@@ -91,7 +92,7 @@ class MinSerialConnection extends BootloadableConnection {
 
     async sendMedia(data: Buffer) {
         if (this.min_wrapper) {
-            await this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, data);
+            this.mediaFramesForBatching.push(data);
         }
     }
 
@@ -146,9 +147,23 @@ class MinSerialConnection extends BootloadableConnection {
         }
     }
 
-    public tick(): void {
+    public async tick(): Promise<void> {
         if (this.min_wrapper) {
-            this.min_wrapper.min_poll(to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN));
+            const maxPerFrame = 200;
+            while (this.mediaFramesForBatching.length > 0) {
+                let frameParts: Buffer[] = [];
+                let currentSize = 0;
+                while (
+                    this.mediaFramesForBatching.length > 0 &&
+                    this.mediaFramesForBatching[0].length + currentSize <= maxPerFrame
+                    ) {
+                    currentSize += this.mediaFramesForBatching[0].length;
+                    frameParts.push(this.mediaFramesForBatching.shift());
+                }
+                let frame = Buffer.concat(frameParts);
+                this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, frame);
+            }
+            this.min_wrapper.min_poll();
         }
     }
 
@@ -165,7 +180,7 @@ class MinSerialConnection extends BootloadableConnection {
     }
 
     public async init_min_wrapper(): Promise<void> {
-        this.min_wrapper = new minprot();
+        this.min_wrapper = new minprot(() => to_ud3_time(microtime.now(), Endianness.BIG_ENDIAN));
         this.min_wrapper.sendByte = (data) => {
             if (this.isBootloading()) {
                 return;

@@ -1,5 +1,6 @@
 module.exports = class minprot {
-	constructor() {
+	constructor(get_ack_payload) {
+		this.get_ack_payload = get_ack_payload;
 		this.rx = [];
 		this.rx.states = {
 			SOF: 'sof',
@@ -91,7 +92,7 @@ module.exports = class minprot {
 		return ~this.crc;
 	}
 
-	rx_byte(byte, ack_payload) {
+	rx_byte(byte) {
 		// Regardless of state, three header bytes means "start of frame" and
 		// should reset the frame buffer and be ready to receive frame data
 		//
@@ -203,7 +204,7 @@ module.exports = class minprot {
 				if (byte == 0x55) {
 					// Frame received OK, pass up data to handler
 					//console.log(this.rx.frame);
-					this.valid_frame_received(this.rx.frame, ack_payload);
+					this.valid_frame_received(this.rx.frame);
 					this.rx.frame.payload = [];
 				}
 				// else discard
@@ -217,7 +218,7 @@ module.exports = class minprot {
 		}
 	}
 
-	valid_frame_received(frame, ack_payload) {
+	valid_frame_received(frame) {
 
 		let seq = frame.seq;
 		let num_acked;
@@ -293,7 +294,7 @@ module.exports = class minprot {
 						// this will cut the latency down.
 						// We also periodically send an ACK in case the ACK was lost, and in any case
 						// frames are re-sent.
-						this.send_ack(ack_payload);
+						this.send_ack();
 
 						// Now ready to pass this up to the application handlers
 						this.handler(frame.id_control & 0x3f, frame.payload);
@@ -325,7 +326,7 @@ module.exports = class minprot {
 		//}
 	}
 
-	send_ack(ack_payload) {
+	send_ack() {
 		// In the embedded end we don't reassemble out-of-order frames and so never ask for retransmits. Payload is
 		// always the same as the sequence number.
 		if (this.debug) console.log("send ACK: seq=" + this.transport_fifo.rn);
@@ -341,7 +342,7 @@ module.exports = class minprot {
 		sq[5] = (this.rx_space >>> 16) & 0xff;
 		sq[6] = (this.rx_space >>> 8) & 0xff;
 		sq[7] = this.rx_space & 0xff;
-		sq = sq.concat(ack_payload);
+		sq = sq.concat(this.get_ack_payload());
 		this.on_wire_bytes(this.rx.magic.ACK, this.transport_fifo.rn, sq);
 		this.transport_fifo.last_sent_ack_time_ms = Date.now();
 		//}
@@ -412,14 +413,13 @@ module.exports = class minprot {
 		return p + 14;
 	}
 
-	min_poll(ack_payload, buf) {
+	min_poll(buf) {
 		if (typeof buf != 'undefined') {
 			for (let i = 0; i < buf.length; i++) {
-				this.rx_byte(buf[i], ack_payload);
+				this.rx_byte(buf[i], this.get_ack_payload());
 			}
 		}
 
-		let window_size;
 		if (this.rx.frame_state == this.rx.states.SOF) {
 			this.now = Date.now();
 
@@ -475,7 +475,7 @@ module.exports = class minprot {
 				// Periodically transmit the ACK with the rn value, unless the line has gone idle
 				if (this.now - this.transport_fifo.last_sent_ack_time_ms > this.TRANSPORT_ACK_RETRANSMIT_TIMEOUT_MS) {
 					if (remote_active) {
-						this.send_ack(ack_payload);
+						this.send_ack();
 					}
 				}
 			}
