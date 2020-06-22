@@ -191,12 +191,26 @@ export function redrawTrigger() {
     }
 }
 
-export function drawLine(x1: number, x2: number, y1: number, y2: number, color: number) {
+function transform_point(x: number, y: number): [number, number] {
+    return [
+        x / 400 * waveCanvas.width,
+        y / 300 * waveCanvas.height,
+    ];
+}
+
+function checkControlled() {
+    if (drawMode != DrawMode.controlled) {
+        beginControlledDraw();
+    }
+}
+
+export function drawLine(x1: number, y1: number, x2: number, y2: number, color: number) {
+    checkControlled();
     waveContext.beginPath();
     waveContext.lineWidth = pixelRatio;
     waveContext.strokeStyle = wavecolors[color];
-    waveContext.moveTo(x1, y1);
-    waveContext.lineTo(x2, y2);
+    waveContext.moveTo(...transform_point(x1, y1));
+    waveContext.lineTo(...transform_point(x2, y2));
     waveContext.stroke();
 }
 
@@ -205,7 +219,6 @@ export function clear() {
     waveContext.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
     xPos = TRIGGER_SPACE + 1;
 }
-
 
 export function beginControlledDraw() {
     clear();
@@ -223,18 +236,20 @@ function beginStandardDraw() {
 }
 
 export function drawString(x: number, y: number, color: number, size: number, str: string, center: boolean) {
+    checkControlled();
+    //TODO transform size?
     waveContext.font = size + "px Arial";
     waveContext.textAlign = "left";
     waveContext.fillStyle = wavecolors[color];
     if (center) {
-        waveContext.fillText(str, x, y);
+        waveContext.fillText(str, ...transform_point(x, y));
     } else {
-        waveContext.fillText(str, x, y);
+        waveContext.fillText(str, ...transform_point(x, y));
     }
 }
 
 export function drawChart(): void {
-    if (drawMode === DrawMode.controlled) {
+    if (drawMode !== DrawMode.standard) {
         beginStandardDraw();
     }
     if (trigger_id === -1) {

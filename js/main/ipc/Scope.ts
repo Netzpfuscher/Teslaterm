@@ -27,16 +27,16 @@ export module ScopeIPC {
         sinceLastDraw[traceId] = value;
     }
 
-    export function startControlledDraw() {
-        processIPC.sendToAll(IPCConstantsToRenderer.scope.startControlled);
+    export function startControlledDraw(source?: object) {
+        processIPC.sendToWindow(IPCConstantsToRenderer.scope.startControlled, source);
     }
 
-    export function drawLine(x1: number, y1: number, x2: number, y2: number, color: number) {
-        processIPC.sendToAll(IPCConstantsToRenderer.scope.drawLine, new ScopeLine(x1, y1, x2, y2, color));
+    export function drawLine(x1: number, y1: number, x2: number, y2: number, color: number, source?: object) {
+        processIPC.sendToWindow(IPCConstantsToRenderer.scope.drawLine, source, new ScopeLine(x1, y1, x2, y2, color));
     }
 
-    export function drawText(x: number, y: number, color: number, size: number, str: string, center: boolean) {
-        processIPC.sendToAll(IPCConstantsToRenderer.scope.drawString, new ScopeText(x, y, color, size, str, center));
+    export function drawText(x: number, y: number, color: number, size: number, str: string, center: boolean, source?: object) {
+        processIPC.sendToWindow(IPCConstantsToRenderer.scope.drawString, source, new ScopeText(x, y, color, size, str, center));
     }
 
     export function configure(traceId: number, min: number, max: number, offset: number, unit: string, name: string) {

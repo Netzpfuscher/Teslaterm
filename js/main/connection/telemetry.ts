@@ -84,7 +84,7 @@ function compute(dat: number[], source?: object) {
             ScopeIPC.drawChart();
             break;
         case TT_CHART_CLEAR:
-            ScopeIPC.startControlledDraw();
+            ScopeIPC.startControlledDraw(source);
             break;
         case TT_CHART_LINE:
             const x1 = bytes_to_signed(dat[2], dat[3]);
@@ -92,14 +92,14 @@ function compute(dat: number[], source?: object) {
             const x2 = bytes_to_signed(dat[6], dat[7]);
             const y2 = bytes_to_signed(dat[8], dat[9]);
             const color = dat[10].valueOf();
-            ScopeIPC.drawLine(x1, y1, x2, y2, color);
+            ScopeIPC.drawLine(x1, y1, x2, y2, color, source);
 
             break;
         case TT_CHART_TEXT:
-            drawString(dat, false);
+            drawString(dat, false, source);
             break;
         case TT_CHART_TEXT_CENTER:
-            drawString(dat, true);
+            drawString(dat, true, source);
             break;
         case TT_STATE_SYNC:
             setBusActive((dat[2] & 1) !== 0);
@@ -146,7 +146,7 @@ function setBusControllable(controllable) {
     }
 }
 
-function drawString(dat: number[], center: boolean) {
+function drawString(dat: number[], center: boolean, source?: object) {
     const x = bytes_to_signed(dat[2], dat[3]);
     const y = bytes_to_signed(dat[4], dat[5]);
     const color = dat[6].valueOf();
@@ -156,7 +156,7 @@ function drawString(dat: number[], center: boolean) {
     }
     dat.splice(0, 8);
     const str = convertBufferToString(dat);
-    ScopeIPC.drawText(x, y, color, size, str, center);
+    ScopeIPC.drawText(x, y, color, size, str, center, source);
 }
 
 enum TelemetryFrameState {

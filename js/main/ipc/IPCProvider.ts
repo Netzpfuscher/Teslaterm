@@ -56,10 +56,14 @@ export class MultiWindowIPC {
     }
 
     public sendToWindow(channel: string, key: object, ...data: any[]) {
-        if (!this.isValidWindow(key)) {
-            throw new Error("Tried to send to invalid window " + key);
+        if (key) {
+            if (!this.isValidWindow(key)) {
+                throw new Error("Tried to send to invalid window " + key);
+            }
+            this.windows.get(key).send(channel, ...data);
+        } else {
+            this.sendToAll(channel, ...data);
         }
-        this.windows.get(key).send(channel, ...data);
     }
 
     public addDisconnectCallback(key: object, cb: () => void) {
