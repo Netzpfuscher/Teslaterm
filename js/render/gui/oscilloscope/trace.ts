@@ -59,7 +59,7 @@ export class Trace {
     ): void {
         const line_height = 32;
         const x_res = waveContext.canvas.width;
-        if (name) {
+        if (this.name) {
             let trigger_symbol = "";
             waveContext.fillStyle = this.wavecolor;
             if (this_id === trigger_id) {
@@ -75,7 +75,6 @@ export class Trace {
                 x_res - INFO_SPACE + 4,
                 (line_height * (this_id + 1)) + 16,
             );
-            trigger_symbol = "";
         }
     }
 
@@ -86,9 +85,11 @@ export class Trace {
         if (this.name) {
             const y_res = waveContext.canvas.height;
             waveContext.fillStyle = this.wavecolor;
-            waveContext.fillText("Min: " + this.stats.get_min_str(), text_pos += 60, y_res - MEAS_POSITION);
-            waveContext.fillText("Max: " + this.stats.get_max_str(), text_pos += 60, y_res - MEAS_POSITION);
-            waveContext.fillText("Avg: " + this.stats.get_rms_str(), text_pos += 60, y_res - MEAS_POSITION);
+            const text = "Min: " + this.stats.get_min_str() +
+                " Max: " + this.stats.get_max_str() +
+                " Avg: " + this.stats.get_rms_str();
+            waveContext.fillText(text, text_pos, y_res - MEAS_POSITION);
+            text_pos += waveContext.measureText(text).width + 60;
         }
         return text_pos;
     }

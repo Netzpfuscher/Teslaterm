@@ -1,18 +1,10 @@
 import * as os from "os";
+import {connection_types} from "../common/constants";
 import {TTConfig} from "../common/TTConfig";
 import {convertArrayBufferToString} from "./helper";
 import {TerminalIPC} from "./ipc/terminal";
 import * as fs from "fs";
 import * as ini from "ini";
-
-// Connection types
-export const eth_node = "eth";
-export const serial_min = "min";
-export const serial_plain = "serial";
-export const connection_types = new Map<string, string>();
-connection_types.set(eth_node, "Ethernet to UD3-node");
-connection_types.set(serial_min, "Serial (MIN)");
-connection_types.set(serial_plain, "Serial (Plain)");
 
 const defaultUDConfigPages: { [prop: string]: number } = {
     offtime: 1,

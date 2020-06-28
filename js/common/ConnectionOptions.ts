@@ -1,5 +1,5 @@
 // Fields
-import {connection_types, serial_min} from "../main/TTConfigLoader";
+import {connection_types, serial_min} from "./constants";
 import {TTConfig} from "./TTConfig";
 
 export const connection_type = "connection_type";

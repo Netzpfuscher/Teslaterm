@@ -4,7 +4,7 @@ import {
     getDefaultConnectOptions, midi_port, remote_ip,
     serial_port, sid_port, telnet_port
 } from "../../common/ConnectionOptions";
-import {connection_types, eth_node, serial_min, serial_plain} from "../../main/TTConfigLoader";
+import {connection_types, eth_node, serial_min, serial_plain} from "../../common/constants";
 import {config} from "../ipc/Misc";
 import * as ui_helper from "./ui_helper";
 import ChangeEvent = W2UI.ChangeEvent;

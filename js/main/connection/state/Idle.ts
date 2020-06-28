@@ -7,10 +7,10 @@ import {
     sid_port,
     telnet_port,
 } from "../../../common/ConnectionOptions";
+import {connection_types, eth_node, serial_min, serial_plain} from "../../../common/constants";
 import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../init";
-import {connection_types, eth_node, serial_min, serial_plain} from "../../TTConfigLoader";
 import {createEthernetConnection} from "../types/ethernet";
 import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {createMinSerialConnection} from "../types/serial_min";

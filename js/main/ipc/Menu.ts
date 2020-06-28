@@ -1,10 +1,10 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
 import {UD3State, IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {commands, pressButton} from "../connection/connection";
+import {configRequestQueue} from "../connection/telemetry/TelemetryFrame";
 import {media_state} from "../media/media_player";
 import {processIPC} from "./IPCProvider";
 import {ScriptingIPC} from "./Scripting";
-import {configRequestQueue} from "../connection/telemetry";
 
 export module MenuIPC {
     let lastUD3State: UD3State = new UD3State(false, false, false);

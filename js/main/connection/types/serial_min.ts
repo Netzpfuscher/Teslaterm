@@ -82,8 +82,10 @@ class MinSerialConnection extends BootloadableConnection {
             console.error("Failed to disconnect cleanly", e);
         }
         this.terminalCallbacks.clear();
-        if (this.serialPort && this.serialPort.isOpen) {
-            this.serialPort.close();
+        if (this.serialPort) {
+            if (this.serialPort.isOpen) {
+                this.serialPort.close();
+            }
             this.serialPort.destroy();
             this.min_wrapper = undefined;
             this.serialPort = undefined;
@@ -222,6 +224,10 @@ class MinSerialConnection extends BootloadableConnection {
 
     getMaxTerminalID(): number {
         return 4;
+    }
+
+    isMultiTerminal(): boolean {
+        return true;
     }
 }
 

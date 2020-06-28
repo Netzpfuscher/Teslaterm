@@ -96,8 +96,11 @@ export class PlainSerialConnection extends UD3Connection {
     }
 
     getMaxTerminalID(): number {
-        // There are no separate terminals in ethernet connections, so we don't need to limit the number of terminals
-        return 100;
+        throw new Error();
+    }
+
+    isMultiTerminal(): boolean {
+        return false;
     }
 }
 

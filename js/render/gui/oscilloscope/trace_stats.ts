@@ -1,9 +1,8 @@
 export class TraceStats {
-    private min: number = 0;
-    private max: number = 1024;
+    private min: number = Number.POSITIVE_INFINITY;
+    private max: number = Number.NEGATIVE_INFINITY;
     private squareSum: number = 0;
     private samples: number = 0;
-
 
     public update(value_real: number): void {
         if (value_real < this.min) {

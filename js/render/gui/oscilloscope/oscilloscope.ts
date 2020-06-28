@@ -16,7 +16,6 @@ let trigger_lvl: number = 0;
 let trigger_lvl_real: number = 0;
 let trigger_block: boolean = false;
 let trigger_trgt: boolean = false;
-let trigger_old: boolean = false;
 export let traces: Trace[] = [];
 let xPos: number = TRIGGER_SPACE + 1;
 let pixelRatio: number = 1;
@@ -191,11 +190,26 @@ export function redrawTrigger() {
     }
 }
 
+const ud3_assumed_width = 450;
+const ud3_assumed_height = 350;
+
 function transform_point(x: number, y: number): [number, number] {
     return [
-        x / 400 * waveCanvas.width,
-        y / 300 * waveCanvas.height,
+        x * waveCanvas.width / ud3_assumed_width,
+        y * waveCanvas.height / ud3_assumed_height,
     ];
+}
+
+function transform_text_size(old_size: number): number {
+    const scale = Math.min(
+        waveCanvas.width / ud3_assumed_width,
+        waveCanvas.height / ud3_assumed_height,
+    );
+    if (scale > 1) {
+        return old_size * scale;
+    } else {
+        return old_size;
+    }
 }
 
 function checkControlled() {
@@ -237,8 +251,7 @@ function beginStandardDraw() {
 
 export function drawString(x: number, y: number, color: number, size: number, str: string, center: boolean) {
     checkControlled();
-    //TODO transform size?
-    waveContext.font = size + "px Arial";
+    waveContext.font = transform_text_size(size) + "px Arial";
     waveContext.textAlign = "left";
     waveContext.fillStyle = wavecolors[color];
     if (center) {
@@ -265,14 +278,9 @@ export function drawChart(): void {
                 trigger_trgt = true;
                 plotTraces();
             }
-            if (trigger_trgt !== trigger_old) {
-                redrawMeas();
-            }
-            trigger_old = trigger_trgt;
-
         }
-
     }
+    redrawMeas();
 }
 
 export function redrawInfo() {
@@ -285,13 +293,12 @@ export function redrawInfo() {
     for (let i = 0; i < tterm_length; i++) {
         traces[i].drawInfo(waveContext, i, trigger_id);
     }
-    redrawMeas();
 }
 
 function redrawMeas() {
     const x_res = waveCanvas.width;
     const y_res = waveCanvas.height;
-    waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - INFO_SPACE - TRIGGER_SPACE, y_res);
+    waveContext.clearRect(TRIGGER_SPACE, y_res - MEAS_SPACE, x_res - TRIGGER_SPACE, y_res);
     drawTriggerStatus();
     let text_pos = TRIGGER_SPACE + 180;
     for (const trace of traces) {
@@ -313,7 +320,6 @@ function onMouseDown(e) {
         pos_y -= TOP_SPACE;
         trigger_lvl = (2 / y_res) * ((y_res / 2) - pos_y);
         trigger_lvl_real = trigger_lvl * traces[trigger_id].span;
-        redrawMeas();
         redrawTrigger();
     }
 }

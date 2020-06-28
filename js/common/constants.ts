@@ -20,5 +20,14 @@ export const TYPE_CHAR = 3;
 export const TYPE_STRING = 4;
 
 export const DATA_TYPE = 0;
-export const DATA_LEN = 1;
-export const DATA_NUM = 2;
+export const DATA_NUM = 1;
+
+// Connection types
+export const eth_node = "eth";
+export const serial_min = "min";
+export const serial_plain = "serial";
+export const connection_types = new Map<string, string>();
+connection_types.set(eth_node, "Ethernet to UD3-node");
+connection_types.set(serial_min, "Serial (MIN)");
+connection_types.set(serial_plain, "Serial (Plain)");
+

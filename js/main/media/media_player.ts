@@ -4,11 +4,11 @@ import * as path from "path";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {commands} from "../connection/connection";
+import {transientActive} from "../connection/telemetry/UD3State";
 import {ScopeIPC} from "../ipc/Scope";
 import {TerminalIPC} from "../ipc/terminal";
 import {kill_msg, playMidiData} from "../midi/midi";
 import {loadMidiFile} from "../midi/midi_file";
-import {transientActive} from "../connection/telemetry";
 import * as scripting from "../scripting";
 import {loadSidFile} from "../sid/sid";
 

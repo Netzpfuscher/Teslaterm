@@ -46,8 +46,10 @@ export abstract class UD3Connection {
 
     abstract getMaxTerminalID(): number;
 
+    abstract isMultiTerminal(): boolean;
+
     public setupNewTerminal(dataCallback: (data: Buffer) => void): TerminalHandle | undefined {
-        for (let i = 0; i < this.getMaxTerminalID(); ++i) {
+        for (let i = 0; !this.isMultiTerminal() || i < this.getMaxTerminalID(); ++i) {
             if (!this.terminalCallbacks.has(i)) {
                 this.terminalCallbacks.set(i, new TerminalData(dataCallback));
                 return i;
