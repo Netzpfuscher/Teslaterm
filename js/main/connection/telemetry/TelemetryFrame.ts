@@ -53,7 +53,6 @@ export class TelemetryFrame {
                 this.data.splice(0, 6);
                 str = convertBufferToString(this.data);
                 MetersIPC.configure(index, gauge_min, gauge_max, 1, str);
-                ScopeIPC.refresh();
                 break;
             }
             case TT_GAUGE32_CONF: {
@@ -64,7 +63,6 @@ export class TelemetryFrame {
                 this.data.splice(0, 14);
                 str = convertBufferToString(this.data);
                 MetersIPC.configure(index, min, max, div, str);
-                ScopeIPC.refresh();
                 break;
             }
             case TT_CHART_CONF: {

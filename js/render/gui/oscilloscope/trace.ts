@@ -54,19 +54,14 @@ export class Trace {
 
     public drawInfo(
         waveContext: CanvasRenderingContext2D,
-        this_id: number,
-        trigger_id: number,
+        this_id: number
     ): void {
         const line_height = 32;
         const x_res = waveContext.canvas.width;
         if (this.name) {
-            let trigger_symbol = "";
             waveContext.fillStyle = this.wavecolor;
-            if (this_id === trigger_id) {
-                trigger_symbol = "->";
-            }
             waveContext.fillText(
-                trigger_symbol + "w" + this_id + ": " + this.name,
+                "w" + this_id + ": " + this.name,
                 x_res - INFO_SPACE + 4,
                 line_height * (this_id + 1),
             );
@@ -94,15 +89,12 @@ export class Trace {
         return text_pos;
     }
 
-    public is_triggered(trigger_lvl: number): boolean {
-        return (trigger_lvl > 0) === (this.value > trigger_lvl);
-    }
-
     public configure(min: number, max: number, offset: number, unit: string, name: string) {
         this.span_private = max - min;
         this.perDiv = this.span / 5;
         this.offset = offset;
         this.unit = unit;
         this.name = name;
+        this.stats.reset();
     }
 }

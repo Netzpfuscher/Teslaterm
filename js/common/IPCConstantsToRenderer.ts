@@ -21,7 +21,6 @@ export const IPCConstantsToRenderer = {
         setScriptName: "menu-script-name",
     },
     scope: {
-        refresh: "scope-refresh",
         configure: "scope-config",
         addValues: "scope-values",
         startControlled: "scope-start-controlled",

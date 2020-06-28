@@ -87,26 +87,6 @@ export function init() {
                         ], text: 'Commands', type: 'menu',
                     },
                     {
-                        icon: 'fa fa-star', id: 'trigger_radio',
-                        items: [
-                            {id: 'waveoff-1', text: 'Off'},
-                            {id: 'waveoid0', text: 'Wave 0'},
-                            {id: 'waveoid1', text: 'Wave 1'},
-                            {id: 'waveoid2', text: 'Wave 2'},
-                            {id: 'waveoid3', text: 'Wave 3'},
-                            {id: 'waveoid4', text: 'Wave 4'},
-                            {id: 'waveoid5', text: 'Wave 5'},
-                        ],
-                        selected: 'waveoff-1',
-                        type: 'menu-radio',
-                        text(item) {
-                            const el = this.get('trigger_radio:' + item.selected);
-                            const triggerId = item.selected.substr(7);
-                            scope.setTrigger(Number(triggerId));
-                            return 'Trigger: ' + el.text;
-                        },
-                    },
-                    {
                         icon: 'fa fa-table', id: 'mnu_midi', items: [
                             {text: 'Play', icon: 'fa fa-bolt'},
                             {text: 'Stop', icon: 'fa fa-bolt'},

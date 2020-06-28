@@ -14,10 +14,6 @@ export module ScopeIPC {
     let sinceLastDraw: { [id: number]: number } = {};
     let configs: Map<number, ScopeTraceConfig> = new Map();
 
-    export function refresh() {
-        processIPC.sendToAll(IPCConstantsToRenderer.scope.refresh);
-    }
-
     export function drawChart() {
         tickSummary.push(sinceLastDraw);
         sinceLastDraw = {};

@@ -26,4 +26,11 @@ export class TraceStats {
     public get_rms_str(): string {
         return Math.sqrt(this.squareSum / this.samples).toFixed(2);
     }
+
+    public reset() {
+        this.min = Number.POSITIVE_INFINITY;
+        this.max = Number.NEGATIVE_INFINITY;
+        this.squareSum = 0;
+        this.samples = 0;
+    }
 }
