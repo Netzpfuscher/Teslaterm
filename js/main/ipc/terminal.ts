@@ -1,4 +1,5 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
+import {FEATURE_NOTELEMETRY} from "../../common/constants";
 import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {commands, getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {receive_main} from "../connection/telemetry";
@@ -69,6 +70,9 @@ export module TerminalIPC {
         }
         terminals.set(source, termID);
         await connection.startTerminal(termID);
+        if (connection.getFeatureValue(FEATURE_NOTELEMETRY) == "1") {
+            await connection.sendTelnet(new Buffer("\rtterm notelemetry\rcls\r"), termID);
+        }
         return TermSetupResult.success;
     }
 

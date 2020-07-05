@@ -3,11 +3,12 @@ import {config} from "../../init";
 import * as microtime from "../../microtime";
 import SerialPort = require("serialport");
 import minprot = require('../../../../libs/min');
-import {convertBufferToString, Endianness, to_ud3_time, withTimeout} from "../../helper";
+import {convertBufferToString, withTimeout} from "../../helper";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
 import {UD3Connection, TerminalHandle} from "./UD3Connection";
+import {FEATURE_NOTELEMETRY} from "../../../common/constants";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
@@ -28,6 +29,7 @@ class MinSerialConnection extends BootloadableConnection {
     private readonly sidConnection: UD3FormattedConnection;
     private mediaFramesForBatching: Buffer[] = [];
     private actualUDFeatures: Map<string, string>;
+    private connectionsToSetTTerm: TerminalHandle[] = [];
 
     constructor(port: string, baud: number) {
         super();
@@ -122,6 +124,9 @@ class MinSerialConnection extends BootloadableConnection {
     async startTerminal(handle: TerminalHandle): Promise<void> {
         await super.startTerminal(handle);
         await this.send_min_socket(true, handle);
+        if (this.getFeatureValue(FEATURE_NOTELEMETRY) !== "1") {
+            this.connectionsToSetTTerm.push(handle);
+        }
     }
 
     public sendBootloaderData(data: Buffer): Promise<void> {
@@ -206,7 +211,7 @@ class MinSerialConnection extends BootloadableConnection {
                 }
             });
         };
-        this.min_wrapper.handler = (id, data) => {
+        this.min_wrapper.handler = async (id, data) => {
             if (id === MIN_ID_MEDIA) {
                 if (data[0] === 0x78) {
                     this.sidConnection.setBusy(true);
@@ -219,7 +224,17 @@ class MinSerialConnection extends BootloadableConnection {
                 const asString = convertBufferToString(data, false);
                 const splitPoint = asString.indexOf("=");
                 if (splitPoint >= 0) {
-                    this.actualUDFeatures.set(asString.substring(0, splitPoint), asString.substring(splitPoint + 1));
+                    const value = asString.substring(splitPoint + 1);
+                    const feature = asString.substring(0, splitPoint);
+                    this.actualUDFeatures.set(feature, value);
+                    if (feature === FEATURE_NOTELEMETRY && value === "1") {
+                        for (const termID of this.connectionsToSetTTerm) {
+                            if (this.terminalCallbacks.has(termID)) {
+                                await this.sendTelnet(new Buffer("\rtterm notelemetry\rcls\r"), termID);
+                            }
+                        }
+                        this.connectionsToSetTTerm = [];
+                    }
                 }
             } else if (this.terminalCallbacks.has(id)) {
                 this.terminalCallbacks.get(id).callback(new Buffer(data));
