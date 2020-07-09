@@ -57,10 +57,11 @@ export class MultiWindowIPC {
 
     public sendToWindow(channel: string, key: object, ...data: any[]) {
         if (key) {
-            if (!this.isValidWindow(key)) {
-                throw new Error("Tried to send to invalid window " + key);
+            if (this.isValidWindow(key)) {
+                this.windows.get(key).send(channel, ...data);
+            } else {
+                console.trace("Tried to send to invalid window " + key);
             }
-            this.windows.get(key).send(channel, ...data);
         } else {
             this.sendToAll(channel, ...data);
         }

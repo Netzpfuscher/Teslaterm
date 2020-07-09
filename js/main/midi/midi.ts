@@ -44,24 +44,37 @@ export function midiMessageReceived(ev) {
 }
 
 const expectedByteCounts = {
-    0x80: 3,
-    0x90: 3,
-    0xA0: 3,
-    0xB0: 3,
-    0xC0: 2,
-    0xD0: 2,
-    0xE0: 3,
+    0x8: 3,
+    0x9: 3,
+    0xA: 3,
+    0xB: 3,
+    0xC: 2,
+    0xD: 2,
+    0xE: 3,
 };
 
+function getVarIntLength(byteArray, base) {
+    let currentByte = byteArray[base];
+    let byteCount = 1;
+
+    while (currentByte >= 128) {
+        currentByte = byteArray[base + byteCount];
+        byteCount++;
+    }
+
+    return byteCount;
+}
+
 let received_event = false;
+
 export function playMidiEvent(event: MidiPlayer.Event): boolean {
     received_event = true;
     const trackObj = player.tracks[event.track - 1];
     // tslint:disable-next-line:no-string-literal
     const track: number[] = trackObj["data"];
-    const startIndex = event.byteIndex + trackObj.getDeltaByteCount();
+    const startIndex = event.byteIndex + getVarIntLength(track, event.byteIndex);
     const data: number[] = [track[startIndex]];
-    const len = expectedByteCounts[data[0]];
+    const len = expectedByteCounts[data[0] >> 4];
     if (!len) {
         return true;
     }

@@ -256,7 +256,7 @@ module.exports = class minprot {
 					for (let i = 0; i < num_acked; i++) {
 						//transport_fifo_pop(self);
 						let last_pop = this.transport_fifo.frames.shift();
-						last_pop.resolve();
+						if (last_pop) last_pop.resolve();
 						if (this.debug) console.log("Popping frame id=" + last_pop.min_id + " seq=" + last_pop.seq);
 					}
 					// Now retransmit the number of frames that were requested
