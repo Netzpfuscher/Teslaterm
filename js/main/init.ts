@@ -8,10 +8,11 @@ import {ScopeIPC} from "./ipc/Scope";
 import {Sliders} from "./ipc/sliders";
 import {TerminalIPC} from "./ipc/terminal";
 import * as sid from "./sid/sid";
+import * as midi from "./midi/midi";
 import {loadConfig} from "./TTConfigLoader";
 
 export let config: TTConfig;
-export const simulated = true;
+export const simulated = false;
 
 export function init() {
     config = loadConfig("config.ini");
@@ -28,6 +29,7 @@ export function init() {
 
 function tick() {
     sid.update();
+    midi.update();
     const updateButton = connection.update();
     if (updateButton) {
         MenuIPC.setConnectionButtonText(connection.connectionState.getButtonText());

@@ -53,7 +53,9 @@ const expectedByteCounts = {
     0xE0: 3,
 };
 
+let received_event = false;
 export function playMidiEvent(event: MidiPlayer.Event): boolean {
+    received_event = true;
     const trackObj = player.tracks[event.track - 1];
     // tslint:disable-next-line:no-string-literal
     const track: number[] = trackObj["data"];
@@ -70,7 +72,7 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
 }
 
 export function playMidiData(data: number[] | Uint8Array): boolean {
-    if ((simulated || hasUD3Connection()) && data[0] !== 0x00) {
+    if (hasUD3Connection() && data[0] !== 0x00) {
         if (!(data instanceof Uint8Array)) {
             data = new Uint8Array(data);
         }
@@ -79,6 +81,20 @@ export function playMidiData(data: number[] | Uint8Array): boolean {
         checkTransientDisabled();
         return true;
     } else {
-        return false;
+        return simulated && data[0] !== 0;
+    }
+}
+
+export function update(): void {
+    // The MIDI player never outputs multiple events at the same time (always at least 5 ms between). This can result
+    // in tones that should start at once starting with a noticeable delay if the main loop runs between the 2 events.
+    // This loop forces the MIDI player to output all events that should have played before now
+    // It is not necessary to reset received_event before the loop since it isn't necessary to run the loop if no events
+    // were processed since the last tick
+    let i = 0;
+    while (received_event && i < 20) {
+        ++i;
+        received_event = false;
+        player.playLoop(false);
     }
 }
