@@ -87,6 +87,8 @@ class ConfigSection {
             const ret = retEntry.value;
             if (typeof (defaultValue) === "number" && typeof (ret) === "string") {
                 return parseInt(ret) as unknown as T;
+            } else if (typeof (defaultValue) === "boolean" && typeof (ret) === "string") {
+                return (ret === "true") as unknown as T;
             } else {
                 return ret as T;
             }
@@ -143,10 +145,13 @@ export function loadConfig(filename: string): TTConfig {
             "ethernet",
             "Default settings for ethernet connections to UD3 node instances"
         );
-        ret.remote_ip = ethernet.getOrWrite("remote_ip", "localhost", changed);
-        ret.midiPort = ethernet.getOrWrite("midiport", 12001, changed);
-        ret.telnetPort = ethernet.getOrWrite("telnetport", 2321, changed);
-        ret.sidPort = ethernet.getOrWrite("sidport", 6581, changed);
+        ret.ethernet.remote_ip = ethernet.getOrWrite("remote_ip", "localhost", changed);
+        ret.ethernet.midiPort = ethernet.getOrWrite("midiport", 12001, changed,
+            "Default remove port for RTP midi");
+        ret.ethernet.telnetPort = ethernet.getOrWrite("telnetport", 2321, changed,
+            "Default remote port for telnet and telemetry");
+        ret.ethernet.sidPort = ethernet.getOrWrite("sidport", 6581, changed,
+            "Default remote port for netSID");
     }
     {
         let serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
@@ -156,10 +161,17 @@ export function loadConfig(filename: string): TTConfig {
         } else {
             defaultPort = "/dev/ttyUSB0";
         }
-        ret.serial_port = serial.getOrWrite("port", defaultPort, changed);
-        ret.baudrate = serial.getOrWrite("baudrate", 460_800, changed);
-        ret.vendorID = serial.getOrWrite("vendor_id", "1a86", changed);
-        ret.productID = serial.getOrWrite("product_id", "7523", changed);
+        ret.serial.serial_port = serial.getOrWrite("port", defaultPort, changed);
+        ret.serial.baudrate = serial.getOrWrite("baudrate", 460_800, changed);
+        ret.serial.vendorID = serial.getOrWrite("vendor_id", "1a86", changed);
+        ret.serial.productID = serial.getOrWrite("product_id", "7523", changed);
+    }
+    {
+        let rtpmidi = config.getOrCreateSection("rtpmidi", "Settings for the RTP-MIDI server hosted by Teslaterm/UD3-node");
+        ret.midi.runMidiServer = rtpmidi.getOrWrite("enabled", true, changed);
+        ret.midi.port = rtpmidi.getOrWrite("port", 12001, changed);
+        ret.midi.localName = rtpmidi.getOrWrite("localName", "Teslaterm", changed);
+        ret.midi.bonjourName = rtpmidi.getOrWrite("bonjourName", "Teslaterm", changed);
     }
     {
         let udconfig = config.getOrCreateSection(

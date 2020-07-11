@@ -23,6 +23,7 @@ export function init() {
     TerminalIPC.init();
     ScopeIPC.init();
     MetersIPC.init();
+    midi.init();
     setInterval(tick, 20);
     connection.autoConnect();
 }

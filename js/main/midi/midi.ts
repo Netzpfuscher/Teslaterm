@@ -1,9 +1,10 @@
 import * as MidiPlayer from "midi-player-js";
 import {ScopeIPC} from "../ipc/Scope";
-import {simulated} from "../init";
+import {config, simulated} from "../init";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import {getUD3Connection, hasUD3Connection} from "../connection/connection";
 import * as scripting from "../scripting";
+import * as rtpmidi from "rtpmidi";
 
 export const kill_msg = new Buffer([0xB0, 0x77, 0x00]);
 
@@ -104,10 +105,23 @@ export function update(): void {
     // This loop forces the MIDI player to output all events that should have played before now
     // It is not necessary to reset received_event before the loop since it isn't necessary to run the loop if no events
     // were processed since the last tick
-    let i = 0;
-    while (received_event && i < 20) {
-        ++i;
-        received_event = false;
-        player.playLoop(false);
+    if (player.isPlaying()) {
+        let i = 0;
+        while (received_event && i < 20) {
+            ++i;
+            received_event = false;
+            player.playLoop(false);
+        }
+    }
+}
+
+export function init() {
+    if (config.midi.runMidiServer) {
+        const session = rtpmidi.manager.createSession({
+            localName: config.midi.localName,
+            bonjourName: config.midi.bonjourName,
+            port: config.midi.port,
+        });
+        session.on("message", (delta, data) => playMidiData(data));
     }
 }

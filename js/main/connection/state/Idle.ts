@@ -79,7 +79,7 @@ export class Idle implements IConnectionState {
         : Promise<UD3Connection | undefined> {
         const all = await SerialPort.list();
         for (const port of all) {
-            if (port.vendorId === config.vendorID && port.productId === config.productID) {
+            if (port.vendorId === config.serial.vendorID && port.productId === config.serial.productID) {
                 TerminalIPC.println("Auto connecting to " + port.path);
                 return create(port.path, baudrate);
             }

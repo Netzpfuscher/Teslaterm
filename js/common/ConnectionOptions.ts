@@ -13,12 +13,12 @@ export const sid_port = "sid_port";
 
 export function getDefaultConnectOptions(for_autoconnect: boolean, config: TTConfig): any {
     let ret = {
-        serial_port: config.serial_port,
-        baudrate: config.baudrate,
-        remote_ip: config.remote_ip,
-        telnet_port: config.telnetPort,
-        midi_port: config.midiPort,
-        sid_port: config.sidPort
+        serial_port: config.serial.serial_port,
+        baudrate: config.serial.baudrate,
+        remote_ip: config.ethernet.remote_ip,
+        telnet_port: config.ethernet.telnetPort,
+        midi_port: config.ethernet.midiPort,
+        sid_port: config.ethernet.sidPort
     };
     if (connection_types.has(config.autoconnect)) {
         ret[connection_type] = config.autoconnect;
