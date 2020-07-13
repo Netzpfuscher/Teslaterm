@@ -80,7 +80,6 @@ export class PlayerState {
     }
 
     public stopPlaying(): void {
-        playMidiData(kill_msg);
         if (this.currentFile === null || this.state !== PlayerActivity.playing) {
             TerminalIPC.println("No media file is currently playing");
             return;

@@ -1,10 +1,11 @@
 import * as MidiPlayer from "midi-player-js";
-import {ScopeIPC} from "../ipc/Scope";
-import {config, simulated} from "../init";
-import {checkTransientDisabled, media_state} from "../media/media_player";
-import {getUD3Connection, hasUD3Connection} from "../connection/connection";
-import * as scripting from "../scripting";
 import * as rtpmidi from "rtpmidi";
+import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
+import {getUD3Connection, hasUD3Connection} from "../connection/connection";
+import {config, simulated} from "../init";
+import {ScopeIPC} from "../ipc/Scope";
+import {checkTransientDisabled, media_state} from "../media/media_player";
+import * as scripting from "../scripting";
 
 export const kill_msg = new Buffer([0xB0, 0x77, 0x00]);
 
@@ -20,28 +21,20 @@ export function stopMidiFile() {
     player.stop();
     ScopeIPC.drawChart();
     stopMidiOutput();
+    scripting.onMidiStopped();
 }
 
 export function stopMidiOutput() {
-    playMidiData([0xB0, 0x7B, 0x00]);
+    playMidiData(kill_msg);
 }
 
 function processMidiFromPlayer(event: MidiPlayer.Event) {
     if (playMidiEvent(event)) {
         media_state.progress = 100 - player.getSongPercentRemaining();
     } else if (!simulated && !hasUD3Connection()) {
-        media_state.stopPlaying();
-        scripting.onMidiStopped();
+        stopMidiFile();
     }
     ScopeIPC.updateMediaInfo();
-}
-
-export function stop() {
-    player.stop();
-}
-
-export function midiMessageReceived(ev) {
-    playMidiData(ev.data);
 }
 
 const expectedByteCounts = {
@@ -112,6 +105,8 @@ export function update(): void {
             received_event = false;
             player.playLoop(false);
         }
+    } else if (media_state.state == PlayerActivity.playing && media_state.type == MediaFileType.midi) {
+        media_state.stopPlaying();
     }
 }
 
