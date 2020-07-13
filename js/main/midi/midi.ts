@@ -1,10 +1,11 @@
 import * as MidiPlayer from "midi-player-js";
-import {ScopeIPC} from "../ipc/Scope";
-import {config, simulated} from "../init";
-import {checkTransientDisabled, media_state} from "../media/media_player";
-import {getUD3Connection, hasUD3Connection} from "../connection/connection";
-import * as scripting from "../scripting";
 import * as rtpmidi from "rtpmidi";
+import {SynthType} from "../../common/CommonTypes";
+import {getUD3Connection, hasUD3Connection} from "../connection/connection";
+import {config, simulated} from "../init";
+import {ScopeIPC} from "../ipc/Scope";
+import {checkTransientDisabled, media_state} from "../media/media_player";
+import * as scripting from "../scripting";
 
 export const kill_msg = new Buffer([0xB0, 0x77, 0x00]);
 
@@ -122,6 +123,12 @@ export function init() {
             bonjourName: config.midi.bonjourName,
             port: config.midi.port,
         });
-        session.on("message", (delta, data) => playMidiData(data));
+        session.on("message", async (delta, data) => {
+            if (hasUD3Connection()) {
+                await getUD3Connection().setSynth(SynthType.MIDI, true);
+                media_state.stopPlaying();
+                playMidiData(data);
+            }
+        });
     }
 }

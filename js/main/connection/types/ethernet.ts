@@ -71,7 +71,7 @@ class EthernetConnection extends UD3Connection {
     public tick(): void {
     }
 
-    public async setSynth(type: SynthType): Promise<void> {
+    public async setSynthImpl(type: SynthType): Promise<void> {
         const id = toCommandID(type);
         return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
     }

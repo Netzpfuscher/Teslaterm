@@ -9,14 +9,15 @@ export class CommandInterface {
     public readonly sendCommand: (c: string) => Promise<void>;
     public readonly setRelativeOntime: (value: number) => void;
     private readonly preClear: () => void;
-    private readonly setSynthInt: (type: SynthType) => Promise<void>;
 
-    constructor(sendCommand: (c: string) => Promise<void>, preClear: () => void, setRelativeOntime: (value: number) => void,
-                setSynth: (type: SynthType) => Promise<void>) {
+    constructor(
+        sendCommand: (c: string) => Promise<void>,
+        preClear: () => void,
+        setRelativeOntime: (value: number) => void,
+    ) {
         this.sendCommand = sendCommand;
         this.preClear = preClear;
         this.setRelativeOntime = setRelativeOntime;
-        this.setSynthInt = setSynth;
     }
 
     public async clear() {
@@ -80,23 +81,6 @@ export class CommandInterface {
 
     public async setParam(param: string, value: string) {
         await this.sendCommand('set ' + param + ' ' + value + '\r');
-    }
-
-    public async setSynth(type: MediaFileType) {
-        let ud3Type: SynthType;
-        switch (type) {
-            case MediaFileType.none:
-                ud3Type = SynthType.NONE;
-                break;
-            case MediaFileType.midi:
-                ud3Type = SynthType.MIDI;
-                break;
-            case MediaFileType.sid_dmp:
-            case MediaFileType.sid_emulated:
-                ud3Type = SynthType.SID;
-                break;
-        }
-        await this.setSynthInt(ud3Type);
     }
 
     public async setTransientEnabled(enable: boolean) {

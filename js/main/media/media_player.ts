@@ -3,7 +3,7 @@
 import * as path from "path";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
-import {commands} from "../connection/connection";
+import {commands, getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {transientActive} from "../connection/telemetry/UD3State";
 import {ScopeIPC} from "../ipc/Scope";
 import {TerminalIPC} from "../ipc/terminal";
@@ -61,7 +61,9 @@ export class PlayerState {
         this.startCallback = startCallback;
         this.stopCallback = stopCallback;
         this.progress = 0;
-        await commands.setSynth(type);
+        if (hasUD3Connection()) {
+            await getUD3Connection().setSynthByFiletype(type, false);
+        }
     }
 
     public async startPlaying(): Promise<void> {
