@@ -9,8 +9,9 @@ export module FileUploadIPC {
     async function loadFile(source: object, name: string, data: number[]) {
         const file = new TransmittedFile(name, new Uint8Array(data));
         const extension = file.name.substring(file.name.lastIndexOf(".") + 1);
-        if (extension === "js") {
-            ScriptingIPC.loadScript(file);
+        if (extension === "zip") {
+            //TODO support plain JS scripts?
+            await ScriptingIPC.loadScript(file);
         } else if (extension === "cyacd") {
             if (!startBootloading(file.contents)) {
                 TerminalIPC.println("Connection does not support bootloading");

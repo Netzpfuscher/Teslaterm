@@ -21,7 +21,7 @@ export function stopMidiFile() {
     player.stop();
     ScopeIPC.drawChart();
     stopMidiOutput();
-    scripting.onMidiStopped();
+    scripting.onMediaStopped();
 }
 
 export function stopMidiOutput() {

@@ -20,9 +20,6 @@ export const manualCommands = new CommandInterface(
     },
     (val: number) => {
         throw new Error();
-    },
-    async (t: SynthType) => {
-        throw new Error();
     }
 );
 
@@ -35,9 +32,6 @@ export const commands = new CommandInterface(
     () => {
     },
     (val: number) => {
-        throw new Error();
-    },
-    async (t: SynthType) => {
         throw new Error();
     }
 );

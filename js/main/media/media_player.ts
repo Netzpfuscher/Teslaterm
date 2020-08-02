@@ -1,13 +1,13 @@
 //TODO MIDI
 //TODO slider messages
 import * as path from "path";
+import {mapDefined} from "tslint/lib/utils";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {commands, getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {transientActive} from "../connection/telemetry/UD3State";
 import {ScopeIPC} from "../ipc/Scope";
 import {TerminalIPC} from "../ipc/terminal";
-import {kill_msg, playMidiData} from "../midi/midi";
 import {loadMidiFile} from "../midi/midi_file";
 import * as scripting from "../scripting";
 import {loadSidFile} from "../sid/sid";
@@ -91,7 +91,7 @@ export class PlayerState {
         }
         this.stateInt = PlayerActivity.idle;
         ScopeIPC.updateMediaInfo();
-        scripting.onMidiStopped();
+        scripting.onMediaStopped();
     }
 }
 
@@ -110,7 +110,15 @@ export function checkTransientDisabled() {
     }
 }
 
+export function isMediaFile(filename: string): boolean {
+    const extension = path.extname(filename).substr(1).toLowerCase();
+    return extension === "mid" || extension === "sid" || extension === "dmp";
+}
+
 export async function loadMediaFile(file: TransmittedFile): Promise<void> {
+    if (media_state.state === PlayerActivity.playing) {
+        media_state.stopPlaying();
+    }
     const extension = path.extname(file.name).substr(1).toLowerCase();
     if (extension === "mid") {
         await loadMidiFile(file);
