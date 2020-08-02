@@ -74,7 +74,7 @@ export class PlainSerialConnection extends UD3Connection {
         await this.sendAsync(data);
     }
 
-    setSynth(type: SynthType): Promise<void> {
+    setSynthImpl(type: SynthType): Promise<void> {
         const id = toCommandID(type);
         return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
     }

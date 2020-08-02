@@ -1,4 +1,4 @@
-import {SynthType} from "../../../common/CommonTypes";
+import {MediaFileType, SynthType, synthTypeFor} from "../../../common/CommonTypes";
 import {FEATURE_TIMEBASE, FEATURE_TIMECOUNT} from "../../../common/constants";
 import {Endianness, to_ud3_time} from "../../helper";
 import {config} from "../../init";
@@ -30,6 +30,7 @@ export class TerminalData {
 
 export abstract class UD3Connection {
     protected terminalCallbacks: Map<TerminalHandle, TerminalData> = new Map<TerminalHandle, TerminalData>();
+    protected lastSynthType: SynthType = SynthType.NONE;
 
     abstract sendTelnet(data: Buffer, handle: TerminalHandle): Promise<void>;
 
@@ -45,7 +46,7 @@ export abstract class UD3Connection {
 
     abstract tick(): void;
 
-    abstract setSynth(type: SynthType): Promise<void>;
+    protected abstract setSynthImpl(type: SynthType): Promise<void>;
 
     abstract getMaxTerminalID(): number;
 
@@ -87,6 +88,17 @@ export abstract class UD3Connection {
             return to_ud3_time(now, timebase, direction, Endianness.BIG_ENDIAN);
         } else {
             return to_ud3_time(now, timebase, "down", Endianness.BIG_ENDIAN);
+        }
+    }
+
+    public async setSynthByFiletype(type: MediaFileType, onlyIfMismatched: boolean) {
+        await this.setSynth(synthTypeFor(type), onlyIfMismatched);
+    }
+
+    public async setSynth(type: SynthType, onlyIfMismatched: boolean) {
+        if (!onlyIfMismatched || type !== this.lastSynthType) {
+            await this.setSynthImpl(type);
+            this.lastSynthType = type;
         }
     }
 }

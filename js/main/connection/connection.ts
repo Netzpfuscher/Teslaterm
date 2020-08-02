@@ -28,12 +28,7 @@ export const commands = new CommandInterface(
         // \033=\u1B
         TerminalIPC.print('\u001B[2J\u001B[0;0H');
     },
-    Sliders.setRelativeOntime,
-    async (t: SynthType) => {
-        if (hasUD3Connection()) {
-            await getUD3Connection().setSynth(t);
-        }
-    }
+    Sliders.setRelativeOntime
 );
 
 export async function startConf() {
@@ -43,7 +38,7 @@ export async function startConf() {
     await commands.setBPS(Sliders.values.bps);
     await commands.setBurstOntime(Sliders.values.burstOntime);
     await commands.setBurstOfftime(Sliders.values.burstOfftime);
-    await commands.setSynth(media_state.type);
+    await getUD3Connection().setSynthByFiletype(media_state.type, false);
     await commands.sendCommand('kill reset\r');
     await commands.sendCommand('tterm start\r');
     await commands.sendCommand('cls\r');

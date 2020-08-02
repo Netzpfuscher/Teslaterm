@@ -10,7 +10,7 @@ jobs:
     name: Create artifacts
     runs-on: ubuntu-latest
     env:
-      release: ${{ github.event_name == 'create' }}
+      release: ${{ github.event_name == 'create' && startsWith(github.ref, 'v')}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2

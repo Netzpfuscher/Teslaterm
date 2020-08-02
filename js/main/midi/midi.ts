@@ -1,6 +1,6 @@
 import * as MidiPlayer from "midi-player-js";
 import * as rtpmidi from "rtpmidi";
-import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
+import {MediaFileType, PlayerActivity, SynthType} from "../../common/CommonTypes";
 import {getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {config, simulated} from "../init";
 import {ScopeIPC} from "../ipc/Scope";
@@ -117,6 +117,12 @@ export function init() {
             bonjourName: config.midi.bonjourName,
             port: config.midi.port,
         });
-        session.on("message", (delta, data) => playMidiData(data));
+        session.on("message", async (delta, data) => {
+            if (hasUD3Connection()) {
+                await getUD3Connection().setSynth(SynthType.MIDI, true);
+                media_state.stopPlaying();
+                playMidiData(data);
+            }
+        });
     }
 }

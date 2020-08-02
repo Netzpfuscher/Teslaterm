@@ -31,7 +31,7 @@ export abstract class BootloadableConnection extends UD3Connection {
 
     abstract sendTelnet(data: Buffer, handle: TerminalHandle): Promise<void>;
 
-    abstract setSynth(type: SynthType): Promise<void>;
+    abstract setSynthImpl(type: SynthType): Promise<void>;
 
     abstract tick(): void;
 

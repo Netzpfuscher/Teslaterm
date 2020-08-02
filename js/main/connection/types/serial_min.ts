@@ -250,7 +250,7 @@ class MinSerialConnection extends BootloadableConnection {
         }
     }
 
-    public async setSynth(type: SynthType): Promise<void> {
+    public async setSynthImpl(type: SynthType): Promise<void> {
         if (this.min_wrapper) {
             await this.min_wrapper.min_queue_frame(MIN_ID_SYNTH, [type]);
         }
