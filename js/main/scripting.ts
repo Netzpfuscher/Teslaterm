@@ -57,7 +57,20 @@ export class Script {
 
     public static async create(zipData: ArrayBuffer): Promise<Script | null> {
         const zip = await JSZip.loadAsync(zipData);
-        const script = await zip.file("main.js").async("string");
+
+        let scriptName = null;
+        for (const name of Object.keys(zip.files)) {
+            if (name.endsWith(".js")) {
+                if (scriptName) {
+                    throw new Error("Multiple scripts in zip: " + scriptName + " and " + name);
+                }
+                scriptName = name;
+            }
+        }
+        if (scriptName == null) {
+            throw new Error("Did not find script in zip file!");
+        }
+        const script = await zip.file(scriptName).async("string");
         const ret = new Script(zip, script);
         for (const entry of ret.queue) {
             await entry.assertApplicable();
