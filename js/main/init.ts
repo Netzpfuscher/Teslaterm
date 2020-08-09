@@ -5,6 +5,7 @@ import {MenuIPC} from "./ipc/Menu";
 import {MetersIPC} from "./ipc/meters";
 import {MiscIPC} from "./ipc/Misc";
 import {ScopeIPC} from "./ipc/Scope";
+import {ScriptingIPC} from "./ipc/Scripting";
 import {Sliders} from "./ipc/sliders";
 import {TerminalIPC} from "./ipc/terminal";
 import * as sid from "./sid/sid";
@@ -23,6 +24,7 @@ export function init() {
     TerminalIPC.init();
     ScopeIPC.init();
     MetersIPC.init();
+    ScriptingIPC.init();
     midi.init();
     setInterval(tick, 20);
     connection.autoConnect();

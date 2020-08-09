@@ -42,8 +42,6 @@ export module MenuIPC {
     export function init() {
         processIPC.on(IPCConstantsToMain.menu.startMedia, () => media_state.startPlaying());
         processIPC.on(IPCConstantsToMain.menu.stopMedia, () => media_state.stopPlaying());
-        processIPC.on(IPCConstantsToMain.menu.startScript, ScriptingIPC.startScript);
-        processIPC.on(IPCConstantsToMain.menu.stopScript, ScriptingIPC.stopScript);
         processIPC.on(IPCConstantsToMain.menu.connectButton, pressButton);
         processIPC.on(IPCConstantsToMain.menu.requestUDConfig, source => {
                 configRequestQueue.push(source);

@@ -1,6 +1,7 @@
 import {UD3State} from "../../common/IPCConstantsToRenderer";
 import {commands, manualCommands} from "../ipc/commands";
 import {MenuIPC} from "../ipc/Menu";
+import {ScriptingIPC} from "../ipc/Scripting";
 import * as sliders from "./sliders";
 import * as ui_helper from "./ui_helper";
 
@@ -52,10 +53,10 @@ export function onCtrlMenuClick(event) {
             MenuIPC.stopPlaying();
             break;
         case "mnu_script:Start":
-            MenuIPC.startScript();
+            ScriptingIPC.startScript();
             break;
         case "mnu_script:Stop":
-            MenuIPC.startScript();
+            ScriptingIPC.stopScript();
             break;
         case "kill_set":
             commands.setKill();

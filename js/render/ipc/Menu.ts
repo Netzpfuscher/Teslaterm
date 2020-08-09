@@ -18,14 +18,6 @@ export namespace MenuIPC {
         processIPC.send(IPCConstantsToMain.menu.stopMedia);
     }
 
-    export function startScript() {
-        processIPC.send(IPCConstantsToMain.menu.startScript);
-    }
-
-    export function stopScript() {
-        processIPC.send(IPCConstantsToMain.menu.stopScript);
-    }
-
     export function connectButton() {
         processIPC.send(IPCConstantsToMain.menu.connectButton);
     }

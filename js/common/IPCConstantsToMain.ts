@@ -10,12 +10,15 @@ export const IPCConstantsToMain = {
         setBurstOfftime: "slider-set-burst-offtime",
     },
     menu: {
-        startScript: "start-script",
-        stopScript: "stop-script",
         startMedia: "start-media",
         stopMedia: "stop-media",
         connectButton: "press-connect-button",
         requestUDConfig: "ud-config",
+    },
+    script: {
+        startScript: "start-script",
+        stopScript: "stop-script",
+        confirmOrDeny: "script-confirm",
     },
     rendererReady: "renderer-ready",
     midiMessage: "midi-message",
@@ -38,5 +41,15 @@ export class TransmittedFile {
     constructor(name: string, contents: Uint8Array) {
         this.name = name;
         this.contents = contents;
+    }
+}
+
+export class ConfirmReply {
+    public readonly confirmed: boolean;
+    public readonly requestID: number;
+
+    constructor(confirmed: boolean, id: number) {
+        this.confirmed = confirmed;
+        this.requestID = id;
     }
 }

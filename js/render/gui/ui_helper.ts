@@ -232,6 +232,14 @@ export function warn(message: string, onConfirmed: () => void) {
         .yes(onConfirmed);
 }
 
+export function confirmPromise(message: string, title: string): Promise<boolean> {
+    return new Promise<boolean>(resolve => {
+        w2confirm(message, title)
+            .yes(() => resolve(true))
+            .no(() => resolve(false));
+    });
+}
+
 export function changeMenuEntry(menu: string, id: string, newName: string): void {
     const items = (w2ui.toolbar.get(menu, false) as W2UI.W2Menu).items;
     for (const item of items) {

@@ -20,6 +20,9 @@ export const IPCConstantsToRenderer = {
         setMediaTitle: "menu-media-title",
         setScriptName: "menu-script-name",
     },
+    script: {
+        requestConfirm: "script-request-confirm"
+    },
     scope: {
         configure: "scope-config",
         addValues: "scope-values",
@@ -138,5 +141,17 @@ export class MediaState {
         this.state = state;
         this.title = title;
         this.type = type;
+    }
+}
+
+export class ConfirmationRequest {
+    public readonly confirmationID: number;
+    public readonly message: string;
+    public readonly title: string | undefined;
+
+    constructor(id: number, message: string, title?: string) {
+        this.confirmationID = id;
+        this.message = message;
+        this.title = title;
     }
 }

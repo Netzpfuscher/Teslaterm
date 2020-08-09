@@ -11,6 +11,7 @@ import {MetersIPC} from "./ipc/meters";
 import {maxBPS, maxBurstOfftime, maxBurstOntime, maxOntime} from "../common/commands";
 import {MiscIPC} from "./ipc/Misc";
 import {ScopeIPC} from "./ipc/scope";
+import {ScriptingIPC} from "./ipc/Scripting";
 import {SlidersIPC} from "./ipc/sliders";
 import * as midi_ui from "./gui/midi_ui";
 
@@ -116,6 +117,7 @@ export function init() {
             MiscIPC.init();
             ScopeIPC.init();
             SlidersIPC.init();
+            ScriptingIPC.init();
 
             w2ui.layout.on({type: 'resize', execute: 'after'}, () => {
                 scope.onResize();

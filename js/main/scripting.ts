@@ -2,6 +2,7 @@ import * as JSZip from "jszip";
 import * as vm from 'vm';
 import {TransmittedFile} from "../common/IPCConstantsToMain";
 import {commands} from "./connection/connection";
+import {ScriptingIPC} from "./ipc/Scripting";
 import {Sliders} from "./ipc/sliders";
 import {TerminalIPC} from "./ipc/terminal";
 import {isMediaFile, media_state} from "./media/media_player";
@@ -24,6 +25,7 @@ export class Script {
     private interruptFunc: (() => any) | null = null;
     private readonly queue: ScriptQueueEntry[];
     private readonly zip: JSZip;
+    private starterKey: object;
 
     private constructor(zip: JSZip, code: string) {
         this.zip = zip;
@@ -46,7 +48,7 @@ export class Script {
             setOntime: this.wrapForSandboxNonPromise(d => commands.setRelativeOntime(d)),
             setTransientMode: this.wrapForSandboxNonPromise(enabled => commands.setTransientEnabled(enabled)),
             stopMedia: this.wrapForSandboxNonPromise(() => media_player.media_state.stopPlaying()),
-            waitForConfirmation: this.wrapForSandbox(waitForConfirmation),
+            waitForConfirmation: this.wrapForSandbox((msg, title) => this.waitForConfirmation(msg, title)),
         });
         try {
             vm.runInContext(code, sandbox, {timeout: 1000});
@@ -90,11 +92,12 @@ export class Script {
         return this.running;
     }
 
-    public async start() {
+    public async start(starterKey: object) {
         if (this.running) {
             TerminalIPC.println("The script is already running.");
             return;
         }
+        this.starterKey = starterKey;
         Sliders.setRelativeAllowed(false);
         this.running = true;
         try {
@@ -183,18 +186,13 @@ export class Script {
         const contents = await fileInZip.async("uint8array");
         await media_player.loadMediaFile(new TransmittedFile(file, contents));
     }
-}
 
-function waitForConfirmation(text, title): Promise<any> {
-    return new Promise((resolve, reject) => {
-        resolve();
-        //TODO this needs IPC
-        //w2confirm(text, title)
-        //    .yes(resolve)
-        //    .no(() => {
-        //        reject("User did not confirm");
-        //    });
-    });
+    private async waitForConfirmation(text, title): Promise<any> {
+        const confirmed = await ScriptingIPC.requestConfirmation(this.starterKey, text, title);
+        if (!confirmed) {
+            throw new Error("User did not confirm");
+        }
+    }
 }
 
 export let onMediaStopped = () => {
