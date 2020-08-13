@@ -4,7 +4,8 @@ export const IPCConstantsToMain = {
     automaticCommand: "automatic-command",
     manualCommand: "manual-command",
     sliders: {
-        setOntime: "slider-set-ontime",
+        setOntimeRelative: "slider-set-ontime-rel",
+        setOntimeAbsolute: "slider-set-ontime-abs",
         setBPS: "slider-set-bps",
         setBurstOntime: "slider-set-burst-ontime",
         setBurstOfftime: "slider-set-burst-offtime",

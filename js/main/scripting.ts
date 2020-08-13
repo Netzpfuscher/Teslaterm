@@ -3,7 +3,7 @@ import * as vm from 'vm';
 import {TransmittedFile} from "../common/IPCConstantsToMain";
 import {commands} from "./connection/connection";
 import {ScriptingIPC} from "./ipc/Scripting";
-import {Sliders} from "./ipc/sliders";
+import {SlidersIPC} from "./ipc/sliders";
 import {TerminalIPC} from "./ipc/terminal";
 import {isMediaFile, media_state} from "./media/media_player";
 import * as media_player from './media/media_player';
@@ -42,10 +42,10 @@ export class Script {
                 TerminalIPC.println(s);
                 return Promise.resolve();
             }),
-            setBPS: this.wrapForSandboxNonPromise(d => commands.setBPS(d)),
-            setBurstOfftime: this.wrapForSandboxNonPromise(d => commands.setBurstOfftime(d)),
-            setBurstOntime: this.wrapForSandboxNonPromise(d => commands.setBurstOntime(d)),
-            setOntime: this.wrapForSandboxNonPromise(d => commands.setRelativeOntime(d)),
+            setBPS: this.wrapForSandboxNonPromise(d => SlidersIPC.setBPS(d)),
+            setBurstOfftime: this.wrapForSandboxNonPromise(d => SlidersIPC.setBurstOfftime(d)),
+            setBurstOntime: this.wrapForSandboxNonPromise(d => SlidersIPC.setBurstOntime(d)),
+            setOntime: this.wrapForSandboxNonPromise(d => SlidersIPC.setRelativeOntime(d)),
             setTransientMode: this.wrapForSandboxNonPromise(enabled => commands.setTransientEnabled(enabled)),
             stopMedia: this.wrapForSandboxNonPromise(() => media_player.media_state.stopPlaying()),
             waitForConfirmation: this.wrapForSandbox((msg, title) => this.waitForConfirmation(msg, title)),
@@ -98,7 +98,7 @@ export class Script {
             return;
         }
         this.starterKey = starterKey;
-        Sliders.setRelativeAllowed(false);
+        SlidersIPC.setRelativeAllowed(false);
         this.running = true;
         try {
             for (const entry of this.queue) {
@@ -116,7 +116,7 @@ export class Script {
             console.error(x);
         }
         this.running = false;
-        Sliders.setRelativeAllowed(true);
+        SlidersIPC.setRelativeAllowed(true);
     }
 
     private wrapForSandboxNonPromise(func: (...args: any[]) => void): (...args: any[]) => void {

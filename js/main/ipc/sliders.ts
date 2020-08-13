@@ -1,47 +1,65 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
-import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
+import {IPCConstantsToRenderer, SliderState} from "../../common/IPCConstantsToRenderer";
 import {commands} from "../connection/connection";
 import {processIPC} from "./IPCProvider";
 
-export module Sliders {
-    export class SliderValues {
-        public ontime: number = 0;
-        public bps: number = 20;
-        public burstOntime: number = 0;
-        public burstOfftime: number = 500;
+export module SlidersIPC {
+    export let state = new SliderState();
+
+    export async function setAbsoluteOntime(val: number, key?: object) {
+        state.ontimeAbs = val;
+        await commands.setOntime(state.ontime);
+        sendSliderSync(key);
     }
 
-    export let values = new SliderValues();
-
-    export function setRelativeOntime(val: number) {
-        processIPC.sendToAll(IPCConstantsToRenderer.sliders.relativeOntime, val);
+    export async function setRelativeOntime(val: number, key?: object) {
+        state.ontimeRel = val;
+        await commands.setOntime(state.ontime);
+        sendSliderSync(key);
     }
 
-    export function setRelativeAllowed(allowed: boolean) {
-        processIPC.sendToAll(IPCConstantsToRenderer.sliders.enableRelativeOntime, allowed);
+    export async function setBPS(val: number, key?: object) {
+        state.bps = val;
+        await commands.setBPS(val);
+        sendSliderSync(key);
     }
 
-    export function setOntimeToZero() {
-        processIPC.sendToAll(IPCConstantsToRenderer.sliders.setOntimeToZero);
+    export async function setBurstOntime(val: number, key?: object) {
+        state.burstOntime = val;
+        await commands.setBurstOntime(val);
+        sendSliderSync(key);
+    }
+
+    export async function setBurstOfftime(val: number, key?: object) {
+        state.burstOfftime = val;
+        await commands.setBurstOfftime(val);
+        sendSliderSync(key);
+    }
+
+    export function setRelativeAllowed(allowed: boolean, key?: object) {
+        state.relativeAllowed = allowed;
+        sendSliderSync(key);
+    }
+
+    function sendSliderSync(connection?: object) {
+        //TODO s delta, if this proves to be too slow
+        processIPC.sendToAllExcept(IPCConstantsToRenderer.sliders.syncSettings, connection, state);
+    }
+
+    function callSwapped(f: (val: number, key: object) => Promise<any>) {
+        return (key: object, val: number) => {
+            f(val, key)
+                .catch((r) => {
+                    console.log("Error while sending command: ", r);
+                });
+        };
     }
 
     export function init() {
-        //TODO move sliders in other windows, and on connect
-        processIPC.on(IPCConstantsToMain.sliders.setOntime, (source, value: number) => {
-            Sliders.values.ontime = value;
-            commands.setOntime(value);
-        });
-        processIPC.on(IPCConstantsToMain.sliders.setBPS, (source, value: number) => {
-            Sliders.values.bps = value;
-            commands.setBPS(value);
-        });
-        processIPC.on(IPCConstantsToMain.sliders.setBurstOntime, (source, value: number) => {
-            Sliders.values.burstOntime = value;
-            commands.setBurstOntime(value);
-        });
-        processIPC.on(IPCConstantsToMain.sliders.setBurstOfftime, (source, value: number) => {
-            Sliders.values.burstOfftime = value;
-            commands.setBurstOfftime(value);
-        });
+        processIPC.on(IPCConstantsToMain.sliders.setOntimeAbsolute, callSwapped(setAbsoluteOntime));
+        processIPC.on(IPCConstantsToMain.sliders.setOntimeRelative, callSwapped(setRelativeOntime));
+        processIPC.on(IPCConstantsToMain.sliders.setBPS, callSwapped(setBPS));
+        processIPC.on(IPCConstantsToMain.sliders.setBurstOntime, callSwapped(setBurstOntime));
+        processIPC.on(IPCConstantsToMain.sliders.setBurstOfftime, callSwapped(setBurstOfftime));
     }
 }

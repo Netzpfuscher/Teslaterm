@@ -6,9 +6,7 @@ export const IPCConstantsToRenderer = {
     udConfig: "ud-config",
     openConnectionUI: "connection-ui",
     sliders: {
-        relativeOntime: "slider-relative-ontime",
-        enableRelativeOntime: "slider-enable-relative-ontime",
-        setOntimeToZero: "slider-ontime-to-0",
+        syncSettings: "slider-sync"
     },
     meters: {
         setValue: "meter-set-value",
@@ -153,5 +151,18 @@ export class ConfirmationRequest {
         this.confirmationID = id;
         this.message = message;
         this.title = title;
+    }
+}
+
+export class SliderState {
+    public ontimeAbs: number = 0;
+    public ontimeRel: number = 100;
+    public bps: number = 20;
+    public burstOntime: number = 0;
+    public burstOfftime: number = 500;
+    public relativeAllowed: boolean = true;
+
+    public get ontime() {
+        return this.ontimeAbs * this.ontimeRel / 100;
     }
 }

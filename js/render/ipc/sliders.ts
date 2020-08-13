@@ -1,23 +1,19 @@
 import {processIPC} from "./IPCProvider";
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
-import {IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
-import {ontime} from "../gui/sliders";
+import {IPCConstantsToRenderer, SliderState} from "../../common/IPCConstantsToRenderer";
+import {ontime, updateSliderState} from "../gui/sliders";
 
 export namespace SlidersIPC {
     export function init() {
-        processIPC.on(IPCConstantsToRenderer.sliders.enableRelativeOntime, (enable: boolean) => {
-            ontime.setRelativeAllowed(enable);
-        });
-        processIPC.on(IPCConstantsToRenderer.sliders.relativeOntime, (val: number) => {
-            ontime.setRelativeOntime(val);
-        });
-        processIPC.on(IPCConstantsToRenderer.sliders.setOntimeToZero, () => {
-            ontime.setToZero();
-        });
+        processIPC.on(IPCConstantsToRenderer.sliders.syncSettings, updateSliderState);
     }
 
-    export function setOntime(val: number) {
-        processIPC.send(IPCConstantsToMain.sliders.setOntime, val);
+    export function setRelativeOntime(val: number) {
+        processIPC.send(IPCConstantsToMain.sliders.setOntimeRelative, val);
+    }
+
+    export function setAbsoluteOntime(val: number) {
+        processIPC.send(IPCConstantsToMain.sliders.setOntimeAbsolute, val);
     }
 
     export function setBPS(val: number) {

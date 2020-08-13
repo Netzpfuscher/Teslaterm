@@ -59,19 +59,19 @@ export class CommandInterface {
     }
 
     public async setOntime(ontime: number) {
-        await this.sendCommand('set pw ' + ontime + '\r');
+        await this.sendCommand('set pw ' + ontime.toFixed(0) + '\r');
     }
 
     public async setBurstOntime(ontime: number) {
-        await this.sendCommand('set bon ' + ontime + '\r');
+        await this.sendCommand('set bon ' + ontime.toFixed(0) + '\r');
     }
 
     public async setBurstOfftime(offtime: number) {
-        await this.sendCommand('set boff ' + offtime + '\r');
+        await this.sendCommand('set boff ' + offtime.toFixed(0) + '\r');
     }
 
     public async setOfftime(offtime: number) {
-        await this.sendCommand('set pwd ' + offtime + '\r');
+        await this.sendCommand('set pwd ' + offtime.toFixed(0) + '\r');
     }
 
     public async setBPS(bps: number) {

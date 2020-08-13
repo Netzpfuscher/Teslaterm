@@ -1,12 +1,9 @@
 import {maxOntime} from "../../common/commands";
-import {UD3State} from "../../common/IPCConstantsToRenderer";
+import {SliderState, UD3State} from "../../common/IPCConstantsToRenderer";
 import {SlidersIPC} from "../ipc/sliders";
 import {terminal} from "./constants";
 
 export class OntimeUI {
-    get relativeVal(): number {
-        return this.relativeValInt;
-    }
 
     private readonly slider: HTMLInputElement;
     private relativeSelect: HTMLInputElement;
@@ -14,7 +11,7 @@ export class OntimeUI {
     private relative: HTMLSpanElement;
     private absolute: HTMLSpanElement;
     private absoluteVal: number = 0;
-    private relativeValInt: number = 100;
+    private relativeVal: number = 100;
     private totalVal: number = 0;
 
     public constructor() {
@@ -37,15 +34,7 @@ export class OntimeUI {
         }
     }
 
-    public setToZero() {
-        if (this.relativeSelect.checked) {
-            this.setRelativeOntime(0);
-        } else {
-            this.setAbsoluteOntime(0);
-        }
-    }
-
-    public setAbsoluteOntime(time: number) {
+    public setAbsoluteOntime(time: number, manual: boolean) {
         if (!this.relativeSelect.checked) {
             setSliderValue(null, time, this.slider);
         }
@@ -53,26 +42,31 @@ export class OntimeUI {
         this.absoluteVal = time;
         this.absolute.textContent = this.absoluteVal.toString();
         this.ontimeChanged();
+        if (manual) {
+            SlidersIPC.setAbsoluteOntime(this.absoluteVal);
+        }
     }
 
-    public setRelativeOntime(percentage: number) {
-        console.log(this);
+    public setRelativeOntime(percentage: number, manual: boolean) {
         if (this.relativeSelect.checked) {
             setSliderValue(null, percentage, this.slider);
         }
         percentage = Math.min(100, Math.max(0, percentage));
-        this.relativeValInt = percentage;
-        this.relative.textContent = this.relativeValInt.toString();
+        this.relativeVal = percentage;
+        this.relative.textContent = this.relativeVal.toString();
         this.ontimeChanged();
+        if (manual) {
+            SlidersIPC.setRelativeOntime(this.relativeVal);
+        }
     }
 
     public updateOntimeLabels() {
         if (this.relativeSelect.checked) {
-            this.relative.innerHTML = "<b>" + this.relativeValInt + "</b>";
+            this.relative.innerHTML = "<b>" + this.relativeVal + "</b>";
             this.absolute.innerHTML = this.absoluteVal.toFixed();
         } else {
             this.absolute.innerHTML = "<b>" + this.absoluteVal + "</b>";
-            this.relative.innerHTML = this.relativeValInt.toFixed();
+            this.relative.innerHTML = this.relativeVal.toFixed();
         }
         this.total.innerHTML = this.totalVal.toFixed();
     }
@@ -80,7 +74,7 @@ export class OntimeUI {
     public onRelativeOntimeSelect() {
         if (this.relativeSelect.checked) {
             this.slider.max = "100";
-            this.slider.value = this.relativeValInt.toFixed();
+            this.slider.value = this.relativeVal.toFixed();
         } else {
             this.slider.max = maxOntime.toFixed();
             this.slider.value = this.absoluteVal.toFixed();
@@ -90,15 +84,14 @@ export class OntimeUI {
 
     public onSliderMoved() {
         if (this.relativeSelect.checked) {
-            this.setRelativeOntime(parseInt(this.slider.value, 10));
+            this.setRelativeOntime(parseInt(this.slider.value, 10), true);
         } else {
-            this.setAbsoluteOntime(parseInt(this.slider.value, 10));
+            this.setAbsoluteOntime(parseInt(this.slider.value, 10), true);
         }
     }
 
     public ontimeChanged() {
-        this.totalVal = Math.round(this.absoluteVal * this.relativeValInt / 100.);
-        SlidersIPC.setOntime(this.totalVal);
+        this.totalVal = Math.round(this.absoluteVal * this.relativeVal / 100.);
         this.updateOntimeLabels();
     }
 
@@ -108,6 +101,19 @@ export class OntimeUI {
 }
 
 export let ontime: OntimeUI;
+export let state: SliderState = new SliderState();
+const bpsName = "slider1";
+const burstOntimeName = "slider2";
+const burstOfftimeName = "slider3";
+
+export function updateSliderState(state: SliderState) {
+    ontime.setAbsoluteOntime(state.ontimeAbs, false);
+    ontime.setRelativeOntime(state.ontimeRel, false);
+    ontime.setRelativeAllowed(state.relativeAllowed);
+    bpsSlider(state.bps);
+    burstOntimeSlider(state.burstOntime);
+    burstOfftimeSlider(state.burstOfftime);
+}
 
 export function updateSliderAvailability(ud3State: UD3State) {
     const busMaybeActive = ud3State.busActive || !ud3State.busControllable;
@@ -120,13 +126,13 @@ export function updateSliderAvailability(ud3State: UD3State) {
 }
 
 export function init() {
-    $("#slider1")[0].addEventListener("input", bpsSlider);
-    $("#slider2")[0].addEventListener("input", burstOntimeSlider);
-    $("#slider3")[0].addEventListener("input", burstOfftimeSlider);
     ontime = new OntimeUI();
+    $("#" + bpsName)[0].addEventListener("input", () => bpsSlider());
+    $("#" + burstOntimeName)[0].addEventListener("input", () => burstOntimeSlider());
+    $("#" + burstOfftimeName)[0].addEventListener("input", () => burstOfftimeSlider());
 }
 
-function setSliderValue(name, value, slider?) {
+function setSliderValue(name: string, value: number, slider?) {
     if (!slider) {
         slider = document.getElementById(name);
     }
@@ -137,54 +143,35 @@ function setSliderValue(name, value, slider?) {
     slider.value = value;
 }
 
-function bpsSlider() {
-    const slider = document.getElementById("slider1") as HTMLInputElement;
+function bpsSlider(value?: number) {
+    const slider = document.getElementById(bpsName) as HTMLInputElement;
     const slider_disp = document.getElementById("slider1_disp");
+    if (value) {
+        setSliderValue("", value, slider);
+    } else {
+        SlidersIPC.setBPS(Number(slider.value));
+    }
     slider_disp.innerHTML = slider.value + " Hz";
-    SlidersIPC.setBPS(Number(slider.value));
 }
 
-export function setBPS(bps) {
-    setSliderValue("slider1", bps);
-    bpsSlider();
-}
-
-export function getBPS(): number {
-    const slider = document.getElementById("slider1") as HTMLInputElement;
-    return Number(slider.value);
-}
-
-function burstOntimeSlider() {
-    const slider: HTMLInputElement = document.getElementById("slider2") as HTMLInputElement;
+function burstOntimeSlider(value?: number) {
+    const slider: HTMLInputElement = document.getElementById(burstOntimeName) as HTMLInputElement;
     const slider_disp = document.getElementById("slider2_disp");
+    if (value) {
+        setSliderValue("", value, slider);
+    } else {
+        SlidersIPC.setBurstOntime(Number(slider.value));
+    }
     slider_disp.innerHTML = slider.value + " ms";
-    SlidersIPC.setBurstOntime(Number(slider.value));
 }
 
-export function setBurstOntime(time) {
-    setSliderValue("slider2", time);
-    burstOntimeSlider();
-}
-
-export function getBurstOntime(): number {
-    const slider = document.getElementById("slider2") as HTMLInputElement;
-    return Number(slider.value);
-}
-
-function burstOfftimeSlider() {
-    const slider = document.getElementById("slider3") as HTMLInputElement;
+function burstOfftimeSlider(value?: number) {
+    const slider = document.getElementById(burstOfftimeName) as HTMLInputElement;
     const slider_disp = document.getElementById("slider3_disp");
+    if (value) {
+        setSliderValue("", value, slider);
+    } else {
+        SlidersIPC.setBurstOfftime(Number(slider.value));
+    }
     slider_disp.innerHTML = slider.value + " ms";
-    SlidersIPC.setBurstOfftime(Number(slider.value));
 }
-
-export function setBurstOfftime(time) {
-    setSliderValue("slider3", time);
-    burstOfftimeSlider();
-}
-
-export function getBurstOfftime(): number {
-    const slider = document.getElementById("slider3") as HTMLInputElement;
-    return Number(slider.value);
-}
-

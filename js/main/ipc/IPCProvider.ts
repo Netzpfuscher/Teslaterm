@@ -55,6 +55,18 @@ export class MultiWindowIPC {
         }
     }
 
+    public sendToAllExcept(channel: string, key: object, ...data: any[]) {
+        if (key && !this.isValidWindow(key)) {
+            console.trace("Tried to send to all except invalid window " + key);
+        } else {
+            for (const k of this.windows.keys()) {
+                if (k != key) {
+                    this.sendToWindow(channel, k, ...data);
+                }
+            }
+        }
+    }
+
     public sendToWindow(channel: string, key: object, ...data: any[]) {
         if (key) {
             if (this.isValidWindow(key)) {

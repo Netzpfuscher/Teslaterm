@@ -1,7 +1,7 @@
 import {CommandInterface} from "../../common/commands";
 import {SynthType} from "../../common/CommonTypes";
 import {getDefaultConnectOptions} from "../../common/ConnectionOptions";
-import {Sliders} from "../ipc/sliders";
+import {SlidersIPC} from "../ipc/sliders";
 import {TerminalIPC} from "../ipc/terminal";
 import {config} from "../init";
 import {media_state} from "../media/media_player";
@@ -28,16 +28,16 @@ export const commands = new CommandInterface(
         // \033=\u1B
         TerminalIPC.print('\u001B[2J\u001B[0;0H');
     },
-    Sliders.setRelativeOntime
+    SlidersIPC.setRelativeOntime
 );
 
 export async function startConf() {
     await commands.sendCommand('\r');
-    Sliders.setOntimeToZero();
+    await SlidersIPC.setAbsoluteOntime(0);
     await commands.sendCommand('set pw 0\r');
-    await commands.setBPS(Sliders.values.bps);
-    await commands.setBurstOntime(Sliders.values.burstOntime);
-    await commands.setBurstOfftime(Sliders.values.burstOfftime);
+    await commands.setBPS(SlidersIPC.state.bps);
+    await commands.setBurstOntime(SlidersIPC.state.burstOntime);
+    await commands.setBurstOfftime(SlidersIPC.state.burstOfftime);
     await getUD3Connection().setSynthByFiletype(media_state.type, false);
     await commands.sendCommand('kill reset\r');
     await commands.sendCommand('tterm start\r');
