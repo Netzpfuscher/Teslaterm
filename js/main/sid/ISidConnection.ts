@@ -1,3 +1,4 @@
+import {getOptionalUD3Connection} from "../connection/connection";
 import {SidFrame} from "./sid_api";
 
 export interface ISidConnection {
@@ -8,4 +9,8 @@ export interface ISidConnection {
     flush(): Promise<void>;
 
     isBusy(): boolean;
+}
+
+export function getActiveSIDConnection(): ISidConnection | null {
+    return getOptionalUD3Connection()?.getSidConnection();
 }

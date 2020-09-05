@@ -174,6 +174,11 @@ export function loadConfig(filename: string): TTConfig {
         ret.midi.bonjourName = rtpmidi.getOrWrite("bonjourName", "Teslaterm", changed);
     }
     {
+        let netsid = config.getOrCreateSection("netsid", "Settings for the NetSID server hosted by Teslaterm/UD3-node");
+        ret.netsid.enabled = netsid.getOrWrite("enabled", true, changed);
+        ret.netsid.port = netsid.getOrWrite("port", 6581, changed);
+    }
+    {
         let udconfig = config.getOrCreateSection(
             "udconfig",
             "Each entry indicates which page the corresponding UD3 option should be shown on in the UD3 config GUI"

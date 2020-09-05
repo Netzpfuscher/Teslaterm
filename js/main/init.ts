@@ -8,12 +8,14 @@ import {ScopeIPC} from "./ipc/Scope";
 import {ScriptingIPC} from "./ipc/Scripting";
 import {SlidersIPC} from "./ipc/sliders";
 import {TerminalIPC} from "./ipc/terminal";
+import {NetworkSIDServer} from "./sid/NetworkSIDServer";
 import * as sid from "./sid/sid";
 import * as midi from "./midi/midi";
 import {loadConfig} from "./TTConfigLoader";
 
 export let config: TTConfig;
 export const simulated = false;
+let sidServer: NetworkSIDServer;
 
 export function init() {
     config = loadConfig("config.ini");
@@ -28,6 +30,9 @@ export function init() {
     midi.init();
     setInterval(tick, 20);
     connection.autoConnect();
+    if (config.netsid.enabled) {
+        sidServer = new NetworkSIDServer(config.netsid.port);
+    }
 }
 
 function tick() {

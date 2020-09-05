@@ -85,6 +85,10 @@ export function getUD3Connection(): UD3Connection {
     return ret;
 }
 
+export function getOptionalUD3Connection(): UD3Connection | undefined {
+    return connectionState.getActiveConnection();
+}
+
 export function getAutoTerminal(): TerminalHandle | undefined {
     return connectionState.getAutoTerminal();
 }

@@ -19,12 +19,18 @@ export class MidiConfig {
     public bonjourName: string;
 }
 
+export class NetSidConfig {
+    public enabled: boolean;
+    public port: number;
+}
+
 export class TTConfig {
     // The type of connection to use for autoconnect: none, eth, min or serial
     public autoconnect: string;
     public readonly ethernet: EthernetConfig = new EthernetConfig();
     public readonly serial: SerialConfig = new SerialConfig();
     public readonly midi: MidiConfig = new MidiConfig();
+    public readonly netsid: NetSidConfig = new NetSidConfig();
 
     public readonly udConfigPages: Map<string, number> = new Map();
     public readonly defaultUDFeatures: Map<string, string> = new Map();

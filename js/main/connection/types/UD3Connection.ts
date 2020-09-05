@@ -95,10 +95,13 @@ export abstract class UD3Connection {
         await this.setSynth(synthTypeFor(type), onlyIfMismatched);
     }
 
-    public async setSynth(type: SynthType, onlyIfMismatched: boolean) {
+    public async setSynth(type: SynthType, onlyIfMismatched: boolean): Promise<boolean> {
         if (!onlyIfMismatched || type !== this.lastSynthType) {
             await this.setSynthImpl(type);
             this.lastSynthType = type;
+            return true;
+        } else {
+            return false;
         }
     }
 }
