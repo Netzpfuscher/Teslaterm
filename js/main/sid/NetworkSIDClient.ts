@@ -2,7 +2,7 @@ import * as net from "net";
 import {connectTCPSocket} from "../connection/tcp_helper";
 import {jspack} from "jspack";
 import {ISidConnection} from "./ISidConnection";
-import {Command, ReplyCode} from "./NetSIDConstants";
+import {Command, ReplyCode} from "./SIDConstants";
 import {SidFrame} from "./sid_api";
 
 export class NetworkSIDClient implements ISidConnection {
@@ -64,7 +64,7 @@ export class NetworkSIDClient implements ISidConnection {
     private sendCommand(command: Command, sid_number: number, data: number[]): Promise<{ code: ReplyCode, data: Buffer }> {
         return new Promise<{ code: ReplyCode, data: Buffer }>((res, rej) => {
             const packed = jspack.Pack("!BBH", [command, sid_number, data.length]).concat(data);
-            this.socket.write(new Buffer(packed));
+            this.socket.write(Buffer.from(packed));
             this.replyPromiseQueue = this.replyPromiseQueue.concat(res);
         });
     }

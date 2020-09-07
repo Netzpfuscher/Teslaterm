@@ -29,3 +29,18 @@ export enum ReplyCode {
     COUNT = 5,
     INFO = 6
 }
+
+export class TimingStandard {
+    public readonly cpu_clock: number;
+    public readonly framerate: number;
+    public readonly cycles_per_frame: number;
+
+    constructor(cpu_clock: number, framerate: number) {
+        this.cpu_clock = cpu_clock;
+        this.framerate = framerate;
+        this.cycles_per_frame = cpu_clock / framerate;
+    }
+}
+
+export const PAL = new TimingStandard(985248, 50);
+export const NTSC = new TimingStandard(1022727, 60);

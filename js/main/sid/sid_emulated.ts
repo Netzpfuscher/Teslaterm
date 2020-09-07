@@ -1,27 +1,13 @@
 //Based on https://github.com/og2t/jsSID/blob/master/source/jsSID.js
 import {SidFrame, ISidSource} from "./sid_api";
 import {convertArrayBufferToString} from "../helper";
+import {NTSC, PAL, TimingStandard} from "./SIDConstants";
 
 enum CPUStatus {
     running,
     done_0xFE,
     done_0xFF
 }
-
-class TimingStandard {
-    public readonly cpu_clock: number;
-    public readonly framerate: number;
-    public readonly cycles_per_frame: number;
-
-    constructor(cpu_clock: number, framerate: number) {
-        this.cpu_clock = cpu_clock;
-        this.framerate = framerate;
-        this.cycles_per_frame = cpu_clock / framerate;
-    }
-}
-
-const PAL = new TimingStandard(985248, 50);
-const NTSC = new TimingStandard(1022727, 60);
 
 class InstructionResult {
     num_cycles: number;
