@@ -18,7 +18,7 @@ export const commands = new CommandInterface(
     async (c: string) => {
         try {
             if (hasUD3Connection()) {
-                await getUD3Connection().sendTelnet(new Buffer(c), getAutoTerminal());
+                await getUD3Connection().sendTelnet(Buffer.from(c), getAutoTerminal());
             }
         } catch (x) {
             console.log("Error while sending: ", x);
@@ -69,12 +69,16 @@ export function startBootloading(cyacd: Uint8Array): boolean {
 
 let lastButton: string;
 
-export function update(): boolean {
-    connectionState = connectionState.tick();
+export function updateFast(): boolean {
+    connectionState = connectionState.tickFast();
     const newButton = connectionState.getButtonText();
     const ret = newButton !== lastButton;
     lastButton = newButton;
     return ret;
+}
+
+export function updateSlow(): void {
+    connectionState.tickSlow();
 }
 
 export function getUD3Connection(): UD3Connection {

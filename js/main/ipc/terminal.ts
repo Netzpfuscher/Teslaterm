@@ -71,7 +71,7 @@ export module TerminalIPC {
         terminals.set(source, termID);
         await connection.startTerminal(termID);
         if (connection.getFeatureValue(FEATURE_NOTELEMETRY) == "1") {
-            await connection.sendTelnet(new Buffer("\rtterm notelemetry\rcls\r"), termID);
+            await connection.sendTelnet(Buffer.from("\rtterm notelemetry\rcls\r"), termID);
         }
         return TermSetupResult.success;
     }
@@ -102,7 +102,7 @@ export module TerminalIPC {
         processIPC.on(IPCConstantsToMain.manualCommand, async (source: object, msg: string) => {
             try {
                 if (hasUD3Connection() && terminals.has(source)) {
-                    await getUD3Connection().sendTelnet(new Buffer(msg), terminals.get(source));
+                    await getUD3Connection().sendTelnet(Buffer.from(msg), terminals.get(source));
                 }
             } catch (x) {
                 console.log("Error while sending: ", x);

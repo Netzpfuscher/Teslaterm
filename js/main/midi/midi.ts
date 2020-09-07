@@ -7,7 +7,7 @@ import {ScopeIPC} from "../ipc/Scope";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import * as scripting from "../scripting";
 
-export const kill_msg = new Buffer([0xB0, 0x77, 0x00]);
+export const kill_msg = Buffer.of(0xB0, 0x77, 0x00);
 
 // Initialize player and register event handler
 export const player = new MidiPlayer.Player(processMidiFromPlayer);
@@ -83,7 +83,7 @@ export function playMidiData(data: number[] | Uint8Array): boolean {
         if (!(data instanceof Uint8Array)) {
             data = new Uint8Array(data);
         }
-        const msg = new Buffer(data);
+        const msg = Buffer.from(data);
         getUD3Connection().sendMidi(msg);
         checkTransientDisabled();
         return true;

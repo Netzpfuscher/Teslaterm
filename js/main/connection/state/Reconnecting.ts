@@ -31,7 +31,7 @@ export class Reconnecting implements IConnectionState {
         return new Idle();
     }
 
-    tick(): IConnectionState {
+    tickFast(): IConnectionState {
         if (this.failedAttempts >= Reconnecting.MAX_RETRIES) {
             TerminalIPC.println("Aborting attempts to reconnect");
             return new Idle();
@@ -46,5 +46,8 @@ export class Reconnecting implements IConnectionState {
         } else {
             return this;
         }
+    }
+
+    public tickSlow() {
     }
 }

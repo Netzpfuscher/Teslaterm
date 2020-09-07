@@ -48,7 +48,7 @@ export class PlainSerialConnection extends UD3Connection {
     }
 
     disconnect(): void {
-        this.sendTelnet(new Buffer("tterm stop"));
+        this.sendTelnet(Buffer.from("tterm stop"));
         this.close();
     }
 
@@ -76,7 +76,7 @@ export class PlainSerialConnection extends UD3Connection {
 
     setSynthImpl(type: SynthType): Promise<void> {
         const id = toCommandID(type);
-        return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
+        return this.sendTelnet(Buffer.from("set synth " + id.toString(10) + "\r"));
     }
 
     tick(): void {

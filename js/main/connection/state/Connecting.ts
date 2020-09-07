@@ -71,7 +71,7 @@ export class Connecting implements IConnectionState {
         return new Idle();
     }
 
-    public tick(): IConnectionState {
+    public tickFast(): IConnectionState {
         switch (this.state) {
             case State.waiting_for_ud_connection:
                 return this;
@@ -86,6 +86,9 @@ export class Connecting implements IConnectionState {
             default:
                 throw new Error("Unexpected state: " + this.state);
         }
+    }
+
+    public tickSlow() {
     }
 
     getAutoTerminal(): TerminalHandle | undefined {

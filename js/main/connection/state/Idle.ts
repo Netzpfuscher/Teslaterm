@@ -36,8 +36,11 @@ export class Idle implements IConnectionState {
         return new Connecting(Idle.connectInternal(window), this);
     }
 
-    public tick(): IConnectionState {
+    public tickFast(): IConnectionState {
         return this;
+    }
+
+    public tickSlow() {
     }
 
     public static async connectWithOptions(options: any): Promise<UD3Connection | undefined> {

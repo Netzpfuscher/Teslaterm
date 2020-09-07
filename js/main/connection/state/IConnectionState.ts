@@ -9,6 +9,8 @@ export interface IConnectionState {
 
     getAutoTerminal(): TerminalHandle | undefined;
 
-    tick(): IConnectionState;
+    tickFast(): IConnectionState;
+
+    tickSlow(): void;
 }
 

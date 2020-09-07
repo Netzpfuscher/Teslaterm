@@ -48,13 +48,10 @@ module.exports = class minprot {
 		this.transport_fifo.sequence_mismatch_drop = 0;
 		this.transport_fifo.dropped_frames = 0;
 		this.transport_fifo.resets_received = 0;
-		this.transport_fifo.n_ring_buffer_bytes_max = 0;
-		this.transport_fifo.n_frames_max = 0;
 		this.transport_fifo.sn_min = 0;
 		this.transport_fifo.sn_max = 0;
 		this.transport_fifo.rn = 0;
 		this.transport_fifo.last_sent_ack_time_ms = 0;
-		this.transport_fifo.last_sent_frame = 0;
 		this.transport_fifo.last_sent_seq = -1;
 		this.transport_fifo.last_sent_seq_cnt = 0;
 		this.transport_fifo.last_received_anything_ms = Date.now();
@@ -157,6 +154,7 @@ module.exports = class minprot {
 				this.rx.frame_state = this.rx.states.LENGTH;
 				break;
 			case this.rx.states.LENGTH:
+				this.rx.frame.payload = [];
 				this.rx.frame.length = byte;
 				this.crc32_step(byte);
 				if (this.rx.frame.length > 0) {
@@ -261,7 +259,13 @@ module.exports = class minprot {
 					}
 					// Now retransmit the number of frames that were requested
 					for (let i = 0; i < num_nacked; i++) {
-
+						let wire_size = this.on_wire_size(this.transport_fifo.frames[i].length);
+						if (wire_size >= this.remote_rx_space) {
+							break;
+						}
+						this.transport_fifo.frames[i].last_send = this.now;
+						this.on_wire_bytes(this.transport_fifo.frames[i].min_id | 0x80, this.transport_fifo.frames[i].seq, this.transport_fifo.frames[i].payload);
+						this.transport_fifo.sn_max++;
 					}
 				} else {
 					if (this.debug) console.log("Received spurious ACK seq=" + seq);
@@ -450,10 +454,13 @@ module.exports = class minprot {
 				if ((window_size > 0) && remote_connected) {
 					// There are unacknowledged frames. Can re-send an old frame. Pick the least recently sent one.
 
-					let old = Date.now();
+					let oldest = Number.POSITIVE_INFINITY;
 					let resend_frame_num = -1;
 					for (let i = 0; i < this.transport_fifo.frames.length; i++) {
-						if (this.transport_fifo.frames[i].last_send < old) resend_frame_num = i;
+						if (this.transport_fifo.frames[i].last_send < oldest) {
+							resend_frame_num = i;
+							oldest = this.transport_fifo.frames[i].last_send;
+						}
 					}
 					if (resend_frame_num > -1 && (this.now - this.transport_fifo.frames[resend_frame_num].last_send) >= this.TRANSPORT_FRAME_RETRANSMIT_TIMEOUT_MS) {
 						let wire_size = this.on_wire_size(this.transport_fifo.frames[resend_frame_num].length);
@@ -508,6 +515,8 @@ module.exports = class minprot {
 			frame.reject("Resetting min FIFO");
 		}
 		this.transport_fifo.frames = [];
+		this.transport_fifo.last_sent_seq = -1;
+		this.transport_fifo.last_sent_seq_cnt = 0;
 	}
 
 	min_queue_frame(min_id, payload) {

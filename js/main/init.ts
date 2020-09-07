@@ -28,17 +28,26 @@ export function init() {
     MetersIPC.init();
     ScriptingIPC.init();
     midi.init();
-    setInterval(tick, 20);
+    setInterval(tick200, 200);
+    setInterval(tick20, 20);
+    setInterval(tick10, 10);
     connection.autoConnect();
     if (config.netsid.enabled) {
         sidServer = new NetworkSIDServer(config.netsid.port);
     }
 }
 
-function tick() {
+function tick200() {
+    connection.updateSlow();
+}
+
+function tick20() {
     sid.update();
     midi.update();
-    const updateButton = connection.update();
+}
+
+function tick10() {
+    const updateButton = connection.updateFast();
     if (updateButton) {
         MenuIPC.setConnectionButtonText(connection.connectionState.getButtonText());
     }

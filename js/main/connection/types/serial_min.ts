@@ -59,6 +59,7 @@ class MinSerialConnection extends BootloadableConnection {
                                 this.min_wrapper.min_poll(data);
                             }
                         });
+                        this.serialPort.on("error", e => console.log(e));
                         res();
                     }
                 });
@@ -188,11 +189,12 @@ class MinSerialConnection extends BootloadableConnection {
                 'utf-8');
             let done = false;
             let tries = 0;
-            while (!done && this.min_wrapper && tries < 256) {
+            while (!done && this.min_wrapper && tries < 16) {
                 try {
                     await this.min_wrapper.min_queue_frame(MIN_ID_SOCKET, infoBuffer);
                     done = true;
                 } catch (e) {
+                    console.error(e);
                 }
                 ++tries;
             }
@@ -230,14 +232,14 @@ class MinSerialConnection extends BootloadableConnection {
                     if (feature === FEATURE_NOTELEMETRY && value === "1") {
                         for (const termID of this.connectionsToSetTTerm) {
                             if (this.terminalCallbacks.has(termID)) {
-                                await this.sendTelnet(new Buffer("\rtterm notelemetry\rcls\r"), termID);
+                                await this.sendTelnet(Buffer.from("\rtterm notelemetry\rcls\r"), termID);
                             }
                         }
                         this.connectionsToSetTTerm = [];
                     }
                 }
             } else if (this.terminalCallbacks.has(id)) {
-                this.terminalCallbacks.get(id).callback(new Buffer(data));
+                this.terminalCallbacks.get(id).callback(Buffer.from(data));
             } else {
                 console.warn("Unexpected MIN message at " + id + ": " + convertBufferToString(data));
             }

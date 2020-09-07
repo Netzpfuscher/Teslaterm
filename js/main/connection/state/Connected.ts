@@ -8,13 +8,13 @@ import {Idle} from "./Idle";
 import * as media from "../../media/media_player";
 import {Reconnecting} from "./Reconnecting";
 
-const TIMEOUT = 100;
-let response_timeout = TIMEOUT;
-const WD_TIMEOUT = 5;
+const TIMEOUT = 1000;
+let lastResponseTime = Date.now();
+const WD_TIMEOUT = 10;
 let wd_reset = WD_TIMEOUT;
 
 export function resetResponseTimeout() {
-    response_timeout = TIMEOUT;
+    lastResponseTime = Date.now();
 }
 
 export class Connected implements IConnectionState {
@@ -43,9 +43,8 @@ export class Connected implements IConnectionState {
         return new Idle();
     }
 
-    public tick(): IConnectionState {
+    public tickFast(): IConnectionState {
         this.active_connection.tick();
-        response_timeout--;
 
         if (this.isConnectionLost()) {
             TerminalIPC.println("\n\rLost connection, will attempt to reconnect");
@@ -54,12 +53,11 @@ export class Connected implements IConnectionState {
             return new Reconnecting(this.active_connection);
         }
 
-        wd_reset--;
-        if (wd_reset === 0) {
-            wd_reset = WD_TIMEOUT;
-            this.active_connection.resetWatchdog();
-        }
         return this;
+    }
+
+    public tickSlow() {
+        this.active_connection.resetWatchdog();
     }
 
     private isConnectionLost(): boolean {
@@ -70,7 +68,7 @@ export class Connected implements IConnectionState {
                 return false;
             }
         }
-        return response_timeout <= 0;
+        return Date.now() - lastResponseTime > TIMEOUT;
     }
 
     private async disconnectInternal() {

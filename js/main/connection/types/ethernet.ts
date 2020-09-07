@@ -65,7 +65,7 @@ class EthernetConnection extends UD3Connection {
     }
 
     public resetWatchdog(): void {
-        this.sendTelnet(new Buffer([7]));
+        this.sendTelnet(Buffer.of(7));
     }
 
     public tick(): void {
@@ -73,7 +73,7 @@ class EthernetConnection extends UD3Connection {
 
     public async setSynthImpl(type: SynthType): Promise<void> {
         const id = toCommandID(type);
-        return this.sendTelnet(new Buffer("set synth " + id.toString(10) + "\r"));
+        return this.sendTelnet(Buffer.from("set synth " + id.toString(10) + "\r"));
     }
 
     getSidConnection(): ISidConnection {

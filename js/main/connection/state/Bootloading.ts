@@ -58,7 +58,7 @@ export class Bootloading implements IConnectionState {
         return new Idle();
     }
 
-    tick(): IConnectionState {
+    public tickFast(): IConnectionState {
         if (this.done) {
             this.connection.disconnect();
             return new Reconnecting(this.connection);
@@ -103,5 +103,8 @@ export class Bootloading implements IConnectionState {
         if (this.inBootloadMode) {
             this.connection.leaveBootloaderMode();
         }
+    }
+
+    public tickSlow() {
     }
 }
