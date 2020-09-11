@@ -120,7 +120,9 @@ export function init() {
         session.on("message", async (delta, data) => {
             if (hasUD3Connection()) {
                 await getUD3Connection().setSynth(SynthType.MIDI, true);
-                media_state.stopPlaying();
+                if (media_state.state == PlayerActivity.playing) {
+                    media_state.stopPlaying();
+                }
                 playMidiData(data);
             }
         });

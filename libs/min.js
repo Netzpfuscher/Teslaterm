@@ -466,10 +466,15 @@ module.exports = class minprot {
 						let wire_size = this.on_wire_size(this.transport_fifo.frames[resend_frame_num].length);
 						if (wire_size < this.remote_rx_space) {
 							if (this.debug) console.log("SEQB=" + this.transport_fifo.frames[resend_frame_num].seq);
-							if (this.transport_fifo.frames[resend_frame_num].seq == this.transport_fifo.last_sent_seq) this.transport_fifo.last_sent_seq_cnt++;
+							if (this.transport_fifo.frames[resend_frame_num].seq == this.transport_fifo.last_sent_seq) {
+								this.transport_fifo.last_sent_seq_cnt++;
+							} else {
+								this.transport_fifo.last_sent_seq_cnt = 0;
+							}
 							this.transport_fifo.last_sent_seq = this.transport_fifo.frames[resend_frame_num].seq;
 							if (this.transport_fifo.last_sent_seq_cnt > 10) {
 								this.min_transport_reset(true);
+								this.transport_fifo.last_sent_seq_cnt = 0;
 							} else {
 								this.on_wire_bytes(this.transport_fifo.frames[resend_frame_num].min_id | 0x80, this.transport_fifo.frames[resend_frame_num].seq, this.transport_fifo.frames[resend_frame_num].payload);
 							}
