@@ -34,7 +34,6 @@ export const commands = new CommandInterface(
 export async function startConf() {
     await commands.sendCommand('\r');
     await SlidersIPC.setAbsoluteOntime(0);
-    await commands.sendCommand('set pw 0\r');
     await commands.setBPS(SlidersIPC.state.bps);
     await commands.setBurstOntime(SlidersIPC.state.burstOntime);
     await commands.setBurstOfftime(SlidersIPC.state.burstOfftime);

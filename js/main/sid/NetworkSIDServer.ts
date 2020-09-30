@@ -3,7 +3,6 @@ import {SynthType} from "../../common/CommonTypes";
 import {getOptionalUD3Connection} from "../connection/connection";
 import {getActiveSIDConnection} from "./ISidConnection";
 import {Command, NTSC, PAL, ReplyCode, TimingStandard} from "./SIDConstants";
-import {jspack} from "jspack";
 import {FRAME_LENGTH, SidFrame} from "./sid_api";
 
 export class NetworkSIDServer {
@@ -13,6 +12,7 @@ export class NetworkSIDServer {
     private currentSIDState: Uint8Array = new Uint8Array(FRAME_LENGTH);
     private localBuffer: SidFrame[] = [];
     private timeStandard: TimingStandard = PAL;
+    private firstAfterReset: boolean = false;
 
     public constructor(port: number) {
         this.port = port;
@@ -37,8 +37,7 @@ export class NetworkSIDServer {
         this.stopListening();
         socket.once("close", () => this.startListening());
         socket.on("data", async (data) => {
-            const reply = await this.handleMessage(data);
-            socket.write(reply);
+            this.handleMessage(data, d => socket.write(d));
         });
     }
 
@@ -52,30 +51,42 @@ export class NetworkSIDServer {
         }
     }
 
-    private async processFrames(data: number[]): Promise<boolean> {
-        if (getActiveSIDConnection()?.isBusy()) {
-            return false;
-        }
+    private processFrames(data: number[] | Buffer) {
         for (let i = 0; i + 3 < data.length; i += 4) {
-            const [delay, register, value] = jspack.Unpack("!HBB", data.slice(i, i + 4));
+            const delay = (data[i] << 8) | data[i + 1];
+            const register = data[i + 2];
+            const value = data[i + 3];
             this.timeSinceLastFrame = delay + this.timeSinceLastFrame;
             const cyclesPerFrame = this.timeStandard.cycles_per_frame;
             while (this.timeSinceLastFrame > cyclesPerFrame) {
-                this.localBuffer.push(new SidFrame(new Uint8Array(this.currentSIDState), cyclesPerFrame));
+                let frameTime = cyclesPerFrame;
+                if (this.firstAfterReset) {
+                    frameTime *= 20;
+                    this.firstAfterReset = false;
+                }
+                this.localBuffer.push(new SidFrame(new Uint8Array(this.currentSIDState), frameTime));
                 this.timeSinceLastFrame -= cyclesPerFrame;
             }
             this.currentSIDState[register] = value;
         }
-        await this.sendFramesWhilePossible();
-        return true;
     }
 
-    private async handleMessage(data: Buffer): Promise<Buffer> {
-        const [command, sidNum, len] = jspack.Unpack("!BBH", data);
-        const additional = Array.from(data).slice(4);
+    private sendFramesSync() {
+        this.sendFramesWhilePossible().catch(r => {
+            console.error("Error while processing SID frames: " + r);
+        });
+    }
+
+    private handleMessage(data: Buffer, sendReply: (data) => void) {
+        const command = data[0];
+        const sidNum = data[1];
+        const additional = data.slice(4);
+        const len = additional.length;
+        let returnCode = Buffer.of(ReplyCode.OK);
+        let toRead: undefined | number[] | Buffer;
         switch (command) {
             case Command.FLUSH:
-                await getActiveSIDConnection()?.flush();
+                getActiveSIDConnection()?.flush();
                 this.localBuffer = [];
                 break;
             case Command.TRY_SET_SID_COUNT:
@@ -88,27 +99,34 @@ export class NetworkSIDServer {
                 break;
             case Command.TRY_RESET:
                 this.currentSIDState.fill(0);
+                this.firstAfterReset = true;
                 break;
             case Command.TRY_DELAY:
-                const [delay] = jspack.Unpack("!H", additional);
+                const delay = (additional[0] << 8) + additional[1];
                 this.timeSinceLastFrame += delay;
                 break;
             case Command.TRY_WRITE:
-                if (!await this.processFrames(additional)) {
-                    return Buffer.of(ReplyCode.BUSY);
+                if (this.localBuffer.length > 10) {
+                    returnCode = Buffer.of(ReplyCode.BUSY);
+                } else {
+                    toRead = additional;
                 }
                 break;
             case Command.TRY_READ:
-                if (!await this.processFrames(additional.slice(0, len - 3))) {
-                    return Buffer.of(ReplyCode.BUSY);
+                if (this.localBuffer.length > 10) {
+                    returnCode = Buffer.of(ReplyCode.BUSY);
                 } else {
-                    const [delay, registerID] = jspack.Unpack("!HB", additional.slice(len - 3));
+                    toRead = additional.slice(0, len - 3);
+                    const delay = (additional[len - 3] << 8) | additional[len - 2];
                     this.timeSinceLastFrame += delay;
                     // we do not have registers to read from, so we need to hope always reading 0 doesn't break anything
-                    return Buffer.of(ReplyCode.READ, 0);
+                    returnCode = Buffer.of(ReplyCode.READ, 0);
                 }
+                returnCode = Buffer.of(ReplyCode.READ, 0);
+                break;
             case Command.GET_VERSION:
-                return Buffer.of(ReplyCode.VERSION, 2);
+                returnCode = Buffer.of(ReplyCode.VERSION, 2);
+                break;
             case Command.TRY_SET_SAMPLING:
                 // Not supported
                 break;
@@ -120,22 +138,27 @@ export class NetworkSIDServer {
                 }
                 break;
             case Command.GET_CONFIG_COUNT:
-                return Buffer.of(ReplyCode.COUNT, 1);
+                returnCode = Buffer.of(ReplyCode.COUNT, 1);
+                break;
             case Command.GET_CONFIG_INFO:
-                return Buffer.concat([
-                    Buffer.of(ReplyCode.INFO, 0),
+                returnCode = Buffer.concat([
+                    Buffer.of(ReplyCode.INFO, 1),
                     Buffer.from("UD3\0")
                 ]);
+                break;
             case Command.SET_SID_POSITION:
             case Command.SET_SID_LEVEL:
             case Command.SET_SID_MODEL:
                 // Not supported
                 break;
-
             default:
                 console.warn("Unexpected command in SID data packet:", data);
                 break;
         }
-        return Buffer.of(ReplyCode.OK);
+        sendReply(returnCode);
+        if (toRead) {
+            this.processFrames(toRead);
+        }
+        this.sendFramesSync();
     }
 }
