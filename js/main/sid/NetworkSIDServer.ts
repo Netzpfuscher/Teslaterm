@@ -36,6 +36,9 @@ export class NetworkSIDServer {
     private onConnected(socket: net.Socket) {
         this.stopListening();
         socket.once("close", () => this.startListening());
+        socket.on("error", err => {
+            console.log("Error in NetSID connection: ", err);
+        });
         socket.on("data", async (data) => {
             this.handleMessage(data, d => socket.write(d));
         });
@@ -102,7 +105,7 @@ export class NetworkSIDServer {
                 this.firstAfterReset = true;
                 break;
             case Command.TRY_DELAY:
-                const delay = (additional[0] << 8) + additional[1];
+                const delay = (additional[0] << 8) | additional[1];
                 this.timeSinceLastFrame += delay;
                 break;
             case Command.TRY_WRITE:
@@ -122,7 +125,6 @@ export class NetworkSIDServer {
                     // we do not have registers to read from, so we need to hope always reading 0 doesn't break anything
                     returnCode = Buffer.of(ReplyCode.READ, 0);
                 }
-                returnCode = Buffer.of(ReplyCode.READ, 0);
                 break;
             case Command.GET_VERSION:
                 returnCode = Buffer.of(ReplyCode.VERSION, 2);
