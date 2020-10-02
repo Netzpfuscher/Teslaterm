@@ -8,6 +8,8 @@ declare class minprot {
     min_queue_frame(min_id: number, payload: Buffer | number[]): Promise<void>;
 
     min_poll(buf?: Buffer): void;
+
+    get_relative_fifo_size(): number;
 }
 
 export = minprot;

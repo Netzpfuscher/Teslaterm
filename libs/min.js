@@ -547,7 +547,8 @@ module.exports = class minprot {
 			}
 		});
 	}
+
+	get_relative_fifo_size() {
+		return this.transport_fifo.length / this.TRANSPORT_MAX_WINDOW_SIZE;
+	}
 };
-
-
-

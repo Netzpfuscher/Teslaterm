@@ -45,6 +45,9 @@ export class NetworkSIDServer {
     }
 
     private async sendFramesWhilePossible() {
+        if (this.localBuffer.length < 3) {
+            return;
+        }
         if (await getOptionalUD3Connection()?.setSynth(SynthType.SID, true)) {
             getActiveSIDConnection()?.onStart();
         }
@@ -61,14 +64,14 @@ export class NetworkSIDServer {
             const value = data[i + 3];
             this.timeSinceLastFrame = delay + this.timeSinceLastFrame;
             const cyclesPerFrame = this.timeStandard.cycles_per_frame;
-            while (this.timeSinceLastFrame > cyclesPerFrame) {
+            if (delay > 1000) {
                 let frameTime = cyclesPerFrame;
                 if (this.firstAfterReset) {
                     frameTime *= 20;
                     this.firstAfterReset = false;
                 }
-                this.localBuffer.push(new SidFrame(new Uint8Array(this.currentSIDState), frameTime));
-                this.timeSinceLastFrame -= cyclesPerFrame;
+                this.localBuffer.push(new SidFrame(Uint8Array.from(this.currentSIDState), this.timeSinceLastFrame));
+                this.timeSinceLastFrame = 0;
             }
             this.currentSIDState[register] = value;
         }

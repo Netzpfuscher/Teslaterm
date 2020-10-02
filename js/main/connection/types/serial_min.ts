@@ -162,7 +162,7 @@ class MinSerialConnection extends BootloadableConnection {
     public async tick(): Promise<void> {
         if (this.min_wrapper) {
             const maxPerFrame = 200;
-            while (this.mediaFramesForBatching.length > 0) {
+            while (this.min_wrapper.get_relative_fifo_size() < 0.75 && this.mediaFramesForBatching.length > 0) {
                 let frameParts: Buffer[] = [];
                 let currentSize = 0;
                 while (
@@ -173,7 +173,9 @@ class MinSerialConnection extends BootloadableConnection {
                     frameParts.push(this.mediaFramesForBatching.shift());
                 }
                 let frame = Buffer.concat(frameParts);
-                this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, frame);
+                this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, frame).catch(err => {
+                    console.log("Failed to send media packet: " + err);
+                });
             }
             this.min_wrapper.min_poll();
         }
