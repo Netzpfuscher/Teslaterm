@@ -25,7 +25,7 @@ export class UD3FormattedConnection implements ISidConnection {
 
     processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
-        const data = Buffer.alloc(FRAME_LENGTH + 4 + 4);
+        const data = Buffer.alloc(FRAME_LENGTH + 4 + 4 + 1);
         for (let j = 0; j < 4; ++j) {
             data[j] = 0xFF;
         }
@@ -36,6 +36,7 @@ export class UD3FormattedConnection implements ISidConnection {
         for (let j = 0; j < 4; ++j) {
             data[j + FRAME_LENGTH + 4] = ud_time[j];
         }
+        data[4 + FRAME_LENGTH + 4] = 0;
         this.lastFrameTime += frame.delayMicrosecond;
         return this.sendToUD(data);
     }
