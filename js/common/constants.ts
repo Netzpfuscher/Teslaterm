@@ -25,6 +25,7 @@ export const DATA_NUM = 1;
 export const FEATURE_TIMEBASE = "timebase";
 export const FEATURE_TIMECOUNT = "time_count";
 export const FEATURE_NOTELEMETRY = "notelemetry_supported";
+export const FEATURE_MINSID = "min_sid_support";
 
 // Connection types
 export const eth_node = "eth";

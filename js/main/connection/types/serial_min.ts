@@ -8,10 +8,11 @@ import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
 import {UD3Connection, TerminalHandle} from "./UD3Connection";
-import {FEATURE_NOTELEMETRY} from "../../../common/constants";
+import {FEATURE_MINSID, FEATURE_NOTELEMETRY} from "../../../common/constants";
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
+const MIN_ID_SID = 21;
 const MIN_ID_SOCKET = 13;
 const MIN_ID_SYNTH = 14;
 const MIN_ID_FEATURE = 15;
@@ -28,6 +29,7 @@ class MinSerialConnection extends BootloadableConnection {
     private min_wrapper: minprot | undefined;
     private readonly sidConnection: UD3FormattedConnection;
     private mediaFramesForBatching: Buffer[] = [];
+    private mediaFramesForBatchingSID: Buffer[] = [];
     private actualUDFeatures: Map<string, string>;
     private connectionsToSetTTerm: TerminalHandle[] = [];
 
@@ -105,6 +107,12 @@ class MinSerialConnection extends BootloadableConnection {
         }
     }
 
+    async sendMediaSID(data: Buffer) {
+        if (this.min_wrapper) {
+            this.mediaFramesForBatchingSID.push(data);
+        }
+    }
+
     sendMidi = this.sendMedia;
 
     getSidConnection(): ISidConnection {
@@ -127,6 +135,10 @@ class MinSerialConnection extends BootloadableConnection {
         await this.send_min_socket(true, handle);
         if (this.getFeatureValue(FEATURE_NOTELEMETRY) !== "1") {
             this.connectionsToSetTTerm.push(handle);
+        }
+        if (this.getFeatureValue(FEATURE_MINSID) === "1") {
+            this.sidConnection.switch_format(2);
+            this.sidConnection.sendToUD = (data) => this.sendMediaSID(data);
         }
     }
 
@@ -174,6 +186,22 @@ class MinSerialConnection extends BootloadableConnection {
                 }
                 let frame = Buffer.concat(frameParts);
                 this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, frame).catch(err => {
+                    console.log("Failed to send media packet: " + err);
+                });
+            }
+            while (this.min_wrapper.get_relative_fifo_size() < 0.75 && this.mediaFramesForBatchingSID.length > 0) {
+                let frameParts: Buffer[] = [];
+                let currentSize = 0;
+                while (
+                    this.mediaFramesForBatchingSID.length > 0 &&
+                    this.mediaFramesForBatchingSID[0].length + currentSize <= maxPerFrame
+                    ) {
+                    currentSize += this.mediaFramesForBatchingSID[0].length;
+                    frameParts.push(this.mediaFramesForBatchingSID.shift());
+                }
+                frameParts.unshift(Buffer.from([frameParts.length]));
+                let frame = Buffer.concat(frameParts);
+                this.min_wrapper.min_queue_frame(MIN_ID_SID, frame).catch(err => {
                     console.log("Failed to send media packet: " + err);
                 });
             }
