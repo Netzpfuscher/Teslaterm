@@ -1,4 +1,5 @@
 export const FRAME_LENGTH = 25;
+export const FRAME_UDTIME_LENGTH = 4;
 
 export class SidFrame {
     public readonly data: Uint8Array;

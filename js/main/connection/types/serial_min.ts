@@ -1,14 +1,14 @@
 import {SynthType} from "../../../common/CommonTypes";
 import {config} from "../../init";
 import * as microtime from "../../microtime";
-import SerialPort = require("serialport");
-import minprot = require('../../../../libs/min');
 import {convertBufferToString, withTimeout} from "../../helper";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
-import {UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
-import {UD3Connection, TerminalHandle} from "./UD3Connection";
+import {formatVersion, UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
+import {TerminalHandle, UD3Connection} from "./UD3Connection";
 import {FEATURE_MINSID, FEATURE_NOTELEMETRY} from "../../../common/constants";
+import SerialPort = require("serialport");
+import minprot = require('../../../../libs/min');
 
 const MIN_ID_WD = 10;
 const MIN_ID_MEDIA = 20;
@@ -137,8 +137,11 @@ class MinSerialConnection extends BootloadableConnection {
             this.connectionsToSetTTerm.push(handle);
         }
         if (this.getFeatureValue(FEATURE_MINSID) === "1") {
-            this.sidConnection.switch_format(2);
+            this.sidConnection.switch_format(formatVersion.v2);
             this.sidConnection.sendToUD = (data) => this.sendMediaSID(data);
+        } else {
+            this.sidConnection.switch_format(formatVersion.v1);
+            this.sidConnection.sendToUD = (data) => this.sendMedia(data);
         }
     }
 
@@ -171,40 +174,33 @@ class MinSerialConnection extends BootloadableConnection {
         }
     }
 
+    private batchFrames(buf: Buffer[], maxPerFrame: number, insertFrameCnt: boolean ,minID: number) {
+        while (this.min_wrapper.get_relative_fifo_size() < 0.75 && buf.length > 0) {
+            let frameParts: Buffer[] = [];
+            let currentSize = 0;
+            while (
+                buf.length > 0 &&
+                buf[0].length + currentSize <= maxPerFrame
+                ) {
+                currentSize += buf[0].length;
+                frameParts.push(buf.shift());
+            }
+            if (insertFrameCnt) {
+                frameParts.unshift(Buffer.from([frameParts.length]));
+            }
+            let frame = Buffer.concat(frameParts);
+            this.min_wrapper.min_queue_frame(minID, frame).catch(err => {
+                console.log("Failed to send media packet: " + err);
+            });
+        }
+    }
+
     public async tick(): Promise<void> {
         if (this.min_wrapper) {
             const maxPerFrame = 200;
-            while (this.min_wrapper.get_relative_fifo_size() < 0.75 && this.mediaFramesForBatching.length > 0) {
-                let frameParts: Buffer[] = [];
-                let currentSize = 0;
-                while (
-                    this.mediaFramesForBatching.length > 0 &&
-                    this.mediaFramesForBatching[0].length + currentSize <= maxPerFrame
-                    ) {
-                    currentSize += this.mediaFramesForBatching[0].length;
-                    frameParts.push(this.mediaFramesForBatching.shift());
-                }
-                let frame = Buffer.concat(frameParts);
-                this.min_wrapper.min_queue_frame(MIN_ID_MEDIA, frame).catch(err => {
-                    console.log("Failed to send media packet: " + err);
-                });
-            }
-            while (this.min_wrapper.get_relative_fifo_size() < 0.75 && this.mediaFramesForBatchingSID.length > 0) {
-                let frameParts: Buffer[] = [];
-                let currentSize = 0;
-                while (
-                    this.mediaFramesForBatchingSID.length > 0 &&
-                    this.mediaFramesForBatchingSID[0].length + currentSize <= maxPerFrame
-                    ) {
-                    currentSize += this.mediaFramesForBatchingSID[0].length;
-                    frameParts.push(this.mediaFramesForBatchingSID.shift());
-                }
-                frameParts.unshift(Buffer.from([frameParts.length]));
-                let frame = Buffer.concat(frameParts);
-                this.min_wrapper.min_queue_frame(MIN_ID_SID, frame).catch(err => {
-                    console.log("Failed to send media packet: " + err);
-                });
-            }
+
+            this.batchFrames(this.mediaFramesForBatching, maxPerFrame, false, MIN_ID_MEDIA);
+            this.batchFrames(this.mediaFramesForBatchingSID, maxPerFrame, true, MIN_ID_SID);
             this.min_wrapper.min_poll();
         }
     }
