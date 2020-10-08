@@ -4,7 +4,7 @@ import * as microtime from "../../microtime";
 import {convertBufferToString, withTimeout} from "../../helper";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
-import {formatVersion, UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
+import {FormatVersion, UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
 import {TerminalHandle, UD3Connection} from "./UD3Connection";
 import {FEATURE_MINSID, FEATURE_NOTELEMETRY} from "../../../common/constants";
 import SerialPort = require("serialport");
@@ -137,10 +137,10 @@ class MinSerialConnection extends BootloadableConnection {
             this.connectionsToSetTTerm.push(handle);
         }
         if (this.getFeatureValue(FEATURE_MINSID) === "1") {
-            this.sidConnection.switch_format(formatVersion.v2);
+            this.sidConnection.switch_format(FormatVersion.v2);
             this.sidConnection.sendToUD = (data) => this.sendMediaSID(data);
         } else {
-            this.sidConnection.switch_format(formatVersion.v1);
+            this.sidConnection.switch_format(FormatVersion.v1);
             this.sidConnection.sendToUD = (data) => this.sendMedia(data);
         }
     }
