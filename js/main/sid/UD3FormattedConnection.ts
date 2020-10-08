@@ -1,13 +1,20 @@
 import {getUD3Connection} from "../connection/connection";
 import {ISidConnection} from "./ISidConnection";
-import {FRAME_LENGTH, SidFrame} from "./sid_api";
+import {FRAME_LENGTH, FRAME_UDTIME_LENGTH, SidFrame} from "./sid_api";
 import * as microtime from "../microtime";
 
+export enum FormatVersion {
+    v1,
+    v2
+}
+
 export class UD3FormattedConnection implements ISidConnection {
+    public sendToUD: (data: Buffer) => Promise<void>;
     private readonly flushCallback: () => Promise<void>;
-    private readonly sendToUD: (data: Buffer) => Promise<void>;
     private lastFrameTime: number | undefined;
     private busy: boolean = false;
+    private ffPrefixBytes: number = 4;
+    private needsZeroSuffix: boolean = true;
 
     constructor(flushCallback: () => Promise<void>, sendToUD: (data: Buffer) => Promise<void>) {
         this.flushCallback = flushCallback;
@@ -23,22 +30,43 @@ export class UD3FormattedConnection implements ISidConnection {
         this.lastFrameTime = microtime.now() + 50e3;
     }
 
+    switch_format(version: formatVersion) {
+        switch (version) {
+            case formatVersion.v1:
+                this.ffPrefixBytes = 4;
+                this.needsZeroSuffix = true;
+                break;
+            case formatVersion.v2:
+                this.ffPrefixBytes = 0;
+                this.needsZeroSuffix = false;
+                break;
+        }
+    }
+
     processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
-        const data = Buffer.alloc(FRAME_LENGTH + 4 + 4 + 1);
-        for (let j = 0; j < 4; ++j) {
-            data[j] = 0xFF;
+        const ud_time = getUD3Connection().toUD3Time(this.lastFrameTime);
+        const frameSize = this.ffPrefixBytes + FRAME_LENGTH + FRAME_UDTIME_LENGTH + ( this.needsZeroSuffix ? 1 : 0);
+        const data = Buffer.alloc(frameSize);
+        let byteCount = 0;
+
+        for (let j = 0; j < this.ffPrefixBytes; ++j) {
+            data[byteCount++] = 0xFF;
         }
         for (let j = 0; j < FRAME_LENGTH; ++j) {
-            data[j + 4] = frame.data[j];
+            data[byteCount++] = frame.data[j];
         }
-        const ud_time = getUD3Connection().toUD3Time(this.lastFrameTime);
-        for (let j = 0; j < 4; ++j) {
-            data[j + FRAME_LENGTH + 4] = ud_time[j];
+
+        for (let j = 0; j < FRAME_UDTIME_LENGTH; ++j) {
+            data[byteCount++] = ud_time[j];
         }
-        data[4 + FRAME_LENGTH + 4] = 0;
+        if (this.needsZeroSuffix) {
+            data[byteCount] = 0;
+        }
+
         this.lastFrameTime += frame.delayMicrosecond;
         return this.sendToUD(data);
+
     }
 
     public setBusy(busy: boolean): void {

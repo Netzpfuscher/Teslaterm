@@ -1,5 +1,11 @@
 import * as os from "os";
-import {connection_types, FEATURE_TIMEBASE, FEATURE_NOTELEMETRY, FEATURE_TIMECOUNT} from "../common/constants";
+import {
+    connection_types,
+    FEATURE_TIMEBASE,
+    FEATURE_NOTELEMETRY,
+    FEATURE_TIMECOUNT,
+    FEATURE_MINSID
+} from "../common/constants";
 import {TTConfig} from "../common/TTConfig";
 import {convertArrayBufferToString} from "./helper";
 import {TerminalIPC} from "./ipc/terminal";
@@ -12,6 +18,7 @@ const defaultUDFeatures: Map<string, string> = new Map([
     [FEATURE_TIMEBASE, "3.125"],
     [FEATURE_TIMECOUNT, "down"],
     [FEATURE_NOTELEMETRY, "0"],
+    [FEATURE_MINSID, "0"],
 ]);
 
 const defaultUDConfigPages: Map<string, number> = new Map([
