@@ -3,7 +3,7 @@ import {ISidConnection} from "./ISidConnection";
 import {FRAME_LENGTH, FRAME_UDTIME_LENGTH, SidFrame} from "./sid_api";
 import * as microtime from "../microtime";
 
-export enum formatVersion {
+export enum FormatVersion {
     v1,
     v2
 }
