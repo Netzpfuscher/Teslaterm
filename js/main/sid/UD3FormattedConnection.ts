@@ -30,13 +30,13 @@ export class UD3FormattedConnection implements ISidConnection {
         this.lastFrameTime = microtime.now() + 50e3;
     }
 
-    switch_format(version: formatVersion) {
+    switch_format(version: FormatVersion) {
         switch (version) {
-            case formatVersion.v1:
+            case FormatVersion.v1:
                 this.ffPrefixBytes = 4;
                 this.needsZeroSuffix = true;
                 break;
-            case formatVersion.v2:
+            case FormatVersion.v2:
                 this.ffPrefixBytes = 0;
                 this.needsZeroSuffix = false;
                 break;
