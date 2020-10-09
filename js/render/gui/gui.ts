@@ -1,4 +1,3 @@
-import * as JSZip from "jszip";
 import {commands, sendManualCommand} from "../ipc/commands";
 import {FileUploadIPC} from "../ipc/FileUpload";
 import {terminal} from "./constants";
@@ -44,7 +43,7 @@ async function ondrop(e: DragEvent): Promise<void> {
             return;
         }
         scriptName = scriptName.substr(0, scriptName.length - 2) + "zip";
-        let zip = new JSZip();
+        const zip = new JSZip();
         for (let i = 0; i < files.length; ++i) {
             const file = files[i];
             zip.file(file.name, await file.arrayBuffer());
