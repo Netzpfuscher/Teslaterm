@@ -2,7 +2,7 @@
   "name": "teslaterm",
   "version": "0.1.0",
   "scripts": {
-    "build": "cross-var tsc && cross-var webpack",
+    "build": "tsc && webpack",
     "watch": "cross-var tsc -w",
     "lint": "cross-var tslint -c tslint.json -p tsconfig.json",
     "start-electron": "npm run build && cross-var electron . --no-sandbox",

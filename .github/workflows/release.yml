@@ -1,6 +1,7 @@
 name: Release for tags
 on:
   push:
+  pull_request:
   create:
     tags:
       - 'v*'
