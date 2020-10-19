@@ -5,16 +5,17 @@ import {
     remote_ip,
     serial_port,
     sid_port,
-    telnet_port,
+    telnet_port, udp_min_port,
 } from "../../../common/ConnectionOptions";
-import {connection_types, eth_node, serial_min, serial_plain} from "../../../common/constants";
+import {connection_types, eth_node, serial_min, serial_plain, udp_min} from "../../../common/constants";
 import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../init";
 import {createEthernetConnection} from "../types/ethernet";
 import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
-import {createMinSerialConnection} from "../types/serial_min";
+import {createMinSerialConnection} from "../types/SerialMinConnection";
 import {createPlainSerialConnection} from "../types/serial_plain";
+import {createMinUDPConnection} from "../types/UDPMinConnection";
 import {Connecting} from "./Connecting";
 import {IConnectionState} from "./IConnectionState";
 import SerialPort = require("serialport");
@@ -52,6 +53,8 @@ export class Idle implements IConnectionState {
                 return this.connectSerial(options, createMinSerialConnection);
             case eth_node:
                 return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
+            case udp_min:
+                return createMinUDPConnection(options[udp_min_port], options[remote_ip]);
             default:
                 TerminalIPC.println("Connection type \"" + connection_types.get(type) +
                     "\" (" + type + ") is currently not supported");

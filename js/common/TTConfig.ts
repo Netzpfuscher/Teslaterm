@@ -3,6 +3,7 @@ export class EthernetConfig {
     public telnetPort: number;
     public midiPort: number;
     public sidPort: number;
+    public udpMinPort: number;
 }
 
 export class SerialConfig {
@@ -25,7 +26,7 @@ export class NetSidConfig {
 }
 
 export class TTConfig {
-    // The type of connection to use for autoconnect: none, eth, min or serial
+    // The type of connection to use for autoconnect: none, eth, udpmin, min or serial
     public autoconnect: string;
     public readonly ethernet: EthernetConfig = new EthernetConfig();
     public readonly serial: SerialConfig = new SerialConfig();

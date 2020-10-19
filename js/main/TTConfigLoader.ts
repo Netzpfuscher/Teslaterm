@@ -159,6 +159,9 @@ export function loadConfig(filename: string): TTConfig {
             "Default remote port for telnet and telemetry");
         ret.ethernet.sidPort = ethernet.getOrWrite("sidport", 6581, changed,
             "Default remote port for netSID");
+        //TODO discuss default value?
+        ret.ethernet.udpMinPort = ethernet.getOrWrite("udpMinPort", 1234, changed,
+            "Default remote port for MIN connections over UDP");
     }
     {
         let serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
