@@ -1,13 +1,12 @@
 import {SynthType} from "../../../common/CommonTypes";
+import {FEATURE_MINSID, FEATURE_NOTELEMETRY} from "../../../common/constants";
+import {convertBufferToString, withTimeout} from "../../helper";
 import {config} from "../../init";
 import * as microtime from "../../microtime";
-import {convertBufferToString, withTimeout} from "../../helper";
-import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {FormatVersion, UD3FormattedConnection} from "../../sid/UD3FormattedConnection";
-import {TerminalHandle, UD3Connection} from "./UD3Connection";
-import {FEATURE_MINSID, FEATURE_NOTELEMETRY} from "../../../common/constants";
-import SerialPort = require("serialport");
+import {BootloadableConnection} from "../bootloader/bootloadable_connection";
+import {TerminalHandle} from "./UD3Connection";
 import minprot = require('../../../../libs/min');
 
 const MIN_ID_WD = 10;
@@ -22,10 +21,7 @@ const SYNTH_CMD_SID = 0x02;
 const SYNTH_CMD_MIDI = 0x03;
 const SYNTH_CMD_OFF = 0x04;
 
-class MinSerialConnection extends BootloadableConnection {
-    public readonly port: string;
-    public readonly baudrate: number;
-    private serialPort: SerialPort;
+export abstract class MinConnection extends BootloadableConnection {
     private min_wrapper: minprot | undefined;
     private readonly sidConnection: UD3FormattedConnection;
     private mediaFramesForBatching: Buffer[] = [];
@@ -33,10 +29,8 @@ class MinSerialConnection extends BootloadableConnection {
     private actualUDFeatures: Map<string, string>;
     private connectionsToSetTTerm: TerminalHandle[] = [];
 
-    constructor(port: string, baud: number) {
+    protected constructor() {
         super();
-        this.port = port;
-        this.baudrate = baud;
         this.sidConnection = new UD3FormattedConnection(
             () => this.flushSynth(),
             (data) => this.sendMedia(data)
@@ -45,35 +39,14 @@ class MinSerialConnection extends BootloadableConnection {
     }
 
     public async connect(): Promise<void> {
-        return new Promise<void>((res, rej) => {
-            this.serialPort = new SerialPort(this.port,
-                {
-                    baudRate: this.baudrate,
-                }, (e: Error | null) => {
-                    if (e) {
-                        console.log("Not connecting, ", e);
-                        rej(e);
-                    } else {
-                        this.serialPort.on('data', (data: Buffer) => {
-                            if (this.isBootloading()) {
-                                this.bootloaderCallback(data);
-                            } else {
-                                this.min_wrapper.min_poll(data);
-                            }
-                        });
-                        this.serialPort.on("error", e => console.log(e));
-                        res();
-                    }
-                });
-        })
-            .then(() => this.init_min_wrapper())
-            .catch((e) => {
-                if (this.serialPort && this.serialPort.isOpen) {
-                    this.serialPort.close();
-                    this.serialPort.destroy();
-                }
-                throw e;
-            });
+        this.registerListener(data => {
+            if (this.isBootloading()) {
+                this.bootloaderCallback(data);
+            } else {
+                this.min_wrapper.min_poll(data);
+            }
+        });
+        await this.init_min_wrapper();
     }
 
     public async disconnect() {
@@ -91,14 +64,6 @@ class MinSerialConnection extends BootloadableConnection {
             console.error("Failed to disconnect cleanly", e);
         }
         this.terminalCallbacks.clear();
-        if (this.serialPort) {
-            if (this.serialPort.isOpen) {
-                this.serialPort.close();
-            }
-            this.serialPort.destroy();
-            this.min_wrapper = undefined;
-            this.serialPort = undefined;
-        }
     }
 
     async sendMedia(data: Buffer) {
@@ -147,7 +112,7 @@ class MinSerialConnection extends BootloadableConnection {
 
     public sendBootloaderData(data: Buffer): Promise<void> {
         return new Promise<void>((res, rej) => {
-            this.serialPort.write(data, (err) => {
+            this.send(data, (err) => {
                 if (err) {
                     rej(err);
                 } else {
@@ -160,7 +125,6 @@ class MinSerialConnection extends BootloadableConnection {
     public enterBootloaderMode(dataCallback: (data: Buffer) => void): void {
         super.enterBootloaderMode(dataCallback);
         this.min_wrapper = undefined;
-        this.serialPort.flush();
     }
 
     public leaveBootloaderMode(): void {
@@ -174,7 +138,7 @@ class MinSerialConnection extends BootloadableConnection {
         }
     }
 
-    private batchFrames(buf: Buffer[], maxPerFrame: number, insertFrameCnt: boolean ,minID: number) {
+    private batchFrames(buf: Buffer[], maxPerFrame: number, insertFrameCnt: boolean, minID: number) {
         while (this.min_wrapper.get_relative_fifo_size() < 0.75 && buf.length > 0) {
             let frameParts: Buffer[] = [];
             let currentSize = 0;
@@ -233,9 +197,9 @@ class MinSerialConnection extends BootloadableConnection {
             if (this.isBootloading()) {
                 return;
             }
-            this.serialPort.write(data, (err) => {
+            this.send(data, (err) => {
                 if (err) {
-                    console.error("Error while sending serial data: ", err);
+                    console.error("Error while sending data: ", err);
                 }
             });
         };
@@ -295,9 +259,8 @@ class MinSerialConnection extends BootloadableConnection {
     getFeatureValue(feature: string): string {
         return this.actualUDFeatures.get(feature);
     }
-}
 
-export function createMinSerialConnection(port: string, baudrate: number): UD3Connection {
-    return new MinSerialConnection(port, baudrate);
-}
+    abstract send(data: Buffer | number[], onError: (err) => void): void;
 
+    abstract registerListener(listener: (data: Buffer) => void): void;
+}
