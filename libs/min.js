@@ -60,7 +60,7 @@ module.exports = class minprot {
 		this.TRANSPORT_IDLE_TIMEOUT_MS = 1000;
 		this.TRANSPORT_MAX_WINDOW_SIZE = 16;
 		this.TRANSPORT_ACK_RETRANSMIT_TIMEOUT_MS = 25;
-		this.TRANSPORT_FRAME_RETRANSMIT_TIMEOUT_MS = 100;
+		this.TRANSPORT_FRAME_RETRANSMIT_TIMEOUT_MS = 50;
 
 		this.sendByte = 0;
 		this.handler = 0;
