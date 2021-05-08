@@ -13,6 +13,7 @@ export class NetworkSIDServer {
     private localBuffer: SidFrame[] = [];
     private timeStandard: TimingStandard = PAL;
     private firstAfterReset: boolean = false;
+    private sendTimer;
 
     public constructor(port: number) {
         this.port = port;
@@ -34,8 +35,16 @@ export class NetworkSIDServer {
     }
 
     private onConnected(socket: net.Socket) {
+        console.log("start");
+        this.sendTimer = setInterval(() => {
+            this.sendFramesSync();
+        } , 10);
         this.stopListening();
-        socket.once("close", () => this.startListening());
+        socket.once("close", () => {
+            this.startListening();
+            clearTimeout(this.sendTimer);
+            console.log("stop");
+        });
         socket.on("error", err => {
             console.log("Error in NetSID connection: ", err);
         });
@@ -48,9 +57,11 @@ export class NetworkSIDServer {
         if (this.localBuffer.length < 3) {
             return;
         }
+
         if (await getOptionalUD3Connection()?.setSynth(SynthType.SID, true)) {
             getActiveSIDConnection()?.onStart();
         }
+
         while (!getActiveSIDConnection()?.isBusy() && this.localBuffer.length > 0) {
             const nextFrame = this.localBuffer.shift();
             await getActiveSIDConnection()?.processFrame(nextFrame);
@@ -64,6 +75,7 @@ export class NetworkSIDServer {
             const value = data[i + 3];
             this.timeSinceLastFrame = delay + this.timeSinceLastFrame;
             const cyclesPerFrame = this.timeStandard.cycles_per_frame;
+            this.currentSIDState[register] = value;
             if (delay > 1000) {
                 let frameTime = cyclesPerFrame;
                 if (this.firstAfterReset) {
@@ -73,7 +85,7 @@ export class NetworkSIDServer {
                 this.localBuffer.push(new SidFrame(Uint8Array.from(this.currentSIDState), this.timeSinceLastFrame));
                 this.timeSinceLastFrame = 0;
             }
-            this.currentSIDState[register] = value;
+
         }
     }
 
@@ -84,8 +96,10 @@ export class NetworkSIDServer {
     }
 
     private handleMessage(data: Buffer, sendReply: (data) => void) {
+
         const command = data[0];
         const sidNum = data[1];
+        const length = (data[2] << 8) | data[3];
         const additional = data.slice(4);
         const len = additional.length;
         let returnCode = Buffer.of(ReplyCode.OK);
@@ -93,7 +107,9 @@ export class NetworkSIDServer {
         switch (command) {
             case Command.FLUSH:
                 getActiveSIDConnection()?.flush();
+                getActiveSIDConnection()?.onStart();
                 this.localBuffer = [];
+                this.firstAfterReset = true;
                 break;
             case Command.TRY_SET_SID_COUNT:
                 if (sidNum > 1) {
@@ -117,6 +133,7 @@ export class NetworkSIDServer {
                 } else {
                     toRead = additional;
                 }
+
                 break;
             case Command.TRY_READ:
                 if (this.localBuffer.length > 10) {
@@ -164,6 +181,6 @@ export class NetworkSIDServer {
         if (toRead) {
             this.processFrames(toRead);
         }
-        this.sendFramesSync();
+        //this.sendFramesSync();
     }
 }

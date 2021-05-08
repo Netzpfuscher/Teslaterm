@@ -46,6 +46,7 @@ export class UD3FormattedConnection implements ISidConnection {
     processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
         const ud_time = getUD3Connection().toUD3Time(this.lastFrameTime);
+        //console.log(Math.floor(this.lastFrameTime/1000));
         const frameSize = this.ffPrefixBytes + FRAME_LENGTH + FRAME_UDTIME_LENGTH + ( this.needsZeroSuffix ? 1 : 0);
         const data = Buffer.alloc(frameSize);
         let byteCount = 0;
