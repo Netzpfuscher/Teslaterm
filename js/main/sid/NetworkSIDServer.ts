@@ -76,7 +76,9 @@ export class NetworkSIDServer {
             this.timeSinceLastFrame = delay + this.timeSinceLastFrame;
             const cyclesPerFrame = this.timeStandard.cycles_per_frame;
             this.currentSIDState[register] = value;
-            if (delay > 1000) {
+
+            if (this.timeSinceLastFrame > 19000) {
+                //console.log(delay , this.timeSinceLastFrame);
                 let frameTime = cyclesPerFrame;
                 if (this.firstAfterReset) {
                     frameTime *= 20;
