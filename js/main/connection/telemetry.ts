@@ -14,16 +14,18 @@ export function receive_main(data: Buffer, source?: object) {
     let print: (s: string) => void;
 
     if (source) {
-        print = s => TerminalIPC.print(s, source);
+        print = (s) => TerminalIPC.print(s, source);
     } else {
-        print = s => {
+        print = (s) => {
             if (s === '\n' || s === '\r') {
                 if (consoleLine !== "") {
                     console.log(consoleLine);
                     consoleLine = "";
                 }
             } else {
-                consoleLine += s;
+                if (s !== '\u0000') {
+                    consoleLine += s;
+                }
             }
         };
     }

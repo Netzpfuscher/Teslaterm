@@ -104,6 +104,8 @@ export function ud_settings(uconfig: string[][]) {
                 {id: 'tab4', caption: 'IP'},
                 {id: 'tab5', caption: 'Serial'},
                 {id: 'tab6', caption: 'Current'},
+                {id: 'tab7', caption: 'NTC'},
+                {id: 'tab8', caption: 'Synthesizer'},
             ],
         });
     }
@@ -128,6 +130,6 @@ export function ud_settings(uconfig: string[][]) {
         showMax: true,
         style: 'padding: 15px 0px 0px 0px',
         title: 'UD3 Settings',
-        width: 650,
+        width: 700,
     });
 }
