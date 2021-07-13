@@ -11,6 +11,9 @@ export const TT_STATE_SYNC = 10;
 export const TT_CONFIG_GET = 11;
 export const TT_GAUGE32 = 13;
 export const TT_GAUGE32_CONF = 14;
+export const TT_CHART32 = 16;
+export const TT_CHART32_CONF = 17;
+
 export const UNITS: string[] = ['', 'V', 'A', 'W', 'Hz', '°C', 'kW', 'RPM'];
 
 export const TYPE_UNSIGNED = 0;

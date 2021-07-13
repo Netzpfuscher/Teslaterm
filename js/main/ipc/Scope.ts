@@ -35,8 +35,8 @@ export module ScopeIPC {
         processIPC.sendToWindow(IPCConstantsToRenderer.scope.drawString, source, new ScopeText(x, y, color, size, str, center));
     }
 
-    export function configure(traceId: number, min: number, max: number, offset: number, unit: string, name: string) {
-        const config = new ScopeTraceConfig(traceId, min, max, offset, unit, name);
+    export function configure(traceId: number, min: number, max: number, offset: number, div: number, unit: string, name: string) {
+        const config = new ScopeTraceConfig(traceId, min, max, offset, div, unit, name);
         processIPC.sendToAll(IPCConstantsToRenderer.scope.configure, config);
         configs.set(traceId, config);
     }

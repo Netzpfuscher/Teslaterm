@@ -18,7 +18,7 @@ import {
 export namespace ScopeIPC {
     export function init() {
         processIPC.on(IPCConstantsToRenderer.scope.configure, (cfg: ScopeTraceConfig) => {
-            traces[cfg.id].configure(cfg.min, cfg.max, cfg.offset, cfg.unit, cfg.name);
+            traces[cfg.id].configure(cfg.min, cfg.max, cfg.offset, cfg.div ,cfg.unit, cfg.name);
             redrawInfo();
         });
         processIPC.on(IPCConstantsToRenderer.scope.addValues, (cfg: ScopeValues) => {

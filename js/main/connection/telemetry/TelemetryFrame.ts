@@ -1,12 +1,13 @@
 import assert = require("assert");
 import {
     DATA_NUM, DATA_TYPE,
-    TT_CHART, TT_CHART_CLEAR,
-    TT_CHART_CONF, TT_CHART_DRAW, TT_CHART_LINE, TT_CHART_TEXT, TT_CHART_TEXT_CENTER, TT_CONFIG_GET,
+    TT_CHART, TT_CHART32,
+    TT_CHART32_CONF, TT_CHART_CLEAR, TT_CHART_CONF, TT_CHART_DRAW, TT_CHART_LINE, TT_CHART_TEXT,
+    TT_CHART_TEXT_CENTER,
+    TT_CONFIG_GET,
     TT_GAUGE,
-    TT_GAUGE32,
-    TT_GAUGE32_CONF,
-    TT_GAUGE_CONF, TT_STATE_SYNC, UNITS
+    TT_GAUGE32, TT_GAUGE32_CONF, TT_GAUGE_CONF,
+    TT_STATE_SYNC, UNITS,
 } from "../../../common/constants";
 import {bytes_to_signed, convertBufferToString, Endianness, from_32_bit_bytes} from "../../helper";
 import {MetersIPC} from "../../ipc/meters";
@@ -65,6 +66,18 @@ export class TelemetryFrame {
                 MetersIPC.configure(index, min, max, div, str);
                 break;
             }
+            case TT_CHART32_CONF: {
+                const traceId = this.data[1].valueOf();
+                const min = from_32_bit_bytes(this.data.slice(2, 6), Endianness.LITTLE_ENDIAN);
+                const max = from_32_bit_bytes(this.data.slice(6, 10), Endianness.LITTLE_ENDIAN);
+                const offset = from_32_bit_bytes(this.data.slice(10, 14), Endianness.LITTLE_ENDIAN);
+                const div = from_32_bit_bytes(this.data.slice(14, 18), Endianness.LITTLE_ENDIAN);
+                const unit = UNITS[this.data[18]];
+                this.data.splice(0, 19);
+                const name = convertBufferToString(this.data);
+                ScopeIPC.configure(traceId, min, max, offset, div, unit, name);
+                break;
+            }
             case TT_CHART_CONF: {
                 const traceId = this.data[1].valueOf();
                 const min = bytes_to_signed(this.data[2], this.data[3]);
@@ -73,7 +86,7 @@ export class TelemetryFrame {
                 const unit = UNITS[this.data[8]];
                 this.data.splice(0, 9);
                 const name = convertBufferToString(this.data);
-                ScopeIPC.configure(traceId, min, max, offset, unit, name);
+                ScopeIPC.configure(traceId, min, max, offset, 1, unit, name);
                 break;
             }
             case TT_CHART: {
@@ -82,6 +95,11 @@ export class TelemetryFrame {
                 ScopeIPC.addValue(chart_num, val);
                 break;
             }
+            case TT_CHART32:
+                const val = from_32_bit_bytes(this.data.slice(2) , Endianness.LITTLE_ENDIAN);
+                const chart_num = num.valueOf();
+                ScopeIPC.addValue(chart_num, val);
+                break;
             case TT_CHART_DRAW:
                 ScopeIPC.drawChart();
                 break;

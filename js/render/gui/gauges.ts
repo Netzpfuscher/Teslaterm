@@ -15,6 +15,7 @@ export class Meter {
             // tslint:disable-next-line:object-literal-sort-keys
             min: 0,
             max: 255,
+            decimals: 1,
             title: ("Gauge" + id),
         });
     }

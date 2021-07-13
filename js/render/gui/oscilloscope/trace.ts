@@ -15,6 +15,7 @@ export class Trace {
     private yPos: number = 0;
     private name: string = "";
     private offset: number = 1024;
+    private div: number = 1;
     private unit: string = "";
     private perDiv: number = 1;
 
@@ -41,6 +42,7 @@ export class Trace {
     }
 
     public addValue(val: number): void {
+        val = val / this.div;
         this.value_real = val;
         this.value = (1 / this.span) * (val - this.offset);
         if (this.value > 1) {
@@ -89,10 +91,11 @@ export class Trace {
         return text_pos;
     }
 
-    public configure(min: number, max: number, offset: number, unit: string, name: string) {
+    public configure(min: number, max: number, offset: number, div: number, unit: string, name: string) {
         this.span_private = max - min;
         this.perDiv = this.span / 5;
         this.offset = offset;
+        this.div = div;
         this.unit = unit;
         this.name = name;
         this.stats.reset();

@@ -72,14 +72,16 @@ export class ScopeTraceConfig {
     public readonly min: number;
     public readonly max: number;
     public readonly offset: number;
+    public readonly div: number;
     public readonly unit: string;
     public readonly name: string;
 
-    constructor(id: number, min: number, max: number, offset: number, unit: string, name: string) {
+    constructor(id: number, min: number, max: number, offset: number, div: number, unit: string, name: string) {
         this.id = id;
         this.min = min;
         this.max = max;
         this.offset = offset;
+        this.div = div;
         this.unit = unit;
         this.name = name;
     }
