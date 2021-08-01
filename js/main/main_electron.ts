@@ -26,7 +26,8 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         webPreferences: {
             // TODO the goal is for this to be removed at some point
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false,
         }
     });
 
