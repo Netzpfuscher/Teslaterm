@@ -46,6 +46,9 @@ class EthernetConnection extends UD3Connection {
         }
     }
 
+    public async sendVMSFrames(data: Buffer) {
+    }
+
     public async connect(): Promise<void> {
         this.telnetSocket = await connectTCPSocket(
             this.remoteIp,
@@ -70,6 +73,7 @@ class EthernetConnection extends UD3Connection {
 
     public tick(): void {
     }
+
 
     public async setSynthImpl(type: SynthType): Promise<void> {
         const id = toCommandID(type);

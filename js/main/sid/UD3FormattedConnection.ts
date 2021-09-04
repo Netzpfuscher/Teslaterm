@@ -43,6 +43,9 @@ export class UD3FormattedConnection implements ISidConnection {
         }
     }
 
+    public async sendVMSFrames(data: Buffer) {
+    }
+
     processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
         const ud_time = getUD3Connection().toUD3Time(this.lastFrameTime);

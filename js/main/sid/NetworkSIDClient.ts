@@ -48,6 +48,9 @@ export class NetworkSIDClient implements ISidConnection {
         }
     }
 
+    public async sendVMSFrames(data: Buffer) {
+    }
+
     isBusy(): boolean {
         return this.busy;
     }

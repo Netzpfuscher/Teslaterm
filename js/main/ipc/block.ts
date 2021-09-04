@@ -474,7 +474,7 @@ export namespace BlockSender {
             }
 
 
-            if (indent < indent_old {
+            if (indent < indent_old) {
                 blk_cnt++;
             }
 
