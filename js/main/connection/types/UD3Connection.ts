@@ -36,6 +36,8 @@ export abstract class UD3Connection {
 
     abstract sendMidi(data: Buffer): Promise<void>;
 
+    abstract sendVMSFrames(data: Buffer);
+
     abstract getSidConnection(): ISidConnection;
 
     abstract connect(): Promise<void>;

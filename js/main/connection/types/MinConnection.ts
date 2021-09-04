@@ -16,6 +16,7 @@ const MIN_ID_SOCKET = 13;
 const MIN_ID_SYNTH = 14;
 const MIN_ID_FEATURE = 15;
 const MIN_ID_DEBUG = 42;
+const MIN_ID_VMS = 43;
 
 const SYNTH_CMD_FLUSH = 0x01;
 const SYNTH_CMD_SID = 0x02;
@@ -27,6 +28,7 @@ export abstract class MinConnection extends BootloadableConnection {
     private readonly sidConnection: UD3FormattedConnection;
     private mediaFramesForBatching: Buffer[] = [];
     private mediaFramesForBatchingSID: Buffer[] = [];
+    private VMSFramesForBatching: Buffer[] = [];
     private actualUDFeatures: Map<string, string>;
     private connectionsToSetTTerm: TerminalHandle[] = [];
 
@@ -76,6 +78,12 @@ export abstract class MinConnection extends BootloadableConnection {
     async sendMediaSID(data: Buffer) {
         if (this.min_wrapper) {
             this.mediaFramesForBatchingSID.push(data);
+        }
+    }
+
+    public async sendVMSFrames(data: Buffer) {
+        if (this.min_wrapper) {
+            this.VMSFramesForBatching.push(data);
         }
     }
 
@@ -160,12 +168,22 @@ export abstract class MinConnection extends BootloadableConnection {
         }
     }
 
+    private sendBufferedFrame(buf: Buffer[], minID: number) {
+        while (this.min_wrapper.get_relative_fifo_size() < 0.75 && buf.length > 0) {
+            console.log(buf[0]);
+            this.min_wrapper.min_queue_frame(minID, buf.shift()).catch(err => {
+                console.log("Failed to send media packet: " + err);
+            });
+        }
+    }
+
     public async tick(): Promise<void> {
         if (this.min_wrapper) {
             const maxPerFrame = 200;
 
             this.batchFrames(this.mediaFramesForBatching, maxPerFrame, false, MIN_ID_MEDIA);
             this.batchFrames(this.mediaFramesForBatchingSID, maxPerFrame, true, MIN_ID_SID);
+            this.sendBufferedFrame(this.VMSFramesForBatching, MIN_ID_VMS);
             this.min_wrapper.min_poll();
         }
     }

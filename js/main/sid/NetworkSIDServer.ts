@@ -78,7 +78,7 @@ export class NetworkSIDServer {
             this.currentSIDState[register] = value;
 
             if (this.timeSinceLastFrame > 19000) {
-                //console.log(delay , this.timeSinceLastFrame);
+                // console.log(delay , this.timeSinceLastFrame);
                 let frameTime = cyclesPerFrame;
                 if (this.firstAfterReset) {
                     frameTime *= 20;
