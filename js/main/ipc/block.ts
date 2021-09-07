@@ -41,12 +41,15 @@ export namespace BlockSender {
                      sendBlock(block);
                  }
              });
+             sendNullBlock();
              blocks[1].items.forEach((item) => {
                 sendMapHeader(item);
                 item.maps.forEach((entry) => {
                    sendMapEntry(entry);
                 });
              });
+             sendNullHeader();
+             sendFlush();
 
              // getUD3Connection().sendVMSFrames(buf);
 
@@ -97,6 +100,11 @@ export namespace BlockSender {
         getUD3Connection().sendVMSFrames(buf);
     }
 
+    function sendFlush() {
+        const buf: Buffer = new Buffer(1);
+        buf[0] = 0x04;
+        getUD3Connection().sendVMSFrames(buf);
+    }
 
     enum FLAGS {
         MAP_ENA_PITCHBEND = 0x80,
@@ -141,6 +149,16 @@ export namespace BlockSender {
         writeUint8(buf, index, flag);
         index++;
         writeUint32(buf, index, entry.startBlock);
+        getUD3Connection().sendVMSFrames(buf);
+    }
+
+    function sendNullBlock(){
+        const buf: Buffer = new Buffer(65);
+        getUD3Connection().sendVMSFrames(buf);
+    }
+
+    function sendNullHeader(){
+        const buf: Buffer = new Buffer(20);
         getUD3Connection().sendVMSFrames(buf);
     }
 
