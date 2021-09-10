@@ -170,7 +170,12 @@ export namespace BlockSender {
         index++;
         writeUint32(buf, index, block.uid);
         index += 4;
-        writeUint32(buf, index, block.nextBlock0);
+        if(block.outsEnabled === false) {
+            console.log("DEAD");
+            writeUint32(buf, index, 0xDEADBEEF);
+        } else {
+            writeUint32(buf, index, block.nextBlock0);
+        }
         index += 4;
         writeUint32(buf, index, block.nextBlock1);
         index += 4;
@@ -355,7 +360,7 @@ export namespace BlockSender {
         index += 4;
         writeint32(buf, index, block.param2);
         index += 4;
-        writeUint32(buf, index, block.period);
+        writeUint32(buf, index, block.param3);
         index += 4;
         writeUint32(buf, index, block.flags);
         
