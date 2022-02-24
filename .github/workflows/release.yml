@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install wine
-        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install wine wine32 libwine fonts-wine
+        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install wine wine32 wine64 libwine libwine:i386 fonts-wine
       - name: Cache node modules
         uses: actions/cache@v2
         env:
