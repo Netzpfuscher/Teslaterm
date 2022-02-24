@@ -9,14 +9,14 @@ on:
 jobs:
   create-artifacts:
     name: Create artifacts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     env:
       release: ${{ github.event_name == 'create' && startsWith(github.ref, 'v')}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install wine
-        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get -f install wine32 libwine:i386
+        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get -f install wine32
       - name: Cache node modules
         uses: actions/cache@v2
         env:
