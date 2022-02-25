@@ -9,7 +9,7 @@ on:
 jobs:
   create-artifacts:
     name: Create artifacts
-    runs-on: debian-latest
+    runs-on: ubuntu-20.04
     env:
       release: ${{ github.event_name == 'create' && startsWith(github.ref, 'v')}}
     steps:
