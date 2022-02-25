@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install wine
-        run: sudo dpkg --add-architecture i386 && sudo apt-get update && wget -qO- https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add - && sudo apt install software-properties-common && sudo apt-add-repository "deb http://dl.winehq.org/wine-builds/ubuntu/ $(lsb_release -cs) main" && sudo apt install --install-recommends wine-stable wine-stable-i386 winehq-stable
+        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install libpcre2-8-0=10.34-7 && sudo apt-get install libssl1.1=1.1.1f-1ubuntu2.1 && sudo apt-get install libssl1.1:i386=1.1.1f-1ubuntu2.1 && sudo apt-get install wine32
       - name: Cache node modules
         uses: actions/cache@v2
         env:
