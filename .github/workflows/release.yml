@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install wine
-        run: sudo apt-get update && sudo apt-get install wine && dpkg --add-architecture i386 && apt-get update && apt-get install wine32
+        run: dpkg --add-architecture i386 sudo apt-get update && sudo apt-get install libc-bin=2.31-0ubuntu9.2 libc-dev-bin=2.31-0ubuntu9.2 libc6:amd64=2.31-0ubuntu9.2 libc6-dbg:amd64=2.31-0ubuntu9.2 libc6-dev:amd64=2.31-0ubuntu9.2 libc6-i386=2.31-0ubuntu9.2 locales=2.31-0ubuntu9.2 wine32
       - name: Cache node modules
         uses: actions/cache@v2
         env:
