@@ -8,12 +8,15 @@
     "start-electron": "npm run build && cross-var electron . --no-sandbox",
     "start-node": "npm run build && node js/main/main_node.js",
     "install": "electron-rebuild",
-    "install-electron": "cd node_modules/@serialport/bindings && prebuild-install --tag-prefix @serialport/bindings@ -r electron -t 13.1.7",
+    "install-electron": "cd node_modules/@serialport/bindings && prebuild-install --tag-prefix @serialport/bindings@ -r electron",
     "install-node": "cd node_modules/@serialport/bindings && prebuild-install --tag-prefix @serialport/bindings@ -r node",
-    "package-electron": "cross-var electron-builder --linux zip --windows zip",
-    "pkg-node": "cross-var pkg --out-path=dist/node -t  node12-linux-x64,node12-windows-x64 package.json",
+    "package-electron": "cross-var electron-builder --windows nsis",
+    "pkg-node": "cross-var pkg --out-path=dist/node package.json",
     "pkg-rename": "cross-var mv dist/node/teslaterm-linux dist/node/ud3-node && cross-var mv dist/node/teslaterm-win.exe dist/node/ud3-node.exe",
-    "package-node": "npm run pkg-node && npm run pkg-rename"
+    "package-node": "npm run pkg-node && npm run pkg-rename",
+	"postinstall": "electron-builder install-app-deps",
+	"app:dir": "electron-builder --dir",
+	"app:dist": "electron-builder"
   },
   "main": "js/main/main_electron.js",
   "bin": "js/main/main_node.js",
@@ -27,7 +30,7 @@
     "justgage": "^1.3.5",
     "jzz": "^0.6.9",
     "midi-player-js": "^2.0.13",
-    "node-abi": "^2.30.0",
+    "node-abi": "",
     "rtpmidi": "^1.0.0",
     "serialport": "^9.2.0",
     "socket.io": "^2.3.0",
@@ -44,20 +47,20 @@
     "@types/socket.io-client": "^1.4.33",
     "@types/w2ui": "^1.4.32",
     "@types/webmidi": "^2.0.4",
-    "cross-var": "^1.1.0",
-    "electron": "^13.1.7",
-    "electron-builder": "^22.7.0",
-    "electron-rebuild": "^2.3.5",
-    "node": "^14.17.4",
-    "npm": "^7.20.3",
-    "pkg": "^4.4.8",
-    "prebuild-install": "^6.1.3",
-    "ts-loader": "^7.0.5",
-    "tslint": "^5.10.0",
-    "tslint-no-circular-imports": "^0.7.0",
-    "typescript": "^3.9.3",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11"
+    "cross-var": "",
+    "electron":"",
+    "electron-builder": "",
+    "electron-rebuild": "",
+    "node": "",
+    "npm": "",
+    "pkg": "",
+    "prebuild-install": "",
+    "ts-loader": "",
+    "tslint": "",
+    "tslint-no-circular-imports": "",
+    "typescript": "",
+    "webpack": "",
+    "webpack-cli": ""
   },
   "build": {
     "appId": "teslaterm",
@@ -66,7 +69,13 @@
     },
     "linux": {
       "artifactName": "electron/${productName}-linux.${ext}"
-    }
+    },
+	"nsis": {
+		"oneClick": false,
+		"perMachine": false,
+		"allowElevation": true,
+		"allowToChangeInstallationDirectory": true
+	}
   },
   "pkg": {
     "assets": [
