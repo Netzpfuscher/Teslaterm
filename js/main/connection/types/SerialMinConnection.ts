@@ -1,6 +1,6 @@
+import {SerialPort} from "serialport";
 import {MinConnection} from "./MinConnection";
 import {UD3Connection} from "./UD3Connection";
-import SerialPort = require("serialport");
 
 
 class MinSerialConnection extends MinConnection {
@@ -16,9 +16,10 @@ class MinSerialConnection extends MinConnection {
 
     public async connect(): Promise<void> {
         return new Promise<void>((res, rej) => {
-            this.serialPort = new SerialPort(this.port,
+            this.serialPort = new SerialPort(
                 {
                     baudRate: this.baudrate,
+                    path: this.port,
                 }, (e: Error | null) => {
                     if (e) {
                         console.log("Not connecting, ", e);

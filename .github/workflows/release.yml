@@ -34,15 +34,9 @@ jobs:
       - name: Prepare
         run: npm run build
       - name: Build Electron
-        run: npm run install-electron && npm run package-electron
+        run: npm run package-electron
       - name: Build Node
-        run: npm run install-node && npm run package-node
-      - name: Package node-linux
-        run: zip -j dist/node/ud3-node-linux.zip dist/node/ud3-node node_modules/@serialport/bindings/build/Release/bindings.node
-      - name: Get Windows serialport bindings
-        run: (cd node_modules/@serialport/bindings && npx prebuild-install --tag-prefix @serialport/bindings@ -r node --platform win32)
-      - name: Package node-windows
-        run: zip -j dist/node/ud3-node-win.zip dist/node/ud3-node.exe node_modules/@serialport/bindings/build/Release/bindings.node
+        run: npm run package-node
       - name: Upload electron-linux
         uses: actions/upload-artifact@v2
         with:
@@ -56,13 +50,13 @@ jobs:
       - name: Upload node-linux
         uses: actions/upload-artifact@v2
         with:
-          path: dist/node/ud3-node-linux.zip
-          name: ud3-node-linux.zip
+          path: dist/node/ud3-node
+          name: ud3-node-linux
       - name: Upload node-win
         uses: actions/upload-artifact@v2
         with:
-          path: dist/node/ud3-node-win.zip
-          name: ud3-node-win.zip
+          path: dist/node/ud3-node.exe
+          name: ud3-node-windows.exe
       - name: Create release
         if: env.release == 'true'
         uses: actions/create-release@v1

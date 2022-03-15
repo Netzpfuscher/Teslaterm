@@ -1,8 +1,7 @@
+import {SerialPort} from "serialport";
 import {SynthType} from "../../../common/CommonTypes";
 import {ISidConnection} from "../../sid/ISidConnection";
-import {UD3Connection, toCommandID} from "./UD3Connection";
-import * as telemetry from "../telemetry";
-import SerialPort = require("serialport");
+import {toCommandID, UD3Connection} from "./UD3Connection";
 
 export class PlainSerialConnection extends UD3Connection {
     private serialPort: SerialPort;
@@ -17,9 +16,10 @@ export class PlainSerialConnection extends UD3Connection {
 
     connect(): Promise<void> {
         return new Promise<void>((res, rej) => {
-            this.serialPort = new SerialPort(this.port,
+            this.serialPort = new SerialPort(
                 {
                     baudRate: this.baudrate,
+                    path: this.port,
                 }, (e: Error | null) => {
                     if (e) {
                         console.log("Not connecting, ", e);

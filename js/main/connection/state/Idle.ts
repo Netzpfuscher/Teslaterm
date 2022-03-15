@@ -18,7 +18,7 @@ import {createPlainSerialConnection} from "../types/serial_plain";
 import {createMinUDPConnection} from "../types/UDPMinConnection";
 import {Connecting} from "./Connecting";
 import {IConnectionState} from "./IConnectionState";
-import SerialPort = require("serialport");
+import {SerialPort} from "serialport";
 
 export class Idle implements IConnectionState {
     public getActiveConnection(): UD3Connection | undefined {
