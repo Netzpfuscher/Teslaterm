@@ -52,7 +52,7 @@ export class Bootloading implements IConnectionState {
         return "Abort bootloading";
     }
 
-    pressButton(window: object): IConnectionState {
+    public async pressButton(window: object): Promise<IConnectionState> {
         this.cancelled = true;
         this.connection.disconnect();
         return new Idle();

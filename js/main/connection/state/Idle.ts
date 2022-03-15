@@ -33,7 +33,7 @@ export class Idle implements IConnectionState {
         return "Connect";
     }
 
-    public pressButton(window: object): IConnectionState {
+    public async pressButton(window: object): Promise<IConnectionState> {
         return new Connecting(Idle.connectInternal(window), this);
     }
 

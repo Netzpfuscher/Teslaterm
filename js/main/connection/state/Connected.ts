@@ -1,17 +1,15 @@
 import {PlayerActivity} from "../../../common/CommonTypes";
 import {TerminalIPC} from "../../ipc/terminal";
+import * as media from "../../media/media_player";
 import {BootloadableConnection} from "../bootloader/bootloadable_connection";
 import {commands} from "../connection";
 import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {IConnectionState} from "./IConnectionState";
 import {Idle} from "./Idle";
-import * as media from "../../media/media_player";
 import {Reconnecting} from "./Reconnecting";
 
 const TIMEOUT = 1000;
 let lastResponseTime = Date.now();
-const WD_TIMEOUT = 10;
-let wd_reset = WD_TIMEOUT;
 
 export function resetResponseTimeout() {
     lastResponseTime = Date.now();
@@ -34,12 +32,13 @@ export class Connected implements IConnectionState {
         return "Disconnect";
     }
 
-    public pressButton(window: object): IConnectionState {
-        console.log("Disconnecting");
-        this.disconnectInternal().then(() => {
-            // NOP
-        });
-        TerminalIPC.onConnectionClosed();
+    public async pressButton(window: object): Promise<IConnectionState> {
+        try {
+            await this.disconnectInternal();
+            TerminalIPC.onConnectionClosed();
+        } catch (err) {
+            console.error("While disconnecting:", err);
+        }
         return new Idle();
     }
 
@@ -60,11 +59,15 @@ export class Connected implements IConnectionState {
         this.active_connection.resetWatchdog();
     }
 
+    public getAutoTerminal(): TerminalHandle | undefined {
+        return this.autoTerminal;
+    }
+
     private isConnectionLost(): boolean {
         if (this.active_connection instanceof BootloadableConnection) {
             const bootConnection = this.active_connection as BootloadableConnection;
             if (bootConnection.isBootloading()) {
-                //TODO detect lost connection in bootloader mode (and fully disconnect)?
+                // TODO detect lost connection in bootloader mode (and fully disconnect)?
                 return false;
             }
         }
@@ -73,7 +76,7 @@ export class Connected implements IConnectionState {
 
     private async disconnectInternal() {
         try {
-            if (media.media_state.state == PlayerActivity.playing) {
+            if (media.media_state.state === PlayerActivity.playing) {
                 media.media_state.stopPlaying();
             }
             await commands.stop();
@@ -81,9 +84,5 @@ export class Connected implements IConnectionState {
             console.error("Failed to send stop command:", e);
         }
         await this.active_connection.disconnect();
-    }
-
-    getAutoTerminal(): TerminalHandle | undefined {
-        return this.autoTerminal;
     }
 }

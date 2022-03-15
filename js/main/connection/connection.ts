@@ -43,8 +43,8 @@ export async function startConf() {
     await commands.sendCommand('cls\r');
 }
 
-export function pressButton(window: object) {
-    connectionState = connectionState.pressButton(window);
+export async function pressButton(window: object) {
+    connectionState = await connectionState.pressButton(window);
 }
 
 export function autoConnect() {

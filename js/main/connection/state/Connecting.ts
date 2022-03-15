@@ -66,7 +66,7 @@ export class Connecting implements IConnectionState {
         return "Abort connection";
     }
 
-    public pressButton(window: object): IConnectionState {
+    public async pressButton(window: object): Promise<IConnectionState> {
         console.log("Aborting connection");
         return new Idle();
     }

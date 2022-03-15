@@ -52,14 +52,14 @@ export abstract class MinConnection extends BootloadableConnection {
 
     public async disconnect() {
         try {
-            let toDisconnect = [];
+            const toDisconnect = [];
             for (const [id, handler] of this.terminalCallbacks) {
                 if (handler.active) {
-                    toDisconnect[toDisconnect.length] = id;
+                    toDisconnect.push(id);
                 }
             }
             for (const id of toDisconnect) {
-                this.closeTerminal(id);
+                await this.closeTerminal(id);
             }
         } catch (e) {
             console.error("Failed to disconnect cleanly", e);

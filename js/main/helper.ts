@@ -96,7 +96,7 @@ export async function readFileAsync(file: fs.PathLike): Promise<Uint8Array> {
 
 export async function withTimeout<T>(base: Promise<T>, timeout: number): Promise<T> {
     return new Promise<T>((res, rej) => {
-        setTimeout(rej, timeout);
+        setTimeout(() => rej("Reached timeout"), timeout);
         base.then(res);
     });
 }
