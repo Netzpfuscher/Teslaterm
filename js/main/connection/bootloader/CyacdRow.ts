@@ -23,7 +23,7 @@ export class CyacdRow {
             + (this.cyRowId & 0xff) + (this.cyRowId >> 8)
             + (size & 0xff) + (size >> 8)) & 0xff)) & 0xff;
         const crcFromFile = parseInt(line.substring(line.length - 2), 16);
-        if (rowCRC != crcFromFile) {
+        if (rowCRC !== crcFromFile) {
             throw new Error("CRC in file is " + crcFromFile.toString() + ", but should be " + rowCRC.toString());
         }
         this.crc = (0x100 - (payloadSum & 0xff)) & 0xff;

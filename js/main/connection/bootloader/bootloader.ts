@@ -1,6 +1,5 @@
-import {PathLike} from "fs";
-import {readFileAsync, withTimeout} from "../../helper";
 import {jspack} from "jspack";
+import {withTimeout} from "../../helper";
 import {CyacdRow} from "./CyacdRow";
 
 const DATA = 0x37;
@@ -25,7 +24,7 @@ class BootloaderReply {
 }
 
 export class Bootloader {
-    public last_commands: Array<{ id: number, callback: (reply: BootloaderReply) => void }>;
+    public last_commands: Array<{ callback: (reply: BootloaderReply) => void }>;
     public chip_id_from_cyacd: string;
     public cyacdRows: CyacdRow[];
     public info_cb: (info: string) => void;
@@ -43,14 +42,17 @@ export class Bootloader {
         this.chunk_size = 128;
     }
 
-    public async onDataReceived(data: Uint8Array) {
-        for (const byte of data) {
+    public async onDataReceived(raw_data: Uint8Array) {
+        for (const byte of raw_data) {
             this.receive_buffer.push(byte);
             if (this.receive_buffer.length > 6 && byte === PACKET_END) {
                 if (this.last_commands.length > 0) {
-                    console.assert(this.receive_buffer[0] === PACKET_START, "Packet did not start correctly", this.receive_buffer);
+                    console.assert(
+                        this.receive_buffer[0] === PACKET_START,
+                        "Packet did not start correctly",
+                        this.receive_buffer,
+                    );
                     const code = this.receive_buffer[1];
-                    const length = jspack.Unpack("<H", this.receive_buffer.slice(2, 4))[0];
                     const data = this.receive_buffer.slice(4, this.receive_buffer.length - 3);
                     // TODO check CRC?
                     const last_command = this.last_commands[0];
@@ -103,13 +105,10 @@ export class Bootloader {
 
     public async finishRow(row: CyacdRow, remainingBytes: Uint8Array): Promise<void> {
         const rowReference = jspack.Pack("<BH", [row.arrayId, row.cyRowId]);
-        const buf = new Uint8Array(remainingBytes.length + 3);
-        buf.set(rowReference);
-        buf.set(remainingBytes, 3);
-        const programReply = await this.sendBootloaderCommand(PROGRAM, buf);
+        const programReply = await this.sendBootloaderCommand(PROGRAM, [...rowReference, ...remainingBytes]);
         if (programReply.code !== CYRET_SUCCESS) {
             await this.exit();
-            throw new Error('ERROR: Failed to program row: ' + row.humanRowId);
+            throw new Error('ERROR: Failed to program row: ' + row.humanRowId + ", return code " + programReply.code);
         }
         // Check CRC
         const crcReply = await this.sendBootloaderCommand(VERIFY_ROW, rowReference);
@@ -151,38 +150,25 @@ export class Bootloader {
         await this.exit();
     }
 
-    public async sendBootloaderCommand(command, data, no_reply?: boolean): Promise<BootloaderReply> {
-        const buffer = new Uint8Array(data.length + 7);
-        let sum = 0;
-        buffer[0] = PACKET_START;
-        buffer[1] = command;
-        buffer[2] = data.length & 0xFF;
-        buffer[3] = (data.length >>> 8) & 0xFF;
-        let dat_cnt = 4;
-        for (const d of data) {
-            buffer[dat_cnt] = d;
-            dat_cnt++;
-        }
-        let size = buffer.length - 3;
-        while (size > 0) {
-            sum += buffer[size - 1];
-            size--;
-        }
+    public async sendBootloaderCommand(
+        command: number, data: number[] | Uint8Array, no_reply?: boolean,
+    ): Promise<BootloaderReply> {
+        const buffer: number[] = [];
+        buffer.push(PACKET_START, command, data.length & 0xFF, (data.length >>> 8) & 0xFF);
+        buffer.push(...data);
 
+        let sum = 0;
+        for (const element of buffer) {
+            sum += element;
+        }
         const crc = (1 + (~sum)) & 0xFFFF;
-        buffer[dat_cnt] = crc & 0xFF;
-        dat_cnt++;
-        buffer[dat_cnt] = (crc >>> 8) & 0xFF;
-        dat_cnt++;
-        buffer[dat_cnt] = PACKET_END;
+
+        buffer.push(crc & 0xFF, (crc >>> 8) & 0xFF, PACKET_END);
         return withTimeout(new Promise<BootloaderReply>((res) => {
             if (!no_reply) {
-                this.last_commands.push({
-                    callback: res,
-                    id: command,
-                });
+                this.last_commands.push({callback: res});
             }
-            this.write_cb(buffer).then(() => {
+            this.write_cb(new Uint8Array(buffer)).then(() => {
                 if (no_reply) {
                     res(new BootloaderReply(CYRET_SUCCESS, []));
                 }
@@ -191,7 +177,7 @@ export class Bootloader {
     }
 
     public checkChipCompatibility(reply: BootloaderReply): boolean {
-        if (reply.payload.length !== 8 || reply.code != CYRET_SUCCESS) {
+        if (reply.payload.length !== 8 || reply.code !== CYRET_SUCCESS) {
             console.error("Got boot info ", reply);
             this.send_info("Invalid boot info");
             return false;
@@ -208,7 +194,7 @@ export class Bootloader {
 
         this.send_info('\r\nINFO: Connected to bootloader chip-id: ' + this.chip_id_from_cyacd +
             ' silicon-rev: ' + silicon_rev.toString(16).toUpperCase() +
-            ' bootloader version: ' + ldr_version.toString(10) + "." + ldr_version_2.toString(10)
+            ' bootloader version: ' + ldr_version.toString(10) + "." + ldr_version_2.toString(10),
         );
         return true;
     }
