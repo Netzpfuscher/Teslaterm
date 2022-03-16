@@ -87,3 +87,11 @@ aside {
     background: #4CAF50;
     cursor: pointer;
 }
+
+.menu {
+    /*
+     * Hack: In recent Chrome versions, W2UIs menu shows scrollbars. This works around that.
+     * see vitmalina/w2ui#2041
+     */
+    overflow-y: unset !important;
+}

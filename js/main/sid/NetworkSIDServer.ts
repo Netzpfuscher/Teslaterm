@@ -2,8 +2,8 @@ import * as net from "net";
 import {SynthType} from "../../common/CommonTypes";
 import {getOptionalUD3Connection} from "../connection/connection";
 import {getActiveSIDConnection} from "./ISidConnection";
-import {Command, NTSC, PAL, ReplyCode, TimingStandard} from "./SIDConstants";
 import {FRAME_LENGTH, SidFrame} from "./sid_api";
+import {Command, NTSC, PAL, ReplyCode, TimingStandard} from "./SIDConstants";
 
 export class NetworkSIDServer {
     private serverSocket: net.Server;
@@ -13,7 +13,7 @@ export class NetworkSIDServer {
     private localBuffer: SidFrame[] = [];
     private timeStandard: TimingStandard = PAL;
     private firstAfterReset: boolean = false;
-    private sendTimer;
+    private sendTimer: NodeJS.Timer;
 
     public constructor(port: number) {
         this.port = port;

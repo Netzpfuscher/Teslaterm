@@ -1,11 +1,11 @@
-import * as net from "net";
 import * as dgram from "dgram";
+import * as net from "net";
 import {SynthType} from "../../../common/CommonTypes";
+import {TerminalIPC} from "../../ipc/terminal";
 import {ISidConnection} from "../../sid/ISidConnection";
 import {NetworkSIDClient} from "../../sid/NetworkSIDClient";
-import {TerminalIPC} from "../../ipc/terminal";
 import {connectTCPSocket} from "../tcp_helper";
-import {UD3Connection, toCommandID} from "./UD3Connection";
+import {toCommandID, UD3Connection} from "./UD3Connection";
 
 class EthernetConnection extends UD3Connection {
     private telnetSocket: net.Socket | undefined;
