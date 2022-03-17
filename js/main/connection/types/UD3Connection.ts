@@ -32,25 +32,23 @@ export abstract class UD3Connection {
     protected terminalCallbacks: Map<TerminalHandle, TerminalData> = new Map<TerminalHandle, TerminalData>();
     protected lastSynthType: SynthType = SynthType.NONE;
 
-    abstract sendTelnet(data: Buffer, handle: TerminalHandle): Promise<void>;
+    public abstract sendTelnet(data: Buffer, handle: TerminalHandle): Promise<void>;
 
-    abstract sendMidi(data: Buffer): Promise<void>;
+    public abstract sendMidi(data: Buffer): Promise<void>;
 
-    abstract getSidConnection(): ISidConnection;
+    public abstract getSidConnection(): ISidConnection;
 
-    abstract connect(): Promise<void>;
+    public abstract connect(): Promise<void>;
 
-    abstract disconnect(): void;
+    public abstract disconnect(): void;
 
-    abstract resetWatchdog(): void;
+    public abstract resetWatchdog(): void;
 
-    abstract tick(): void;
+    public abstract tick(): void;
 
-    protected abstract setSynthImpl(type: SynthType): Promise<void>;
+    public abstract getMaxTerminalID(): number;
 
-    abstract getMaxTerminalID(): number;
-
-    abstract isMultiTerminal(): boolean;
+    public abstract isMultiTerminal(): boolean;
 
     public setupNewTerminal(dataCallback: (data: Buffer) => void): TerminalHandle | undefined {
         for (let i = 0; !this.isMultiTerminal() || i < this.getMaxTerminalID(); ++i) {
@@ -62,7 +60,7 @@ export abstract class UD3Connection {
         return undefined;
     }
 
-    async startTerminal(handle: TerminalHandle): Promise<void> {
+    public async startTerminal(handle: TerminalHandle): Promise<void> {
         if (!this.terminalCallbacks.has(handle)) {
             throw new Error("Trying to connect start terminal that has not been set up yet");
         }
@@ -72,7 +70,7 @@ export abstract class UD3Connection {
         this.terminalCallbacks.get(handle).active = true;
     }
 
-    async closeTerminal(handle: TerminalHandle): Promise<void> {
+    public async closeTerminal(handle: TerminalHandle): Promise<void> {
         this.terminalCallbacks.delete(handle);
         await TerminalIPC.onSlotsAvailable(false);
     }
@@ -83,7 +81,7 @@ export abstract class UD3Connection {
 
     public toUD3Time(now: number) {
         const timebase = Number(this.getFeatureValue(FEATURE_TIMEBASE));
-        let direction = this.getFeatureValue(FEATURE_TIMECOUNT);
+        const direction = this.getFeatureValue(FEATURE_TIMECOUNT);
         if (direction === "up" || direction === "down") {
             return to_ud3_time(now, timebase, direction, Endianness.BIG_ENDIAN);
         } else {
@@ -104,4 +102,6 @@ export abstract class UD3Connection {
             return false;
         }
     }
+
+    protected abstract setSynthImpl(type: SynthType): Promise<void>;
 }

@@ -7,10 +7,11 @@ import {
     sid_port,
     telnet_port, udp_min_port,
 } from "../../../common/ConnectionOptions";
-import {connection_types, eth_node, serial_min, serial_plain, udp_min} from "../../../common/constants";
+import {connection_types, dummy, eth_node, serial_min, serial_plain, udp_min} from "../../../common/constants";
 import {ConnectionUIIPC} from "../../ipc/ConnectionUI";
 import {TerminalIPC} from "../../ipc/terminal";
 import {config} from "../../init";
+import {DummyConnection} from "../types/DummyConnection";
 import {createEthernetConnection} from "../types/ethernet";
 import {TerminalHandle, UD3Connection} from "../types/UD3Connection";
 import {createMinSerialConnection} from "../types/SerialMinConnection";
@@ -55,6 +56,8 @@ export class Idle implements IConnectionState {
                 return createEthernetConnection(options[remote_ip], options[telnet_port], options[midi_port], options[sid_port]);
             case udp_min:
                 return createMinUDPConnection(options[udp_min_port], options[remote_ip]);
+            case dummy:
+                return new DummyConnection();
             default:
                 TerminalIPC.println("Connection type \"" + connection_types.get(type) +
                     "\" (" + type + ") is currently not supported");

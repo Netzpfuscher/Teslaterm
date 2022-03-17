@@ -4,7 +4,7 @@ import {
     getDefaultConnectOptions, midi_port, remote_ip,
     serial_port, sid_port, telnet_port, udp_min_port
 } from "../../common/ConnectionOptions";
-import {connection_types, eth_node, serial_min, serial_plain, udp_min} from "../../common/constants";
+import {connection_types, dummy, eth_node, serial_min, serial_plain, udp_min} from "../../common/constants";
 import {config} from "../ipc/Misc";
 import * as ui_helper from "./ui_helper";
 import ChangeEvent = W2UI.ChangeEvent;
@@ -58,6 +58,7 @@ function recreateForm(selected_type: string | undefined, resolve: (cfg: object) 
             addField(fields, remote_ip, "Remote IP");
             addField(fields, udp_min_port, "Remote port");
             break;
+        case dummy: break;
         default:
             throw new Error("Unknown connection type: " + selected_type);
     }
