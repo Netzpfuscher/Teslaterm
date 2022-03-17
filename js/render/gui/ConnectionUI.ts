@@ -90,7 +90,11 @@ function recreateForm(selected_type: string | undefined, resolve: (cfg: object) 
     const selector = $("input[name=" + connection_type + "]");
     const selectorItems: { id: string, text: string }[] = [];
     for (const [id, text] of connection_types.entries()) {
-        selectorItems.push({id, text});
+        // Disable eth_node connection type if command server is in use: Eth-node is not compatible with absolute SID
+        // timestamps.
+        if (id !== eth_node || config.command.state === "disable") {
+            selectorItems.push({id, text});
+        }
     }
     selector.w2field("list", {
         items: selectorItems,

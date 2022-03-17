@@ -19,7 +19,7 @@ export let config: TTConfig;
 export const simulated = false;
 let sidServer: NetworkSIDServer;
 let commandClient: CommandClient;
-let commandServer: CommandServer;
+export let commandServer: CommandServer;
 
 export function init() {
     config = loadConfig("config.ini");
@@ -54,7 +54,7 @@ function tick200() {
     connection.updateSlow();
     if (commandServer) {
         commandServer.tick();
-    } else if (commandClient && commandClient.tick()) {
+    } else if (commandClient && commandClient.tickSlow()) {
         TerminalIPC.println("Command server timed out, reconnecting");
         initCommandClient();
     }
@@ -63,6 +63,9 @@ function tick200() {
 function tick20() {
     sid.update();
     midi.update();
+    if (commandClient) {
+        commandClient.tickFast();
+    }
 }
 
 function tick10() {

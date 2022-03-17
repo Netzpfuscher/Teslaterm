@@ -1,11 +1,10 @@
 import * as path from "path";
 import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
-import {readFileAsync} from "../helper";
+import * as connection from "../connection/connection";
 import {MenuIPC} from "../ipc/Menu";
 import {ScopeIPC} from "../ipc/Scope";
 import {checkTransientDisabled, isSID, media_state} from "../media/media_player";
-import * as connection from "../connection/connection";
 import {ISidSource} from "./sid_api";
 import {DumpSidSource} from "./sid_dump";
 import {EmulationSidSource} from "./sid_emulated";

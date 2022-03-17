@@ -30,6 +30,12 @@ export class CommandServer {
         }
     }
 
+    public sendSIDFrame(data: Uint8Array, absoluteTime: number) {
+        for (const client of this.clients) {
+            client.socket.write(toBytes({type: MessageType.sid_frame, data, absoluteServerTime: absoluteTime}));
+        }
+    }
+
     private onConnect(socket: Socket) {
         const client = {lastMessageMicrotime: now(), socket};
         this.clients.push(client);
