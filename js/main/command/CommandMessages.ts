@@ -6,12 +6,14 @@ export enum MessageType {
     time,
     keep_alive,
     sid_frame,
+    midi_message,
 }
 
 export type Message =
     {type: MessageType.time, time: number} |
     {type: MessageType.keep_alive} |
-    {type: MessageType.sid_frame, data: Uint8Array, absoluteServerTime: number};
+    {type: MessageType.sid_frame, data: Uint8Array, absoluteServerTime: number} |
+    {type: MessageType.midi_message, message: Buffer};
 
 function readTime(data: Buffer, offset: number): number {
     return jspack.Unpack('d', data.slice(offset))[0];
@@ -34,6 +36,9 @@ export function toBytes(message: Message): Uint8Array {
             buffer.push(...writeTime(message.absoluteServerTime));
             buffer.push(...message.data);
             break;
+        case MessageType.midi_message:
+            buffer.push(...message.message);
+            break;
     }
     return new Uint8Array(buffer);
 }
@@ -47,5 +52,7 @@ export function fromBytes(data: Buffer): Message {
             return {type};
         case MessageType.sid_frame:
             return {type, absoluteServerTime: readTime(data, 1), data: data.slice(9)};
+        case MessageType.midi_message:
+            return {type, message: data.slice(1)};
     }
 }

@@ -3,6 +3,7 @@ import {SynthType} from "../../common/CommonTypes";
 import {getOptionalUD3Connection} from "../connection/connection";
 import {TerminalIPC} from "../ipc/terminal";
 import {now} from "../microtime";
+import {playMidiData} from "../midi/midi";
 import {UD3FormattedConnection} from "../sid/UD3FormattedConnection";
 import {fromBytes, MessageType, timeout_us, toBytes} from "./CommandMessages";
 
@@ -75,6 +76,9 @@ export class CommandClient {
                 break;
             case MessageType.sid_frame:
                 this.sidFrameQueue.push({data: packet.data, absTime: packet.absoluteServerTime + this.averagedOffset});
+                break;
+            case MessageType.midi_message:
+                playMidiData(packet.message);
                 break;
         }
     }

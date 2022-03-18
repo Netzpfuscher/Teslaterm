@@ -36,6 +36,12 @@ export class CommandServer {
         }
     }
 
+    public sendMIDI(data: Buffer) {
+        for (const client of this.clients) {
+            client.socket.write(toBytes({type: MessageType.midi_message, message: data}));
+        }
+    }
+
     private onConnect(socket: Socket) {
         const client = {lastMessageMicrotime: now(), socket};
         this.clients.push(client);
