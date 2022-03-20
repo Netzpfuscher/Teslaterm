@@ -43,6 +43,9 @@ export class DummyConnection extends UD3Connection {
         resetResponseTimeout();
     }
 
+    public sendVMSFrames(data: Buffer) {
+    }
+
     protected setSynthImpl(type: SynthType): Promise<void> {
         return Promise.resolve(undefined);
     }

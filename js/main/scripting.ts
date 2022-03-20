@@ -161,7 +161,7 @@ export class Script {
                 onMediaStopped = () => {
                 };
                 this.interruptFunc = null;
-                resolve("Res");
+                resolve();
             };
             this.interruptFunc = () => {
                 media_player.media_state.stopPlaying();
