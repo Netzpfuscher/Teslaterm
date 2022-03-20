@@ -181,7 +181,7 @@ export function inputStrings(msg, title, checkValid, names) {
             width: 450,
         });
     }
-    return new Promise((res, rej) => {
+    return new Promise((res: any, rej: any) => {
         resolve = res;
         reject = rej;
     });

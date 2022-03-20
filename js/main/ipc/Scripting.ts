@@ -1,7 +1,6 @@
 import {ConfirmReply, IPCConstantsToMain, TransmittedFile} from "../../common/IPCConstantsToMain";
 import {ConfirmationRequest, IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
 import {Script} from "../scripting";
-import * as scripting from "../scripting";
 import {processIPC} from "./IPCProvider";
 import {MenuIPC} from "./Menu";
 import {TerminalIPC} from "./terminal";

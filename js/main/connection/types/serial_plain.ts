@@ -47,6 +47,9 @@ export class PlainSerialConnection extends UD3Connection {
         }
     }
 
+    public async sendVMSFrames(data: Buffer) {
+    }
+
     disconnect(): void {
         this.sendTelnet(Buffer.from("tterm stop"));
         this.close();

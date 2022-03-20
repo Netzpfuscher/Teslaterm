@@ -9,6 +9,8 @@ export interface ISidConnection {
     flush(): Promise<void>;
 
     isBusy(): boolean;
+
+    sendVMSFrames(data: Buffer);
 }
 
 export function getActiveSIDConnection(): ISidConnection | null {

@@ -44,6 +44,9 @@ export class UD3FormattedConnection implements ISidConnection {
         }
     }
 
+    public async sendVMSFrames(data: Buffer) {
+    }
+
     public processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
         const absoluteTime = this.lastFrameTime;

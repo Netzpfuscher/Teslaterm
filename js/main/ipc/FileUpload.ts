@@ -4,6 +4,7 @@ import * as media_player from "../media/media_player";
 import {processIPC} from "./IPCProvider";
 import {ScriptingIPC} from "./Scripting";
 import {TerminalIPC} from "./terminal";
+import {BlockSender} from "./block";
 
 export module FileUploadIPC {
     async function loadFile(source: object, name: string, data: number[]) {
@@ -16,6 +17,8 @@ export module FileUploadIPC {
             if (!startBootloading(file.contents)) {
                 TerminalIPC.println("Connection does not support bootloading");
             }
+        } else if (extension === "mcf") {
+            await BlockSender.loadBlocks(file);
         } else {
             await media_player.loadMediaFile(file);
         }
