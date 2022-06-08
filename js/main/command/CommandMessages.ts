@@ -15,7 +15,7 @@ export type Message =
     {type: MessageType.sid_frame, data: Uint8Array, absoluteServerTime: number} |
     {type: MessageType.midi_message, message: Buffer};
 
-function readTime(data: Buffer, offset: number): number {
+function readTime(data: Buffer | number[], offset: number): number {
     return jspack.Unpack('d', data.slice(offset))[0];
 }
 
@@ -24,7 +24,7 @@ function writeTime(time: number): number[] {
 }
 
 export function toBytes(message: Message): Uint8Array {
-    const buffer: number[] = [message.type];
+    let buffer: number[] = [];
     switch (message.type) {
         case MessageType.keep_alive:
             // NOP
@@ -40,19 +40,45 @@ export function toBytes(message: Message): Uint8Array {
             buffer.push(...message.message);
             break;
     }
+    buffer = [buffer.length, message.type, ...buffer];
     return new Uint8Array(buffer);
 }
 
-export function fromBytes(data: Buffer): Message {
-    const type: MessageType = data[0];
-    switch (type) {
-        case MessageType.time:
-            return {type, time: readTime(data, 1)};
-        case MessageType.keep_alive:
-            return {type};
-        case MessageType.sid_frame:
-            return {type, absoluteServerTime: readTime(data, 1), data: data.slice(9)};
-        case MessageType.midi_message:
-            return {type, message: data.slice(1)};
+export class Parser {
+
+    private static fromBytes(data: number[]): Message {
+        const type: MessageType = data[0];
+        switch (type) {
+            case MessageType.time:
+                return {type, time: readTime(data, 1)};
+            case MessageType.keep_alive:
+                return {type};
+            case MessageType.sid_frame:
+                return {type, absoluteServerTime: readTime(data, 1), data: new Uint8Array(data.slice(9))};
+            case MessageType.midi_message:
+                return {type, message: Buffer.of(...data.slice(1))};
+        }
+    }
+
+    private readonly consumer: (msg: Message) => void;
+    private buffer: number[] = [];
+
+    public constructor(consumer: (msg: Message) => void) {
+        this.consumer = consumer;
+    }
+
+    public onData(data: Buffer) {
+        this.buffer.push(...data);
+        while (this.processFrame()) { }
+    }
+
+    private processFrame(): boolean {
+        if (this.buffer.length < 2) { return false; }
+        const actualLength = this.buffer[0] + 2;  // +2: type and length
+        if (this.buffer.length < actualLength) { return false; }
+        const messageBytes = this.buffer.slice(1, actualLength);
+        this.buffer = this.buffer.slice(actualLength);
+        this.consumer(Parser.fromBytes(messageBytes));
+        return true;
     }
 }
