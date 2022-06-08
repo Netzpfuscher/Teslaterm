@@ -100,7 +100,7 @@ class ConfigSection {
         key: string,
         defaultValue: T,
         changed: { val: boolean },
-        description?: string
+        description?: string,
     ): T {
         if (this.contents.has(key)) {
             const retEntry = this.contents.get(key);
@@ -152,7 +152,7 @@ export function loadConfig(filename: string): TTConfig {
     let changed: { val: boolean } = {val: false};
 
     {
-        let general = config.getOrCreateSection("general");
+        const general = config.getOrCreateSection("general");
         const types = Array.from(connection_types.keys());
         ret.autoconnect = general.getOrWrite(
             "autoconnect",
@@ -162,7 +162,7 @@ export function loadConfig(filename: string): TTConfig {
         );
     }
     {
-        let ethernet = config.getOrCreateSection(
+        const ethernet = config.getOrCreateSection(
             "ethernet",
             "Default settings for ethernet connections to UD3 node instances"
         );
@@ -178,7 +178,7 @@ export function loadConfig(filename: string): TTConfig {
             "Default remote port for MIN connections over UDP");
     }
     {
-        let serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
+        const serial = config.getOrCreateSection("serial", "Default settings for serial connections (plain or MIN)");
         let defaultPort: string;
         if (os.platform() === "win32") {
             defaultPort = "COM1";
@@ -191,19 +191,26 @@ export function loadConfig(filename: string): TTConfig {
         ret.serial.productID = serial.getOrWrite("product_id", "7523", changed);
     }
     {
-        let rtpmidi = config.getOrCreateSection("rtpmidi", "Settings for the RTP-MIDI server hosted by Teslaterm/UD3-node");
+        const rtpmidi = config.getOrCreateSection("rtpmidi", "Settings for the RTP-MIDI server hosted by Teslaterm/UD3-node");
         ret.midi.runMidiServer = rtpmidi.getOrWrite("enabled", true, changed);
         ret.midi.port = rtpmidi.getOrWrite("port", 12001, changed);
         ret.midi.localName = rtpmidi.getOrWrite("localName", "Teslaterm", changed);
         ret.midi.bonjourName = rtpmidi.getOrWrite("bonjourName", "Teslaterm", changed);
     }
     {
-        let netsid = config.getOrCreateSection("netsid", "Settings for the NetSID server hosted by Teslaterm/UD3-node");
+        const netsid = config.getOrCreateSection("netsid", "Settings for the NetSID server hosted by Teslaterm/UD3-node");
         ret.netsid.enabled = netsid.getOrWrite("enabled", true, changed);
         ret.netsid.port = netsid.getOrWrite("port", 6581, changed);
     }
     {
-        let udconfig = config.getOrCreateSection(
+        // TODO document
+        const command = config.getOrCreateSection("command", "");
+        ret.command.state = command.getOrWrite("state", "disable", changed, "Possible values: disable, server, client");
+        ret.command.port = command.getOrWrite("port", 13001, changed);
+        ret.command.remoteName = command.getOrWrite("remoteName", "localhost", changed);
+    }
+    {
+        const udconfig = config.getOrCreateSection(
             "udconfig",
             "Each entry indicates which page the corresponding UD3 option should be shown on in the UD3 config GUI"
         );

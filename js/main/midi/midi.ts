@@ -2,7 +2,7 @@ import * as MidiPlayer from "midi-player-js";
 import * as rtpmidi from "rtpmidi";
 import {MediaFileType, PlayerActivity, SynthType} from "../../common/CommonTypes";
 import {getUD3Connection, hasUD3Connection} from "../connection/connection";
-import {config, simulated} from "../init";
+import {commandServer, config, simulated} from "../init";
 import {ScopeIPC} from "../ipc/Scope";
 import {checkTransientDisabled, media_state} from "../media/media_player";
 import * as scripting from "../scripting";
@@ -80,12 +80,14 @@ export function playMidiEvent(event: MidiPlayer.Event): boolean {
 
 export function playMidiData(data: number[] | Uint8Array): boolean {
     if (hasUD3Connection() && data[0] !== 0x00) {
-        if (!(data instanceof Uint8Array)) {
-            data = new Uint8Array(data);
-        }
         const msg = Buffer.from(data);
-        getUD3Connection().sendMidi(msg);
+        const connection = getUD3Connection();
         checkTransientDisabled();
+        connection.sendMidi(msg);
+        connection.setSynth(SynthType.MIDI, true);
+        if (commandServer) {
+            commandServer.sendMIDI(msg);
+        }
         return true;
     } else {
         return simulated && data[0] !== 0;

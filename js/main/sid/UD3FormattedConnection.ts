@@ -1,11 +1,12 @@
 import {getUD3Connection} from "../connection/connection";
+import {commandServer} from "../init";
+import * as microtime from "../microtime";
 import {ISidConnection} from "./ISidConnection";
 import {FRAME_LENGTH, FRAME_UDTIME_LENGTH, SidFrame} from "./sid_api";
-import * as microtime from "../microtime";
 
 export enum FormatVersion {
     v1,
-    v2
+    v2,
 }
 
 export class UD3FormattedConnection implements ISidConnection {
@@ -21,16 +22,16 @@ export class UD3FormattedConnection implements ISidConnection {
         this.sendToUD = sendToUD;
     }
 
-    flush(): Promise<void> {
+    public flush(): Promise<void> {
         return this.flushCallback();
     }
 
-    onStart(): void {
+    public onStart(): void {
         this.busy = false;
         this.lastFrameTime = microtime.now() + 50e3;
     }
 
-    switch_format(version: FormatVersion) {
+    public switch_format(version: FormatVersion) {
         switch (version) {
             case FormatVersion.v1:
                 this.ffPrefixBytes = 4;
@@ -46,10 +47,15 @@ export class UD3FormattedConnection implements ISidConnection {
     public async sendVMSFrames(data: Buffer) {
     }
 
-    processFrame(frame: SidFrame): Promise<void> {
+    public processFrame(frame: SidFrame): Promise<void> {
         console.assert(this.lastFrameTime);
-        const ud_time = getUD3Connection().toUD3Time(this.lastFrameTime);
-        //console.log(Math.floor(this.lastFrameTime/1000));
+        const absoluteTime = this.lastFrameTime;
+        this.lastFrameTime += frame.delayMicrosecond;
+        return this.processAbsoluteFrame(frame.data, absoluteTime);
+    }
+
+    public processAbsoluteFrame(frameData: Uint8Array, absoluteTime: number): Promise<void> {
+        const ud_time = getUD3Connection().toUD3Time(absoluteTime);
         const frameSize = this.ffPrefixBytes + FRAME_LENGTH + FRAME_UDTIME_LENGTH + ( this.needsZeroSuffix ? 1 : 0);
         const data = Buffer.alloc(frameSize);
         let byteCount = 0;
@@ -58,7 +64,7 @@ export class UD3FormattedConnection implements ISidConnection {
             data[byteCount++] = 0xFF;
         }
         for (let j = 0; j < FRAME_LENGTH; ++j) {
-            data[byteCount++] = frame.data[j];
+            data[byteCount++] = frameData[j];
         }
 
         for (let j = 0; j < FRAME_UDTIME_LENGTH; ++j) {
@@ -67,17 +73,17 @@ export class UD3FormattedConnection implements ISidConnection {
         if (this.needsZeroSuffix) {
             data[byteCount] = 0;
         }
-
-        this.lastFrameTime += frame.delayMicrosecond;
+        if (commandServer) {
+            commandServer.sendSIDFrame(frameData, absoluteTime);
+        }
         return this.sendToUD(data);
-
     }
 
     public setBusy(busy: boolean): void {
         this.busy = busy;
     }
 
-    isBusy(): boolean {
+    public isBusy(): boolean {
         return this.busy;
     }
 }

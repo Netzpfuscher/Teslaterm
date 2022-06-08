@@ -27,7 +27,7 @@ export class Reconnecting implements IConnectionState {
         return "Abort reconnection attempt";
     }
 
-    pressButton(window: object): IConnectionState {
+    public async pressButton(window: object): Promise<IConnectionState> {
         return new Idle();
     }
 

@@ -1,16 +1,15 @@
 import {CommandInterface} from "../../common/commands";
-import {SynthType} from "../../common/CommonTypes";
 import {getDefaultConnectOptions} from "../../common/ConnectionOptions";
+import {config} from "../init";
 import {SlidersIPC} from "../ipc/sliders";
 import {TerminalIPC} from "../ipc/terminal";
-import {config} from "../init";
 import {media_state} from "../media/media_player";
 import {BootloadableConnection} from "./bootloader/bootloadable_connection";
 import {Bootloading} from "./state/Bootloading";
-import {TerminalHandle, UD3Connection} from "./types/UD3Connection";
+import {Connecting} from "./state/Connecting";
 import {IConnectionState} from "./state/IConnectionState";
 import {Idle} from "./state/Idle";
-import {Connecting} from "./state/Connecting";
+import {TerminalHandle, UD3Connection} from "./types/UD3Connection";
 
 export let connectionState: IConnectionState = new Idle();
 
@@ -43,8 +42,8 @@ export async function startConf() {
     await commands.sendCommand('cls\r');
 }
 
-export function pressButton(window: object) {
-    connectionState = connectionState.pressButton(window);
+export async function pressButton(window: object) {
+    connectionState = await connectionState.pressButton(window);
 }
 
 export function autoConnect() {

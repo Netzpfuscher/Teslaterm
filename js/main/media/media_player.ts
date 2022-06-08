@@ -6,6 +6,7 @@ import {MediaFileType, PlayerActivity} from "../../common/CommonTypes";
 import {TransmittedFile} from "../../common/IPCConstantsToMain";
 import {commands, getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {transientActive} from "../connection/telemetry/UD3State";
+import {config} from "../init";
 import {ScopeIPC} from "../ipc/Scope";
 import {TerminalIPC} from "../ipc/terminal";
 import {loadMidiFile} from "../midi/midi_file";
@@ -116,6 +117,10 @@ export function isMediaFile(filename: string): boolean {
 }
 
 export async function loadMediaFile(file: TransmittedFile): Promise<void> {
+    if (config.command.state === "client") {
+        TerminalIPC.println("Cannot load media files on command client!");
+        return;
+    }
     if (media_state.state === PlayerActivity.playing) {
         media_state.stopPlaying();
     }

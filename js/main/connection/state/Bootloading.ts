@@ -52,7 +52,7 @@ export class Bootloading implements IConnectionState {
         return "Abort bootloading";
     }
 
-    pressButton(window: object): IConnectionState {
+    public async pressButton(window: object): Promise<IConnectionState> {
         this.cancelled = true;
         this.connection.disconnect();
         return new Idle();
@@ -71,7 +71,8 @@ export class Bootloading implements IConnectionState {
         try {
             const ldr = new Bootloader();
             await ldr.loadCyacd(file);
-            await commands.sendCommand('\rbootloader\r');
+            // Ignore result: The UD3 won't ACK this command since it immediately goes into bootloader mode
+            commands.sendCommand('\rbootloader\r').catch(() => {});
             TerminalIPC.println("Waiting for bootloader to start...");
             await sleep(3000);
             this.connection.enterBootloaderMode((data) => {

@@ -119,7 +119,7 @@ export function inputStrings(msg, title, checkValid, names) {
     for (let i = 0; i < names.length; i++) {
         bodyHtml += "<br>" + names[i] + ': <input id="input' + i + '">';
     }
-    let resolve = () => {
+    let resolve = (val) => {
         // NOP
     };
     let reject = () => {

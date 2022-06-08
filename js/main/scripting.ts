@@ -156,12 +156,12 @@ export class Script {
     }
 
     private playMediaBlocking(): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             onMediaStopped = () => {
                 onMediaStopped = () => {
                 };
                 this.interruptFunc = null;
-                resolve("Res");
+                resolve();
             };
             this.interruptFunc = () => {
                 media_player.media_state.stopPlaying();

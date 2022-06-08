@@ -1,3 +1,4 @@
+import {io} from "socket.io-client";
 import {init} from './init';
 import {IPCProvider, setIPC} from "./ipc/IPCProvider";
 

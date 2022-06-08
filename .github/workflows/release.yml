@@ -9,14 +9,14 @@ on:
 jobs:
   create-artifacts:
     name: Create artifacts
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     env:
       release: ${{ github.event_name == 'create' && startsWith(github.ref, 'v')}}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install wine
-        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get install libpcre2-8-0=10.34-7 --allow-downgrades && sudo apt-get install libssl1.1=1.1.1f-1ubuntu2 --allow-downgrades && sudo apt-get install libssl1.1:i386=1.1.1f-1ubuntu2 --allow-downgrades && sudo apt-get install wine32
+        run: sudo dpkg --add-architecture i386 && sudo apt-get update && sudo apt-get -f install wine32
       - name: Cache node modules
         uses: actions/cache@v2
         env:
@@ -34,15 +34,9 @@ jobs:
       - name: Prepare
         run: npm run build
       - name: Build Electron
-        run: npm run install-electron && npm run package-electron
+        run: npm run package-electron
       - name: Build Node
-        run: npm run install-node && npm run package-node
-      - name: Package node-linux
-        run: zip -j dist/node/ud3-node-linux.zip dist/node/ud3-node node_modules/@serialport/bindings/build/Release/bindings.node
-      - name: Get Windows serialport bindings
-        run: (cd node_modules/@serialport/bindings && npx prebuild-install --tag-prefix @serialport/bindings@ -r node --platform win32)
-      - name: Package node-windows
-        run: zip -j dist/node/ud3-node-win.zip dist/node/ud3-node.exe node_modules/@serialport/bindings/build/Release/bindings.node
+        run: npm run package-node
       - name: Upload electron-linux
         uses: actions/upload-artifact@v2
         with:
@@ -56,13 +50,13 @@ jobs:
       - name: Upload node-linux
         uses: actions/upload-artifact@v2
         with:
-          path: dist/node/ud3-node-linux.zip
-          name: ud3-node-linux.zip
+          path: dist/node/ud3-node
+          name: ud3-node-linux
       - name: Upload node-win
         uses: actions/upload-artifact@v2
         with:
-          path: dist/node/ud3-node-win.zip
-          name: ud3-node-win.zip
+          path: dist/node/ud3-node.exe
+          name: ud3-node-windows.exe
       - name: Create release
         if: env.release == 'true'
         uses: actions/create-release@v1

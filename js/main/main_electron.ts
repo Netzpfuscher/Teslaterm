@@ -25,10 +25,10 @@ function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
         webPreferences: {
-            // TODO the goal is for this to be removed at some point
+            // TODO the goal is for both of these to be removed at some point
             nodeIntegration: true,
             contextIsolation: false,
-        }
+        },
     });
 
     // and load the index.html of the app.

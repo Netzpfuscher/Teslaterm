@@ -1,11 +1,8 @@
-//Head
-
-import {createServer, IncomingMessage, ServerResponse} from "http";
-import {Socket} from "socket.io";
-import * as url from "url";
-import * as path from "path";
 import * as fs from "fs";
-import * as socket_io from "socket.io";
+import {createServer, IncomingMessage, ServerResponse} from "http";
+import * as path from "path";
+import {Server, Socket} from "socket.io";
+import * as url from "url";
 import {init} from "./init";
 import {ISingleWindowIPC, processIPC} from "./ipc/IPCProvider";
 
@@ -30,8 +27,8 @@ class IPC implements ISingleWindowIPC {
 }
 
 const app = createServer(httpHandler);
-const io = socket_io(app);
-//TODO config
+const io = new Server(app);
+// TODO config
 app.listen(2525);
 init();
 
