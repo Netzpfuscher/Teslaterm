@@ -5,7 +5,7 @@ import {TerminalIPC} from "../ipc/terminal";
 import {now} from "../microtime";
 import {playMidiData} from "../midi/midi";
 import {UD3FormattedConnection} from "../sid/UD3FormattedConnection";
-import {fromBytes, MessageType, timeout_us, toBytes} from "./CommandMessages";
+import {Message, MessageType, Parser, timeout_us, toBytes} from "./CommandMessages";
 
 const averagingOldFactor = 31 / 32;
 const averagingNewFactor = 1 - averagingOldFactor;
@@ -20,10 +20,11 @@ export class CommandClient {
     private lastPacketMicrotime: number = now();
     private averagedOffset: number = NaN;
     private sidFrameQueue: IAbsoluteSIDFrame[] = [];
+    private parser: Parser = new Parser((msg) => this.onData(msg));
 
     public constructor(remoteName: string, port: number) {
         this.socket = new Socket();
-        this.socket.addListener("data", (data) => this.onData(data));
+        this.socket.addListener("data", (data) => this.parser.onData(data));
         this.socket.addListener("error", (err) => TerminalIPC.println("Failed to connect to command server: " + err));
         this.socket.connect(port, remoteName);
     }
@@ -59,8 +60,7 @@ export class CommandClient {
         }
     }
 
-    private async onData(data: Buffer) {
-        const packet = fromBytes(data);
+    private async onData(packet: Message) {
         const currentTime = now();
         this.lastPacketMicrotime = currentTime;
         switch (packet.type) {
