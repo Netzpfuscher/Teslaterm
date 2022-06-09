@@ -174,7 +174,7 @@ export function loadConfig(filename: string): TTConfig {
         ret.ethernet.sidPort = ethernet.getOrWrite("sidport", 6581, changed,
             "Default remote port for netSID");
         //TODO discuss default value?
-        ret.ethernet.udpMinPort = ethernet.getOrWrite("udpMinPort", 1234, changed,
+        ret.ethernet.udpMinPort = ethernet.getOrWrite("udpMinPort", 1337, changed,
             "Default remote port for MIN connections over UDP");
     }
     {
