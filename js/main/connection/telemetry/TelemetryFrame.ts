@@ -13,7 +13,7 @@ import {bytes_to_signed, convertBufferToString, Endianness, from_32_bit_bytes} f
 import {MetersIPC} from "../../ipc/meters";
 import {MiscIPC} from "../../ipc/Misc";
 import {ScopeIPC} from "../../ipc/Scope";
-import {setBusActive, setBusControllable, setTransientActive} from "./UD3State";
+import {updateStateFromTelemetry} from "./UD3State";
 
 export let configRequestQueue: object[] = [];
 let udconfig: string[][] = [];
@@ -121,9 +121,7 @@ export class TelemetryFrame {
                 drawString(this.data, true, source);
                 break;
             case TT_STATE_SYNC:
-                setBusActive((this.data[1] & 1) !== 0);
-                setTransientActive((this.data[1] & 2) !== 0);
-                setBusControllable((this.data[1] & 4) !== 0);
+                updateStateFromTelemetry(this.data[1]);
                 break;
             case TT_CONFIG_GET:
                 this.data.splice(0, 1);

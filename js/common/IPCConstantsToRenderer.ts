@@ -56,14 +56,25 @@ export class MeterConfig {
 }
 
 export class UD3State {
+    public static DEFAULT_STATE = new UD3State(false, false, false, false);
+
     public readonly busActive: boolean;
     public readonly busControllable: boolean;
     public readonly transientActive: boolean;
+    public readonly killBitSet: boolean;
 
-    constructor(active: boolean, controllable: boolean, transientActive: boolean) {
+    constructor(active: boolean, controllable: boolean, transientActive: boolean, killBitSet: boolean) {
         this.busActive = active;
         this.busControllable = controllable;
         this.transientActive = transientActive;
+        this.killBitSet = killBitSet;
+    }
+
+    public equals(other: UD3State): boolean {
+        return this.busActive === other.busActive &&
+            this.busControllable === other.busControllable &&
+            this.transientActive === other.transientActive &&
+            this.killBitSet === other.killBitSet;
     }
 }
 
