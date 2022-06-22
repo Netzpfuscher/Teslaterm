@@ -5,6 +5,9 @@ import {ScriptingIPC} from "../ipc/Scripting";
 import * as sliders from "./sliders";
 import * as ui_helper from "./ui_helper";
 
+export const KILL_STATUS_OK = '<p class="kill_status_ok">OK</p>';
+export const KILL_STATUS_ERR = '<p class="kill_status_err">ERR</p>';
+
 export function init() {
     const port = $("#toolbar #tb_toolbar_item_port");
     port.on("keypress", (e) => {
@@ -67,10 +70,10 @@ export function onCtrlMenuClick(event) {
     }
 }
 
-let ud3State: UD3State = new UD3State(false, false, false);
+let ud3State: UD3State = UD3State.DEFAULT_STATE;
 
 export function updateUD3State(newState: UD3State) {
-    if (newState.transientActive != ud3State.transientActive) {
+    if (newState.transientActive !== ud3State.transientActive) {
         ui_helper.changeMenuEntry("mnu_command", "transient", "TR " + (newState.transientActive ? "Stop" : "Start"));
     }
 
@@ -78,8 +81,13 @@ export function updateUD3State(newState: UD3State) {
         ui_helper.addFirstMenuEntry("mnu_command", "bus", "Bus " + (newState.busActive ? "OFF" : "ON"), "fa fa-bolt");
     } else if (!newState.busControllable && ud3State.busControllable) {
         ui_helper.removeMenuEntry("mnu_command", "bus");
-    } else if (newState.busActive != ud3State.busActive) {
+    } else if (newState.busActive !== ud3State.busActive) {
         ui_helper.changeMenuEntry("mnu_command", "bus", "Bus " + (newState.busActive ? "OFF" : "ON"));
+    }
+    if (ud3State.killBitSet !== newState.killBitSet) {
+        const kill_item = w2ui.toolbar.get("kill_status", false);
+        kill_item.html = newState.killBitSet ? KILL_STATUS_ERR : KILL_STATUS_OK;
+        w2ui.toolbar.refresh("kill_status");
     }
 
     sliders.updateSliderAvailability(newState);
