@@ -46,6 +46,7 @@ module.exports = class minprot {
 		this.transport_fifo = [];
 		this.transport_fifo.spurious_acks = 0;
 		this.transport_fifo.sequence_mismatch_drop = 0;
+		this.transport_fifo.sequential_sequence_mismatch_drop = 0;
 		this.transport_fifo.dropped_frames = 0;
 		this.transport_fifo.resets_received = 0;
 		this.transport_fifo.sn_min = 0;
@@ -250,7 +251,7 @@ module.exports = class minprot {
 
 					// Now pop off all the frames up to (but not including) rn
 					// The ACK contains Rn; all frames before Rn are ACKed and can be removed from the window
-					if (this.debug) console.log("Received ACK seq=" + seq + ", num_acked=" + num_acked + ", num_nacked=" + num_nacked);
+					if (this.debug && (num_acked != 0)) console.log(((num_acked == 0) ? "Retransmitted Ack: seq=" : "Received ACK seq=") + seq + ", num_acked=" + num_acked + ", num_nacked=" + num_nacked);
 					for (let i = 0; i < num_acked; i++) {
 						//transport_fifo_pop(self);
 						let last_pop = this.transport_fifo.frames.shift();
@@ -279,6 +280,7 @@ module.exports = class minprot {
 				// alive (pings, etc.) or just wait to get application frames.
 				this.transport_fifo.resets_received++;
 				this.transport_fifo_reset();
+				console.log("min reset");
 				break;
 			default:
 				if (frame.id_control & 0x80) {
@@ -293,6 +295,12 @@ module.exports = class minprot {
 						// Now looking for the next one in the sequence
 						this.transport_fifo.rn++;
 
+						this.transport_fifo.sequential_sequence_mismatch_drop = 0;
+
+						if (this.debug) console.log("Incoming app frame seq=" + frame.seq + ", id=" + (frame.id_control & 0x3f) + ", payload len=" + frame.payload.length);
+
+
+						if (this.debug) console.log("send ACK: seq=" + this.transport_fifo.rn);
 						// Always send an ACK back for the frame we received
 						// ACKs are short (should be about 9 microseconds to send on the wire) and
 						// this will cut the latency down.
@@ -303,7 +311,6 @@ module.exports = class minprot {
 						// Now ready to pass this up to the application handlers
 						this.handler(frame.id_control & 0x3f, frame.payload);
 						// Pass frame up to application handler to deal with
-						if (this.debug) console.log("Incoming app frame seq=" + frame.seq + ", id=" + (frame.id_control & 0x3f) + ", payload len=" + frame.payload.length);
 						//min_application_handler(id_control & (uint8_t)0x3fU, payload, payload_len, self->port);
 					} else {
 						// Discard this frame because we aren't looking for it: it's either a dupe because it was
@@ -311,6 +318,18 @@ module.exports = class minprot {
 						// sequence and others got dropped.
 						this.transport_fifo.sequence_mismatch_drop++;
 						if (this.debug) console.log('Mismatch seq=' + seq + 'rn=' + this.transport_fifo.rn);
+
+						//check if we are lagging behind for some reason, but give the UD3 a few chances to re-transmit other frames
+						if(seq > this.transport_fifo.rn){
+							if (this.debug) console.log("UD3 left us behind... didn't ack but got new package (" + this.transport_fifo.sequential_sequence_mismatch_drop + ")");
+							if(this.transport_fifo.sequential_sequence_mismatch_drop > 10){
+								this.transport_fifo.sequential_sequence_mismatch_drop = 0;
+								this.min_transport_reset(true);
+								console.log("min fifo reset! (too many sequential mismatches)");
+							}else{
+								this.transport_fifo.sequential_sequence_mismatch_drop++;
+							}
+						}
 					}
 				} else {
 					// Not a transport frame
@@ -333,7 +352,7 @@ module.exports = class minprot {
 	send_ack() {
 		// In the embedded end we don't reassemble out-of-order frames and so never ask for retransmits. Payload is
 		// always the same as the sequence number.
-		if (this.debug) console.log("send ACK: seq=" + this.transport_fifo.rn);
+		//if (this.debug) console.log("send ACK: seq=" + this.transport_fifo.rn);
 		//if(ON_WIRE_SIZE(8) <= min_tx_space(self->port)) {
 		//on_wire_bytes(self, ACK, self->transport_fifo.rn, &self->transport_fifo.rn, 0, 0xffU, 1U);
 		let sq = [];
@@ -442,7 +461,7 @@ module.exports = class minprot {
 						this.transport_fifo.frames[window_size].seq = this.transport_fifo.sn_max;
 						this.transport_fifo.last_sent_seq = this.transport_fifo.sn_max;
 						this.transport_fifo.frames[window_size].last_send = this.now;
-						if (this.debug) console.log("SEQA=" + this.transport_fifo.frames[window_size].seq);
+						if (this.debug) console.log("tx frame seq=" + this.transport_fifo.frames[window_size].seq);
 						this.on_wire_bytes(this.transport_fifo.frames[window_size].min_id | 0x80, this.transport_fifo.frames[window_size].seq, this.transport_fifo.frames[window_size].payload);
 						this.transport_fifo.sn_max++;
 					}
@@ -465,7 +484,7 @@ module.exports = class minprot {
                		if (resend_frame_num > -1 && (this.now - this.transport_fifo.frames[resend_frame_num].last_send) >= this.TRANSPORT_FRAME_RETRANSMIT_TIMEOUT_MS) {
 						let wire_size = this.on_wire_size(this.transport_fifo.frames[resend_frame_num].length);
 						if (wire_size < this.remote_rx_space) {
-							if (this.debug) console.log("SEQB=" + this.transport_fifo.frames[resend_frame_num].seq);
+							if (this.debug) console.log("tx olfFrame seq=" + this.transport_fifo.frames[resend_frame_num].seq);
 							if (this.transport_fifo.frames[resend_frame_num].seq == this.transport_fifo.last_sent_seq) {
 								this.transport_fifo.last_sent_seq_cnt++;
 							} else {
@@ -488,6 +507,7 @@ module.exports = class minprot {
 				// Periodically transmit the ACK with the rn value, unless the line has gone idle
 				if (this.now - this.transport_fifo.last_sent_ack_time_ms > this.TRANSPORT_ACK_RETRANSMIT_TIMEOUT_MS) {
 					if (remote_active) {
+						//if (this.debug) console.log("retransmit ACK: seq=" + this.transport_fifo.rn);
 						this.send_ack();
 					}
 				}
