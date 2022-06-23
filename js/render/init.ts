@@ -104,6 +104,7 @@ export function init() {
                     {type: 'spacer'},
                     {type: 'button', id: 'connect', text: 'Connect', icon: 'fa fa-plug'},
                     {type: 'button', id: 'kill_set', text: 'KILL SET', icon: 'fa fa-power-off'},
+                    {type: 'html', id: 'kill_status', html: menu.KILL_STATUS_OK},
                     {type: 'button', id: 'kill_reset', text: 'KILL RESET', icon: 'fa fa-power-off'},
                     {type: 'button', id: 'cls', text: 'Clear Term', icon: 'fa fa-terminal'},
                 ],

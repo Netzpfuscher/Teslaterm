@@ -1,20 +1,24 @@
 import {IPCConstantsToMain} from "../../common/IPCConstantsToMain";
-import {UD3State, IPCConstantsToRenderer} from "../../common/IPCConstantsToRenderer";
+import {IPCConstantsToRenderer, UD3State} from "../../common/IPCConstantsToRenderer";
 import {commands, pressButton} from "../connection/connection";
 import {configRequestQueue} from "../connection/telemetry/TelemetryFrame";
 import {media_state} from "../media/media_player";
 import {processIPC} from "./IPCProvider";
-import {ScriptingIPC} from "./Scripting";
 
 export module MenuIPC {
-    let lastUD3State: UD3State = new UD3State(false, false, false);
+    let lastUD3State: UD3State = UD3State.DEFAULT_STATE;
     let lastConnectText: string = "Connect";
     let lastScriptName: string = "Script: none";
     let lastMediaName: string = "MIDI-File: none";
 
-    export function setUD3State(active: boolean, controllable: boolean, transientActive: boolean) {
-        lastUD3State = new UD3State(active, controllable, transientActive);
-        processIPC.sendToAll(IPCConstantsToRenderer.menu.ud3State, lastUD3State);
+    export function setUD3State(
+        busActive: boolean, busControllable: boolean, transientActive: boolean, killBitSet: boolean,
+    ) {
+        const newState = new UD3State(busActive, busControllable, transientActive, killBitSet);
+        if (!newState.equals(lastUD3State)) {
+            lastUD3State = newState;
+            processIPC.sendToAll(IPCConstantsToRenderer.menu.ud3State, lastUD3State);
+        }
     }
 
     export function setConnectionButtonText(newText: string) {
