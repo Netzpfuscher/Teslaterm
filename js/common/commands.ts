@@ -62,6 +62,10 @@ export class CommandInterface {
         await this.sendCommand('set pw ' + ontime.toFixed(0) + '\r');
     }
 
+    public async setOntimeRelative(ontime: number) {
+        await this.sendCommand('set pwp ' + ontime.toFixed(1) + '\r');
+    }
+
     public async setBurstOntime(ontime: number) {
         await this.sendCommand('set bon ' + ontime.toFixed(0) + '\r');
     }

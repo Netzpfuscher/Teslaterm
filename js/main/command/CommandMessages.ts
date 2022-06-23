@@ -7,13 +7,16 @@ export enum MessageType {
     keep_alive,
     sid_frame,
     midi_message,
+    telnet,
 }
 
 export type Message =
     {type: MessageType.time, time: number} |
     {type: MessageType.keep_alive} |
     {type: MessageType.sid_frame, data: Uint8Array, absoluteServerTime: number} |
-    {type: MessageType.midi_message, message: Buffer};
+    {type: MessageType.midi_message, message: Buffer} |
+    {type: MessageType.telnet, message: Buffer};
+
 
 function readTime(data: Buffer | number[], offset: number): number {
     return jspack.Unpack('d', data.slice(offset))[0];
@@ -39,6 +42,9 @@ export function toBytes(message: Message): Uint8Array {
         case MessageType.midi_message:
             buffer.push(...message.message);
             break;
+        case MessageType.telnet:
+            buffer.push(...message.message);
+            break;
     }
     buffer = [buffer.length, message.type, ...buffer];
     return new Uint8Array(buffer);
@@ -56,6 +62,8 @@ export class Parser {
             case MessageType.sid_frame:
                 return {type, absoluteServerTime: readTime(data, 1), data: new Uint8Array(data.slice(9))};
             case MessageType.midi_message:
+                return {type, message: Buffer.of(...data.slice(1))};
+            case MessageType.telnet:
                 return {type, message: Buffer.of(...data.slice(1))};
         }
     }

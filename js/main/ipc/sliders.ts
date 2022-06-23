@@ -14,7 +14,7 @@ export module SlidersIPC {
 
     export async function setRelativeOntime(val: number, key?: object) {
         state.ontimeRel = val;
-        await commands.setOntime(state.ontime);
+        await commands.setOntimeRelative(state.ontimeRel);
         sendSliderSync(key);
     }
 

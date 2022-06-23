@@ -1,6 +1,6 @@
 import {Socket} from "net";
 import {SynthType} from "../../common/CommonTypes";
-import {getOptionalUD3Connection} from "../connection/connection";
+import {getAutoTerminal, getOptionalUD3Connection, getUD3Connection, hasUD3Connection} from "../connection/connection";
 import {TerminalIPC} from "../ipc/terminal";
 import {now} from "../microtime";
 import {playMidiData} from "../midi/midi";
@@ -79,6 +79,11 @@ export class CommandClient {
                 break;
             case MessageType.midi_message:
                 playMidiData(packet.message);
+                break;
+            case MessageType.telnet:
+                if (hasUD3Connection()) {
+                    await getUD3Connection().sendTelnet(packet.message, getAutoTerminal());
+                }
                 break;
         }
     }

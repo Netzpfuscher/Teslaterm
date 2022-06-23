@@ -42,6 +42,12 @@ export class CommandServer {
         }
     }
 
+    public sendTelnet(data: Buffer) {
+        for (const client of this.clients) {
+            client.socket.write(toBytes({type: MessageType.telnet, message: data}));
+        }
+    }
+
     private onConnect(socket: Socket) {
         const client = {lastMessageMicrotime: now(), socket};
         this.clients.push(client);

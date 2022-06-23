@@ -1,6 +1,6 @@
 import {CommandInterface} from "../../common/commands";
 import {getDefaultConnectOptions} from "../../common/ConnectionOptions";
-import {config} from "../init";
+import {commandServer, config} from "../init";
 import {SlidersIPC} from "../ipc/sliders";
 import {TerminalIPC} from "../ipc/terminal";
 import {media_state} from "../media/media_player";
@@ -16,6 +16,9 @@ export let connectionState: IConnectionState = new Idle();
 export const commands = new CommandInterface(
     async (c: string) => {
         try {
+            if (commandServer) {
+                commandServer.sendTelnet(Buffer.from(c));
+            }
             if (hasUD3Connection()) {
                 await getUD3Connection().sendTelnet(Buffer.from(c), getAutoTerminal());
             }
@@ -27,7 +30,7 @@ export const commands = new CommandInterface(
         // \033=\u1B
         TerminalIPC.print('\u001B[2J\u001B[0;0H');
     },
-    SlidersIPC.setRelativeOntime
+    SlidersIPC.setRelativeOntime,
 );
 
 export async function startConf() {
