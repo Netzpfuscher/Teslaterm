@@ -39,7 +39,7 @@
     "@types/w2ui": "^1.4.33",
     "@types/webmidi": "^2.0.6",
     "cross-var": "^1.1.0",
-    "electron": "^17.1.2",
+    "electron": "^18.3.7",
     "electron-builder": "^22.14.13",
     "node": "^17.0.0",
     "node-abi": "^3.8.0",
