@@ -1,6 +1,6 @@
 import {MediaFileType, SynthType} from "./CommonTypes";
 
-export const maxOntime = 400;
+export const maxOntime = 800;
 export const maxBPS = 1000;
 export const maxBurstOntime = 1000;
 export const maxBurstOfftime = 1000;
