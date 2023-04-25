@@ -24,7 +24,7 @@
     "justgage": "^1.5.1",
     "jzz": "^1.4.9",
     "midi-player-js": "^2.0.16",
-    "npm-check-updates": "^12.5.3",
+    "npm-check-updates": "^16.10.9",
     "rtpmidi": "^1.0.0",
     "serialport": "10.4.0",
     "socket.io": "^4.4.1",
